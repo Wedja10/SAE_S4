@@ -16,9 +16,10 @@ function isValidPassword($password) {
 
 function checkLogin() {
     if (!isset($_SESSION['user_id'])) {
-        header("Location: ../index.php?error=must_be_logged");
-        exit();
+        return true;
     }
+
+    return false;
 }
 
 function verifyPassword($password, $storedPassword) {

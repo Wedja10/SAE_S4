@@ -11,10 +11,11 @@ session_destroy();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion</title>
-    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="style/login.css">
 </head>
 
 <body>
+    <img src="assets/bg.jpg" alt="" class="bg">
     <div class="container">
         <h2>Connexion</h2>
         <form action="back/back_login.php" method="post">

@@ -11,10 +11,11 @@ session_destroy();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription</title>
-    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="style/login.css">
 </head>
 
 <body>
+    <img src="assets/bg.jpg" alt="" class="bg">
     <div class="container">
         <h2>Inscription</h2>
         <form action="back/back_register.php" method="POST">
