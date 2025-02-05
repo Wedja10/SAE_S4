@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
 
     if (!$email || empty($password)) {
         insertLog("Tentative de connexion échouée : Identifiants invalides", "Erreur");
-        header("Location: ../index.php?error=invalid_credentials");
+        header("Location: ../login/index.php?error=invalid_credentials");
         exit();
     }
 
@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     if ($user && verifyPassword($password, $user['password'])) {
         if ($user['is_verified'] == 0) {
             insertLog("Connexion refusée : Compte non vérifié", "Erreur");
-            header("Location: ../index.php?error=account_not_verified");
+            header("Location: ../login/index.php?error=account_not_verified");
             exit();
         }
 
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         exit();
     } else {
         insertLog("Tentative de connexion échouée : Mot de passe ou email incorrect", "Erreur");
-        header("Location: ../index.php?error=invalid_credentials");
+        header("Location: ../login/index.php?error=invalid_credentials");
         exit();
     }
 }
