@@ -36,10 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
         $subject = 'Vérification de votre compte';
         $body = "Cliquez sur ce lien pour valider votre compte: <a href='$verificationLink'>$verificationLink</a>";
         sendmail($email, $subject, $body);
-        header("Location: ../index.php?success=verification_email_sent");
+        header("Location: ../login/index.php?success=verification_email_sent");
         exit();
     } else {
-        header("Location: ../register.php?error=registration_failed");
+        header("Location: ../login/register.php?error=registration_failed");
         exit();
     }
 }

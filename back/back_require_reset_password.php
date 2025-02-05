@@ -10,6 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['requiremdp'])) {
     $subject = 'Réinitialiser le mot de passe';
     $body = "Cliquez sur ce lien pour réinitialiser le mot de passe de votre compte: <a href='$verificationLink'>$verificationLink</a>";
     sendmail($email, $subject, $body);
-    header("Location: ../index.php?success=require");
+    header("Location: ../login/index.php?success=require");
     exit();
 }

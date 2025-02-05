@@ -13,7 +13,7 @@ $stmt->execute();
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($password !== $confirm_password) {
-    header("Location: ../resetmdp.php?error=password_mismatch&email=".$email."");
+    header("Location: ../login/resetmdp.php?error=password_mismatch&email=".$email."");
     exit();
 }
 
@@ -24,7 +24,7 @@ $stmt->bindParam(':id', $user['id']);
 $stmt->execute();
 
 insertLog('Réinitialisation de mot de passe', 'Succès');
-header("Location: ../index.php?success=password_reset");
+header("Location: ../login/index.php?success=password_reset");
 exit();
 
 ?>

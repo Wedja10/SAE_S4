@@ -1,6 +1,6 @@
 <?php
 session_start();
-require 'back/cnx.php';
+require '../back/cnx.php';
 
 if (isset($_GET['token'])) {
     $token = $_GET['token'];
