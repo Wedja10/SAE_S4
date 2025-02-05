@@ -1,5 +1,5 @@
 <?php
-require 'back/back_function.php';
+require '../back/back_function.php';
 session_start();
 session_unset();
 session_destroy();
@@ -11,14 +11,13 @@ session_destroy();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion</title>
-    <link rel="stylesheet" href="style/login.css">
+    <link rel="stylesheet" href="../style/login.css">
 </head>
 
 <body>
-    <img src="assets/bg.jpg" alt="" class="bg">
     <div class="container">
         <h2>Connexion</h2>
-        <form action="back/back_login.php" method="post">
+        <form action="../back/back_login.php" method="post">
             <label for="email">Email :</label>
             <input type="email" name="email" id="email" required>
 
@@ -38,7 +37,7 @@ session_destroy();
         </div>
     </div>
 
-    <script src="js/modal.js"></script>
+    <script src="../js/modal.js"></script>
 </body>
 
 </html>

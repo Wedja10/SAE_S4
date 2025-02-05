@@ -1,5 +1,5 @@
 <?php
-require 'back/back_function.php';
+require '../back/back_function.php';
 session_start();
 session_unset();
 session_destroy();
@@ -11,13 +11,13 @@ session_destroy();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Réinitialisation de mot de passe</title>
-    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="../style/style.css">
 </head>
 
 <body>
     <div class="container">
         <h2>Réinitialiser le mot de passe</h2>
-        <form action="back/back_reset_password.php" method="post">
+        <form action="../back/back_reset_password.php" method="post">
 
             <label for="password">Mot de passe :</label>
             <input type="password" name="password" id="password" required>
@@ -39,7 +39,7 @@ session_destroy();
         </div>
     </div>
 
-    <script src="js/modal.js"></script>
+    <script src="../js/modal.js"></script>
 </body>
 
 </html>
