@@ -10,14 +10,14 @@
 
 <body>
     <header>
-        <nav>
+        <nav class="fade-in">
             <ul>
                 <li><a href="#">HOME</a></li>
                 <li><a href="#">PAGE</a></li>
                 <li><a href="#">PAGE</a></li>
             </ul>
         </nav>
-        <div class="welcome">
+        <div class="welcome fade-in">
             <h2>
                 <div class="warp" aria-labelledby="warp-label">
                     <span id="warp-label" class="warp__placeholder">
@@ -87,7 +87,7 @@
         </div>
     </header>
 
-    <section class="game-options">
+    <section class="game-options fade-in">
         <div class="option">
             <h2>LAUNCH YOUR GAME</h2>
             <button class="start-btn">
@@ -106,8 +106,8 @@
     </section>
 
     <section class="game-info">
-        <h1 class="sectionTitle">THE GAME FOR YOU</h1>
-        <div class="content">
+        <h1 class="sectionTitle fade-in">THE GAME FOR YOU</h1>
+        <div class="content fade-in">
             <img src="assets/card.png" alt="Game Image">
             <p>
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer blandit feugiat ex.
@@ -117,36 +117,9 @@
         </div>
     </section>
 
-    <footer class="fade-in" id="contact">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h3>À propos</h3>
-                <p>Ce site a été développer par :</p> <br>
-                <ul>
-                    <li>Abdelrmb (<a href="https://github.com/AbdelRMB" target="_blank">Github</a>, <a href="https://abdelrahimriche.com" target="_blank">Portfolio</a>)</li>
-                    <li>Abdelrmb (<a href="https://github.com/AbdelRMB" target="_blank">Github</a>, <a href="https://abdelrahimriche.com" target="_blank">Portfolio</a>)</li>
-                    <li>Abdelrmb (<a href="https://github.com/AbdelRMB" target="_blank">Github</a>, <a href="https://abdelrahimriche.com" target="_blank">Portfolio</a>)</li>
-                    <li>Abdelrmb (<a href="https://github.com/AbdelRMB" target="_blank">Github</a>, <a href="https://abdelrahimriche.com" target="_blank">Portfolio</a>)</li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Mentions Légales</h3>
-                <ul>
-                    <li><a href="#">Mentions légales</a></li>
-                    <li><a href="#">Conditions générales d'utilisation</a></li>
-                    <li><a href="#">Politique de confidentialité</a></li>
-                    <li><a href="#">Cookies</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Contact</h3>
-                <p>Email : <a href="#">contact.example@gmail.com</a></p>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 BELLE PARIS. Tous droits réservés.</p>
-        </div>
-    </footer>
+    <?php include 'include/footer.html'; ?>
+
+    <script src="js/fade-in.js"></script>
 </body>
 
 </html>
