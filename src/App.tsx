@@ -15,6 +15,7 @@ function App() {
         <Navbar />
         <Welcome />
       </header>
+
       <GameOption />
       <GameInfo />
       <Footer />
