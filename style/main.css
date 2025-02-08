@@ -1,9 +1,16 @@
+@font-face {
+    font-family: "cowboy";
+    src: url("../assets/farwest.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
 /* ---------- Style Général ---------- */
 
 body {
     background: linear-gradient(to bottom, #0d0d3b, #2c0075);
     color: white;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: "cowboy", sans-serif;
     text-align: center;
     margin: 0;
     padding: 0;
@@ -107,6 +114,7 @@ nav ul li a {
     width: 250px;
     color: white;
     box-shadow: -5px 5px 0px 0px #F1B24A;
+    font-family: "cowboy", sans-serif;
 }
 
 .join-btnDiv{
@@ -127,6 +135,7 @@ nav ul li a {
     cursor: pointer;
     width: 250px;
     color: white;
+    font-family: "cowboy", sans-serif;
 }
 
 .jaune {
@@ -193,7 +202,7 @@ h2 {
 }
 
 .warp {
-    font-family: 'Courier New', Courier, monospace;
+    font-family: "cowboy", sans-serif;
     font-size: 1.2rem;
 }
 
