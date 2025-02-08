@@ -95,8 +95,8 @@ nav ul li a {
     margin-top: -15px;
 }
 
-.start-btn,
-.join-btn {
+.start-btn {
+    position: relative;
     background: #150D44;
     border: none;
     margin-top: 40px;
@@ -109,9 +109,40 @@ nav ul li a {
     box-shadow: -5px 5px 0px 0px #F1B24A;
 }
 
+.join-btnDiv{
+    position: relative;
+    border: none;
+    width: 250px;
+}
+
+.join-btn {
+    border: 3px solid #FFFFFF;
+    box-shadow: -5px 5px 0px 0px #150D44;
+    background: #A4A4A4;
+    border-radius: 13px;
+    position: relative;
+    margin-top: 40px;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 250px;
+    color: white;
+}
+
 .jaune {
     background: #F1B24A;
     color: #F1B24A;
+}
+
+.topright {
+    position: absolute;
+    top: -10px;
+    right: -5px;
+    width: 60px;
+}
+
+.topright2{
+    right: -40px;
 }
 
 
