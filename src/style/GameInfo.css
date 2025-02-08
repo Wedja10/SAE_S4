@@ -1,0 +1,59 @@
+/* ---------- Section Info de Jeu ---------- */
+.game-info {
+    margin: 50px auto;
+    width: 50%;
+}
+
+.content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.content img {
+    width: 150px;
+    border: 2px solid #ffcc00;
+}
+
+.content p {
+    text-align: justify;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-left: 70px;
+}
+
+@media screen and (max-width: 1200px) {
+    .game-info {
+        width: 70%;
+    }
+
+    .content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .content p {
+        margin-left: 0;
+    }
+}
+
+/* Smartphones grands (iPhone 12+, Android grands écrans) */
+@media screen and (max-width: 768px) {
+
+    .content img {
+        width: 100px;
+    }
+
+    .game-info {
+        width: 90%;
+    }
+}
+
+/* Smartphones petits (iPhone SE, petits Android) */
+@media screen and (max-width: 480px) {
+
+    .content img {
+        width: 80px;
+    }
+}

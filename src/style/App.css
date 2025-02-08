@@ -1,0 +1,55 @@
+/* ---------- Police ---------- */
+@font-face {
+    font-family: "cowboy";
+    src: url("../assets/farwest.otf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* ---------- Style Général ---------- */
+* {
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    background: linear-gradient(to bottom, #0d0d3b, #2c0075);
+    color: white;
+    font-family: "cowboy", sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* ---------- Animation ---------- */
+.fade-in {
+    opacity: 0;
+}
+
+.fade-in.is-visible {
+    animation: fadeInAnimation ease 2s;
+    animation-fill-mode: forwards;
+}
+
+@keyframes fadeInAnimation {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* ---------- Header Index.html ---------- */
+header {
+    background-image: url('../assets/bg.jpg');
+    background-size: cover;
+    background-position: center;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
