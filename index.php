@@ -10,13 +10,7 @@
 
 <body>
     <header>
-        <nav class="fade-in">
-            <ul>
-                <li><a href="#">HOME</a></li>
-                <li><a href="#">PAGE</a></li>
-                <li><a href="#">PAGE</a></li>
-            </ul>
-        </nav>
+        <?php include 'include/nav.html'; ?>
         <div class="welcome fade-in">
             <h2 class="welcomeh2-2">- BE THE FASTEST -</h2>
             <h2 class="welcomeh2">
