@@ -1,0 +1,95 @@
+/* Menu Nav (Desktop) */
+nav {
+    height: 20%;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 50px;
+}
+
+.nav-links li {
+    display: inline-block;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+/* Menu hamburger (mobile) */
+.menu-toggle {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 999;
+}
+
+.bar {
+    background-color: white;
+    height: 4px;
+    width: 30px;
+    margin: 5px 0;
+    transition: 0.3s;
+}
+
+/* Tablettes (iPads, petits PC) */
+@media screen and (max-width: 992px) {
+    nav ul {
+        gap: 50px;
+    }
+}
+
+/* Smartphones grands (iPhone 12+, Android grands écrans) */
+@media screen and (max-width: 768px) {
+
+    .menu-toggle {
+        display: flex;
+    }
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: right;
+        z-index: 998 !important;
+    }
+
+    .nav-links li {
+        margin-bottom: 10px;
+    }
+
+    .nav-links.show {
+        display: flex;
+        z-index: 998;
+    }
+
+    nav ul {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+}
+
+/* Smartphones petits (iPhone SE, petits Android) */
+@media screen and (max-width: 480px) {
+
+    nav ul {
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+        gap: 15px;
+    }
+}
