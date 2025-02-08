@@ -18,7 +18,8 @@
             </ul>
         </nav>
         <div class="welcome fade-in">
-            <h2>
+            <h2 class="welcomeh2-2">- BE THE FASTEST -</h2>
+            <h2 class="welcomeh2">
                 <div class="warp" aria-labelledby="warp-label">
                     <span id="warp-label" class="warp__placeholder">
                         - BE THE FASTEST -

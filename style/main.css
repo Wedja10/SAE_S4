@@ -1,3 +1,5 @@
+/* ---------- Police ---------- */
+
 @font-face {
     font-family: "cowboy";
     src: url("../assets/farwest.ttf") format("truetype");
@@ -5,7 +7,13 @@
     font-style: normal;
 }
 
+
 /* ---------- Style Général ---------- */
+
+* {
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
 
 body {
     background: linear-gradient(to bottom, #0d0d3b, #2c0075);
@@ -115,9 +123,10 @@ nav ul li a {
     color: white;
     box-shadow: -5px 5px 0px 0px #F1B24A;
     font-family: "cowboy", sans-serif;
+    margin-bottom: 20px;
 }
 
-.join-btnDiv{
+.join-btnDiv {
     position: relative;
     border: none;
     width: 250px;
@@ -136,6 +145,7 @@ nav ul li a {
     width: 250px;
     color: white;
     font-family: "cowboy", sans-serif;
+    margin-bottom: 20px;
 }
 
 .jaune {
@@ -150,7 +160,7 @@ nav ul li a {
     width: 60px;
 }
 
-.topright2{
+.topright2 {
     right: -40px;
 }
 
@@ -301,6 +311,10 @@ h2 {
     transform: translate(180px, 10px) rotate(0.378253rad);
 }
 
+.welcomeh2-2{
+    display: none;
+}
+
 
 /* ---------- Footer ---------- */
 
@@ -380,5 +394,168 @@ footer {
 
     100% {
         opacity: 1;
+    }
+}
+
+
+/* ---------- Responsive Design ---------- */
+
+/* Écrans très larges (TV, très grands écrans) */
+@media screen and (min-width: 1600px) {
+    .welcome {
+        width: 30%;
+    }
+}
+
+/* Écrans larges (PC classiques) */
+@media screen and (max-width: 1200px) {
+    .game-options {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .option {
+        width: 90%;
+        text-align: center;
+    }
+
+    .start-btn,
+    .join-btn {
+        width: 80%;
+    }
+
+    .game-info {
+        width: 70%;
+    }
+
+    .content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .content p {
+        margin-left: 0;
+    }
+}
+
+/* Tablettes (iPads, petits PC) */
+@media screen and (max-width: 992px) {
+    .welcome {
+        width: 60%;
+    }
+
+    .welcomeh2{
+        display: none;
+    }
+
+    .welcomeh2-2{
+        display: block;
+    }
+
+    .sectionTitle {
+        font-size: 2.5rem;
+    }
+
+    nav ul {
+        gap: 50px;
+    }
+
+    .game-options {
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+    }
+
+    .start-btn,
+    .join-btn {
+        width: 90%;
+    }
+}
+
+/* Smartphones grands (iPhone 12+, Android grands écrans) */
+@media screen and (max-width: 768px) {
+    .welcome {
+        width: 80%;
+    }
+
+    .sectionTitle {
+        font-size: 2rem;
+    }
+
+    nav ul {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .game-options {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .start-btn,
+    .join-btn {
+        width: 100%;
+    }
+
+    .topright {
+        width: 40px;
+        top: -5px;
+        right: -5px;
+    }
+
+    .topright2 {
+        right: -20px;
+    }
+
+    .content img {
+        width: 100px;
+    }
+
+    .game-info {
+        width: 90%;
+    }
+}
+
+/* Smartphones petits (iPhone SE, petits Android) */
+@media screen and (max-width: 480px) {
+    .welcome {
+        width: 90%;
+    }
+
+    .sectionTitle {
+        font-size: 1.8rem;
+    }
+
+    nav ul {
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+        gap: 15px;
+    }
+
+    .game-options {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .start-btn,
+    .join-btn {
+        font-size: 1rem;
+        padding: 8px 15px;
+    }
+
+    .topright {
+        width: 35px;
+    }
+
+    .content img {
+        width: 80px;
+    }
+
+    .footer-container {
+        flex-direction: column;
+        text-align: center;
     }
 }
