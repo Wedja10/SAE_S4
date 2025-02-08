@@ -36,6 +36,13 @@ nav {
     border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
+.sectionTitle {
+    color: #ffcc00;
+    font-size: 3rem;
+    margin: 20px 0;
+    font-weight: bold;
+}
+
 nav ul {
     list-style: none;
     padding: 20px;
@@ -62,30 +69,46 @@ nav ul li a {
 
 .game-options {
     display: flex;
-    justify-content: center;
+    width: 100%;
+    justify-content: space-around;
     gap: 50px;
-    margin: 50px 0;
 }
 
 .option {
-    background: #3e1f47;
-    padding: 20px;
     border-radius: 10px;
+}
+
+.option h2{
+    margin-block: 0;
+    margin-inline: 0;
+    font-size: 1.7rem;
+    font-weight: 900;
+    unicode-bidi: bidi-override;
+    margin-top: -15px;
 }
 
 .start-btn,
 .join-btn {
-    background: #ffcc00;
+    background: #150D44;
     border: none;
+    margin-top: 40px;
     padding: 10px 20px;
     font-size: 1.2rem;
     cursor: pointer;
     border-radius: 5px;
+    width: 250px;
+    color: white;
+    box-shadow: -5px 5px 0px 0px #F1B24A;
+}
+
+.jaune {
+    background: #F1B24A;
+    color: #F1B24A;
 }
 
 .game-info {
     margin: 50px auto;
-    width: 60%;
+    width: 50%;
 }
 
 .content {
@@ -100,7 +123,10 @@ nav ul li a {
 }
 
 .content p {
-    text-align: left;
+    text-align: justify;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-left: 70px;
 }
 
 .warp__placeholder{
@@ -122,7 +148,8 @@ h2{
 }
 
 .warp {
-    font: normal 19px/1 ultra;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.2rem;
 }
 
 [class*='warp__'] {
@@ -177,37 +204,37 @@ h2{
 
 .warp__9 {
     transform-origin: 50% 16px;
-    transform: translate(327.9217px,0px) rotate(0.121562rad);
+    transform: translate(20px,-31.8px) rotate(0.121562rad);
 }
 
 .warp__10 {
     transform-origin: 50% 16px;
-    transform: translate(342.1268px,0px) rotate(0.172675rad);
+    transform: translate(40px,-29px) rotate(0.172675rad);
 }
 
 .warp__11 {
     transform-origin: 50% 16px;
-    transform: translate(357.0556px,0px) rotate(0.212004rad);
+    transform: translate(60px,-25px) rotate(0.212004rad);
 }
 
 .warp__12 {
     transform-origin: 50% 16px;
-    transform: translate(370.8164px,0px) rotate(0.24465rad);
+    transform: translate(80px,-20px) rotate(0.24465rad);
 }
 
 .warp__13 {
     transform-origin: 50% 16px;
-    transform: translate(385.5943px,0px) rotate(0.273738rad);
+    transform: translate(100px,-15px) rotate(0.273738rad);
 }
 
 .warp__14 {
     transform-origin: 50% 16px;
-    transform: translate(399.236px,0px) rotate(0.299937rad);
+    transform: translate(120px,-10px) rotate(0.299937rad);
 }
 
 .warp__15 {
     transform-origin: 50% 16px;
-    transform: translate(412.7705px,0px) rotate(0.326959rad);
+    transform: translate(140px,-3px) rotate(0.326959rad);
 }
 
 .warp__16 {
@@ -217,5 +244,5 @@ h2{
 
 .warp__17 {
     transform-origin: 50% 16px;
-    transform: translate(439.4683px,0px) rotate(0.378253rad);
+    transform: translate(180px,10px) rotate(0.378253rad);
 }
