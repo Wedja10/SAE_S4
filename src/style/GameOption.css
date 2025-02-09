@@ -1,0 +1,145 @@
+/* ---------- Section de Jeux ---------- */
+.game-options {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    gap: 50px;
+}
+
+.option {
+    border-radius: 10px;
+}
+
+.option h2 {
+    margin-block: 0;
+    margin-inline: 0;
+    font-size: 1.7rem;
+    font-weight: 900;
+    unicode-bidi: bidi-override;
+    margin-top: -15px;
+}
+
+.start-btn {
+    position: relative;
+    background: #150D44;
+    border: none;
+    margin-top: 40px;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border-radius: 5px;
+    width: 250px;
+    color: white;
+    box-shadow: -5px 5px 0px 0px #F1B24A;
+    font-family: "cowboy", sans-serif;
+    margin-bottom: 20px;
+}
+
+.join-btnDiv {
+    position: relative;
+    border: none;
+    width: 250px;
+}
+
+.join-btn {
+    border: 3px solid #FFFFFF;
+    box-shadow: -5px 5px 0px 0px #150D44;
+    background: #A4A4A4;
+    border-radius: 13px;
+    position: relative;
+    margin-top: 40px;
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 250px;
+    color: white;
+    font-family: "cowboy", sans-serif;
+    margin-bottom: 20px;
+}
+
+.jaune {
+    background: #F1B24A;
+    color: #F1B24A;
+}
+
+.topright {
+    position: absolute;
+    top: -10px;
+    right: -5px;
+    width: 60px;
+}
+
+@media screen and (max-width: 1200px) {
+    .game-options {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .option {
+        width: 90%;
+        text-align: center;
+    }
+
+    .start-btn,
+    .join-btn {
+        width: 80%;
+    }
+}
+
+/* Tablettes (iPads, petits PC) */
+@media screen and (max-width: 992px) {
+    .game-options {
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+    }
+
+    .start-btn,
+    .join-btn {
+        width: 90%;
+    }
+}
+
+/* Smartphones grands (iPhone 12+, Android grands écrans) */
+@media screen and (max-width: 768px) {
+
+    .game-options {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .start-btn,
+    .join-btn {
+        width: 100%;
+    }
+
+    .topright {
+        width: 40px;
+        top: -5px;
+        right: -5px;
+    }
+
+    .topright2 {
+        right: -20px;
+    }
+
+}
+
+/* Smartphones petits (iPhone SE, petits Android) */
+@media screen and (max-width: 480px) {
+
+    .game-options {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .start-btn,
+    .join-btn {
+        font-size: 1rem;
+        padding: 8px 15px;
+    }
+
+    .topright {
+        width: 35px;
+    }
+}
