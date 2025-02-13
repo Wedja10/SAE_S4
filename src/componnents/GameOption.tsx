@@ -9,9 +9,9 @@ function GameOption() {
         <>
             <section className="game-options fade-in">
                 <div className="option">
-                    <h2>LAUNCH YOUR GAME</h2>
+                    <h2 className='start'>LAUNCH YOUR GAME</h2>
                     <div className="join-btnDiv">
-                        <NavLink to="/game" className="join-btn">
+                        <NavLink to="/game" className="start-btn">
                             <svg width="15" height="15" viewBox="0 0 35 40" fill="none"
                                 xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '10px' }}>
                                 <path
