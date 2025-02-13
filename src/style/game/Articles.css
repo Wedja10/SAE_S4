@@ -27,8 +27,8 @@
 .articles-list {
     list-style: none;
     padding: 0;
-    height: 310px;
-    max-height: 310px;
+    height: 280px;
+    max-height: 280px;
     overflow-y: auto;
     overflow-x: hidden;
     margin-top: 30px;

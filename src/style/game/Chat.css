@@ -23,18 +23,21 @@
 
 .chat-box {
     padding: 10px;
+    margin-top: 10px;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     justify-content: left;
     text-align: left;
-    height: 300px;
-    max-height: 300px;
+    height: 280px;
+    max-height: 280px;
     overflow-y: auto;
 }
 
 .chat-message {
     font-size: 0.9rem;
+    padding: 0px;
+    margin: 5px 0;
 }
 
 .sendcontainer{
