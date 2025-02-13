@@ -35,6 +35,11 @@
     margin-bottom: 20px;
 }
 
+.start-btn a {
+    color: white;
+    text-decoration: none;
+}
+
 .join-btnDiv {
     position: relative;
     border: none;

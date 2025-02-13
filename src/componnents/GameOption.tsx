@@ -1,6 +1,6 @@
-
-
 import '../style/GameOption.css'
+import {NavLink} from "react-router-dom";
+//import { BrowserRouter as Link } from "react-router-dom";
 
 function GameOption() {
 
@@ -10,15 +10,17 @@ function GameOption() {
                 <div className="option">
                     <h2>LAUNCH YOUR GAME</h2>
                     <div className="join-btnDiv">
-                        <button className="start-btn">
-                            <svg width="15" height="15" viewBox="0 0 35 40" fill="none"
-                                xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '10px' }}>
-                                <path
-                                    d="M33.1562 16.7739L5.65625 0.51605C3.42188 -0.804262 0 0.476988 0 3.74261V36.2504C0 39.1801 3.17969 40.9457 5.65625 39.477L33.1562 23.227C35.6094 21.7817 35.6172 18.2192 33.1562 16.7739Z"
-                                    fill="#F1B24A" />
-                            </svg>
-                            START IT
-                        </button>
+                        <NavLink to="/lobby">
+                            <button className="start-btn">
+                                <svg width="15" height="15" viewBox="0 0 35 40" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '10px' }}>
+                                    <path
+                                        d="M33.1562 16.7739L5.65625 0.51605C3.42188 -0.804262 0 0.476988 0 3.74261V36.2504C0 39.1801 3.17969 40.9457 5.65625 39.477L33.1562 23.227C35.6094 21.7817 35.6172 18.2192 33.1562 16.7739Z"
+                                        fill="#F1B24A" />
+                                </svg>
+                                START IT
+                            </button>
+                        </NavLink>
                         <svg className="topright" width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
                             <rect width="100" height="100" fill="url(#pattern0_111_7)" />
                             <defs>
