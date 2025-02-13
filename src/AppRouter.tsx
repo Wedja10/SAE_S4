@@ -10,17 +10,10 @@ const AppRouter: React.FC = () => {
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/game" element={<Game />} />
+                <Route path="/lobby" element={<Lobby />} />
             </Routes>
         </Router>
     );
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/lobby" element={<Lobby />} />
-      </Routes>
-    </Router>
-  );
 };
 
 export default AppRouter;
