@@ -1,8 +1,8 @@
 import Footer from "../componnents/Footer.tsx";
 import Navbar from "../componnents/Navbar.tsx";
-import "../componnents/loby/LobbyComponents.tsx";
+import "../componnents/lobby/LobbyComponents.tsx";
 import '../style/Lobby.css';
-import {PlayerList} from "../componnents/loby/LobbyComponents.tsx";
+import {PlayerList} from "../componnents/lobby/LobbyComponents.tsx";
 
 const Lobby: React.FC = () => {
 
@@ -10,7 +10,7 @@ const Lobby: React.FC = () => {
 
   return (
     <>
-      <header>
+      <header className="loby-header">
           <Navbar />
       </header>
       <div className="lobbyContent">
