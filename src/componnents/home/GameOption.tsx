@@ -1,7 +1,7 @@
 
 
 import { NavLink } from 'react-router-dom'
-import '../style/GameOption.css'
+import '../../style/GameOption.css'
 
 function GameOption() {
 
