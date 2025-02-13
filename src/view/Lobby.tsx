@@ -1,8 +1,8 @@
 import Footer from "../componnents/Footer.tsx";
 import Navbar from "../componnents/Navbar.tsx";
-import "../componnents/LobbyComponents.tsx";
+import "../componnents/loby/LobbyComponents.tsx";
 import '../style/Lobby.css';
-import {PlayerList} from "../componnents/LobbyComponents.tsx";
+import {PlayerList} from "../componnents/loby/LobbyComponents.tsx";
 
 const Lobby: React.FC = () => {
 
