@@ -6,7 +6,7 @@ import {PlayerList} from "../componnents/loby/LobbyComponents.tsx";
 
 const Lobby: React.FC = () => {
 
-  const players: string[] = ["VOUS", "LE BON", "LA BRUTE", "LE TRUAND"]; // Joueurs à récupérer du back
+  const players: string[] = ["VOUS", "LE BON", "LA BRUTE", "LE TRUAND"]; 
 
   return (
     <>
