@@ -4,6 +4,13 @@
     margin-top: 20px;
     position: fixed;
     bottom: 0;
+    background-color: #0b1239f3;
+    width: 40%;
+    display: flex;
+    justify-content: space-around;
+    height: 70px;
+    border-radius: 20px 20px 0 0;
+    overflow: visible;
 }
 
 .action-button {
@@ -13,7 +20,13 @@
     border-radius: 8px;
     border: none;
     cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+    overflow: visible; 
+    z-index: 10;
     transition: background-color 0.2s ease-in-out;
+    width: 100px;
+    height: 100px;
 }
 
 .mine-button {
