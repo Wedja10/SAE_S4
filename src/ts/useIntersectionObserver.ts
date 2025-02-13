@@ -11,11 +11,24 @@ const useIntersectionObserver = (className: string, threshold: number = 0.5) => 
             });
         }, { threshold });
 
-        const elements = document.querySelectorAll(`.${className}`);
-        elements.forEach(el => observer.observe(el));
+        const observeElements = () => {
+            const elements = document.querySelectorAll(`.${className}`);
+            elements.forEach(el => observer.observe(el));
+        };
+
+        // Observer les changements du DOM (utile si les éléments apparaissent dynamiquement)
+        const mutationObserver = new MutationObserver(() => {
+            observeElements();
+        });
+
+        mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+        // Observer les éléments au montage
+        observeElements();
 
         return () => {
-            elements.forEach(el => observer.unobserve(el));
+            observer.disconnect();
+            mutationObserver.disconnect();
         };
     }, [className, threshold]);
 };
