@@ -1,0 +1,37 @@
+.players-container {
+    text-align: center;
+    color: white;
+    min-height: 50%;
+    max-height: 50%;
+    overflow: visible;
+}
+
+.players-title {
+    position: relative;
+    font-size: 2rem;
+    font-weight: 10;
+    text-transform: uppercase;
+    background: linear-gradient(#E09D2D, #8B672B);
+    padding: 10px;
+    border-radius: 50px;
+    white-space: nowrap;
+    overflow: visible; 
+    z-index: 10;
+    width: 130%;
+    transform: translateX(-20%);
+}
+
+.players-list {
+    list-style: none;
+    padding: 0;
+}
+
+.player-item {
+    font-size: 1rem;
+    padding: 5px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.player-item:hover {
+    transform: scale(1.1);
+}

@@ -1,0 +1,61 @@
+.actions-container {
+    display: flex;
+    gap: 16px;
+    position: fixed;
+    bottom: 0;
+    background-color: #0b1239f3;
+    width: 40%;
+    justify-content: space-around;
+    height: 100px;
+    border-radius: 20px 20px 0 0;
+    overflow: visible;
+    left: 50%;
+    transform: translateX(-50%);
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+/* Boutons d'action qui dépassent */
+.action-button {
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+    overflow: visible; 
+    z-index: 10;
+    transition: background-color 0.2s ease-in-out, transform 0.3s ease-in-out;
+    width: 150px;
+    height: 130px;
+    bottom: 50px;
+    background-color: #3f4c8ce7;
+}
+
+.action-button:hover {
+    transform: scale(1.1);
+}
+
+/* Bouton MINE */
+.mine-button {
+    background: linear-gradient(to top, #E09D2D, #8B672B);
+    color: snow;
+    box-shadow: 0px 4px 10px rgba(251, 192, 45, 0.5);
+}
+
+.mine-button:hover {
+    background-color: #ff9800;
+}
+
+/* Bouton TELEPORT */
+.teleport-button {
+    background: linear-gradient(to top, #E09D2D, #8B672B);
+    color: snow;
+    box-shadow: 0px 4px 10px rgba(251, 192, 45, 0.5);
+}
+
+.teleport-button:hover {
+    background-color: #0288d1;
+}

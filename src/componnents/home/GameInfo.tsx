@@ -1,5 +1,5 @@
-import '../style/GameInfo.css'
-import card from '../assets/card.png'
+import '../../style/GameInfo.css'
+import card from '../../assets/card.png'
 
 function GameInfo() {
 
