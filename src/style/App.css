@@ -53,3 +53,33 @@ header {
     align-items: center;
 }
 
+
+/* Styles pour la barre de défilement (compatible Webkit - Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+    width: 10px; /* Largeur de la scrollbar */
+    height: 10px; /* Hauteur pour scroll horizontal */
+}
+
+/* Couleur de fond de la scrollbar */
+::-webkit-scrollbar-track {
+    background: #1c2541;
+    border-radius: 5px;
+}
+
+/* Barre qui défile */
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, #E09D2D, #8B672B);
+    border-radius: 10px;
+    transition: background 0.3s ease-in-out;
+}
+
+/* Effet hover */
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(45deg, #C08625, #754D1F);
+}
+
+/* Scrollbar pour Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #E09D2D #1c2541;
+}

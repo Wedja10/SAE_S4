@@ -27,12 +27,19 @@
 .articles-list {
     list-style: none;
     padding: 0;
+    height: 310px;
+    max-height: 310px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-top: 30px;
 }
 
 .article-item {
     font-size: 1rem;
     padding: 5px;
     transition: transform 0.2s ease-in-out;
+    text-align: left;
+    margin-left: 10px;
 }
 
 .article-item:hover {
