@@ -40,6 +40,11 @@
     text-decoration: none;
 }
 
+.start-btn a {
+    color: white;
+    text-decoration: none;
+}
+
 .join-btnDiv {
     position: relative;
     border: none;
