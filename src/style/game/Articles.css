@@ -1,0 +1,49 @@
+.articles-container {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: visible;
+    height: 100%;
+}
+
+.articles-container div{
+    height: 50%;
+}
+
+.articles-title {
+    position: relative;
+    font-size: 2rem;
+    font-weight: 10;
+    text-transform: uppercase;
+    background: linear-gradient(#E09D2D, #8B672B);
+    padding: 10px;
+    border-radius: 50px;
+    white-space: nowrap;
+    overflow: visible; 
+    z-index: 10;
+    width: 130%;
+}
+
+.articles-list {
+    list-style: none;
+    padding: 0;
+}
+
+.article-item {
+    font-size: 1rem;
+    padding: 5px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.article-item:hover {
+    transform: scale(1.1);
+    cursor: pointer;
+}
+
+.article-to-find {
+    color: #ffeb3b;
+}
+
+.article-visited {
+    color: #76ff03;
+}

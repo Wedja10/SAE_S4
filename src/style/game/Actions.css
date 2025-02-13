@@ -1,0 +1,35 @@
+.actions-container {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+    position: fixed;
+    bottom: 0;
+}
+
+.action-button {
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.mine-button {
+    background-color: #fbc02d;
+    color: black;
+}
+
+.mine-button:hover {
+    background-color: #ff9800;
+}
+
+.teleport-button {
+    background-color: #03a9f4;
+    color: white;
+}
+
+.teleport-button:hover {
+    background-color: #0288d1;
+}
