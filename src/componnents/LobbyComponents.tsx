@@ -1,7 +1,9 @@
-export const Player = (props: {player: string}) => {
+export const Player = (props: {player: string, self: boolean}) => {
   return (
-    <div className="PlayerDiv">
-      <img src={"player"} alt={props.player} />
+    <div className="Player">
+      {!props.self ? <img className="playerPicture" src="/src/assets/playerPicture.png" alt="X" style={{
+        height: '50px',
+      }}/> : null}
       {props.player}
       <ChatButton />
     </div>
@@ -12,7 +14,7 @@ export const ChatButton = () => {
   return (
     <button className="ChatButton">
       <img src="/src/assets/chatIcon.svg" alt="X" style={{
-        width: '40%',
+        height: '20px',
       }}/>
       <p>Chat</p>
     </button>
@@ -21,10 +23,10 @@ export const ChatButton = () => {
 
 export const PlayerList = (props: { players: string[] }) => { // A voir ce que vous mettez pour le back
   return (
-    <div className="PlayerListDiv">
+    <div className="PlayerList">
       <div className="LobbyTitle">LOBBY</div>
       {props.players.map((player) => (
-        <Player player={player} />
+        <Player player={player} self={false} /> // Afficher le bouton de chat
       ))}
     </div>
   )
