@@ -43,7 +43,7 @@ body {
 }
 
 /* ---------- Header Index.html ---------- */
-header {
+.loby-header {
   background-image: url('../assets/bg-lobby.jpg');
   background-size: cover;
   background-position: center;
