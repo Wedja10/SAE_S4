@@ -3,7 +3,7 @@ import '../../style/game/WikiView.css';
 
 const WikiView: React.FC = () => {
     return (
-        <div className="wiki-container">
+        <div className="wiki-container fade-in">
         </div>
     );
 };

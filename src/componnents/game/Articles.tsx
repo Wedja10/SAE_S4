@@ -6,7 +6,7 @@ const Articles: React.FC = () => {
     const visitedArticles = ["Article 1", "Article 2", "Article 3", "Article 3", "Article 3", "Article 3", "Article 3", "Article 3", "Article 3"];
   
     return (
-      <div className="articles-container">
+      <div className="articles-container fade-in">
         <div>
           <h2 className="articles-title">Articles à Trouver</h2>
           <ul className="articles-list">

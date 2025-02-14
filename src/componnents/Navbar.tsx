@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router-dom'
 import '../style/Navbar.css'
 
 function Navbar() {
@@ -11,9 +12,7 @@ function Navbar() {
                     <div className="bar"></div>
                 </div>
                 <ul className="nav-links">
-                    <li><a href="#">HOME</a></li>
-                    <li><a href="#">PAGE</a></li>
-                    <li><a href="#">PAGE</a></li>
+                    <li><NavLink to="/">HOME</NavLink></li>
                 </ul>
             </nav>
         </>

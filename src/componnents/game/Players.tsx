@@ -10,7 +10,7 @@ const Players: React.FC = () => {
     ];
 
     return (
-        <div className="players-container">
+        <div className="players-container fade-in">
             <h2 className="players-title">Joueurs</h2>
             <ul className="players-list">
                 {players.map((player, index) => (

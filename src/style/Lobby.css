@@ -70,7 +70,7 @@ body {
   align-items: flex-start;
   justify-content: space-evenly;
 
-  margin-top: 10%;
+  margin-top: 7%;
 }
 
 @media (max-width: 768px) {
@@ -92,6 +92,7 @@ body {
 
   flex-direction: column;
   overflow: scroll;
+  overflow-x: hidden;
 }
 
 @media (max-width: 768px) {
@@ -172,6 +173,7 @@ body {
   align-items: center;
 
   overflow: scroll;
+  overflow-x: hidden;
 }
 
 @media (max-width: 768px) {
@@ -196,6 +198,13 @@ body {
   align-items: center;
   text-align: center;
   margin: 10px;
+  transition: 0.5s;
+}
+
+.Artefact:hover{
+  cursor: pointer;
+  transform: scale(1.1);
+  transition: 0.5s;
 }
 
 .Artefact .ArtefactInfo {
