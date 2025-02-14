@@ -43,7 +43,7 @@ body {
 }
 
 /* ---------- Header Index.html ---------- */
-.loby-header {
+.headerLobby {
   background-image: url('../assets/bg-lobby.jpg');
   background-size: cover;
   background-position: center;
@@ -55,65 +55,167 @@ body {
 
 /* ---------- Lobby components ---------- */
 
+* {
+  --maxWidth: 950px;
+}
+
 .lobbyContent {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-evenly;
+
+  margin-top: 10%;
 }
 
-.PlayerListDiv {
+@media (max-width: 768px) {
+  .lobbyContent {
+    height: 200%;
+
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.PlayerList {
   background-color: rgba(11, 18, 57, 0.63);
   backdrop-filter: blur(10px);
   border-radius: 25px;
 
-  position: absolute;
-  top: 25%;
-  left: 10%;
-
   width: 30%;
   height: 80%;
 
-  display: flex;
-
   flex-direction: column;
-  justify-content: space-around;
+  overflow: scroll;
 }
 
-.PlayerListDiv .LobbyTitle {
+@media (max-width: 768px) {
+  .PlayerList {
+    height: 40%;
+
+    width: 80%;
+    left: 10%;
+  }
+}
+
+.PlayerList .LobbyTitle {
   font-size: 48px;
-  border-bottom: #FFFFFF 0.25px solid;
+  border-bottom: #817D7D 0.25px solid;
   padding-bottom: 10px;
 
-  height: 10%;
-}
-
-.PlayerDiv {
-  border-bottom: #FFFFFF 0.25px solid;
-  padding-bottom: 10px;
-
+  height: 15%;
   width: 100%;
-  height: 20%;
-
-  font-size: 24px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.Player {
+  border-bottom: #817D7D 0.25px solid;
+  padding-bottom: 10px;
+  display: flex;
+
+  width: 100%;
+  height: 15%;
+  padding-right: 20px;
+  padding-left: 20px;
+
+  font-size: 24px;
+
+  align-items: center;
+  justify-content: space-between;
+}
+
 .ChatButton {
   display: flex;
-  justify-content: center;
-  padding-left: 10px;
-  padding-right: 10px;
+  align-items: center;
+  justify-content: space-around;
 
   color: #FFFFFF;
   font-family: cowboy;
-  font-size: 8px;
+  font-size: 12px;
+
+  height: 35px;
+  width: 75px;
 
   background-color: #1E6E00;
   border: #2A830C 2px solid;
-  border-radius: 2px;
+  border-radius: 5px;
+}
+
+.ChatButton:hover {
+  background-color: #2A830C;
+  cursor: pointer;
+}
+
+/* ---------- Artefacts List ---------- */
+
+.ArtefactsList {
+  background-color: rgba(11, 18, 57, 0.63);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+
+  width: 50%;
+  height: 45%;
+
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+
+  justify-content: space-evenly;
+  align-items: center;
+
+  overflow: scroll;
+}
+
+@media (max-width: 768px) {
+  .ArtefactsList {
+    flex-direction: column;
+    height: 25%;
+
+    width: 80%;
+    left: 10%;
+  }
+}
+
+.Artefact {
+  background: linear-gradient(#8B672B, #E09D2D);
+  border-radius: 25px;
+  position: relative;
+
+  width: 165px;
+  height: 165px;
+
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin: 10px;
+}
+
+.Artefact .ArtefactInfo {
+  position: absolute;
+  top: 5%;
+  right: 5%;
+}
+
+.Artefact .ArtefactImage {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.Artefact p {
+  font-size: 22px;
+
+  position: absolute;
+  bottom: -5%;
+  left: 50%;
+  transform: translateX(-50%);
 }
