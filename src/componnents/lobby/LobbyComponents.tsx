@@ -1,6 +1,6 @@
 export const Player = (props: {player: string, self: boolean}) => {
   return (
-    <div className="Player">
+    <div className="Player fade-in">
       {!props.self ? <img className="playerPicture" src="/src/assets/playerPicture.png" alt="X" style={{
         height: '50px',
       }}/> : null}
@@ -24,7 +24,7 @@ export const ChatButton = () => {
 export const PlayerList = (props: { players: string[] }) => { // A voir ce que vous mettez pour le back
   return (
     <div className="PlayerList">
-      <div className="LobbyTitle">LOBBY</div>
+      <div className="LobbyTitle fade-in">LOBBY</div>
       {props.players.map((player) => (
         <Player player={player} self={false} /> // Afficher le bouton de chat
       ))}

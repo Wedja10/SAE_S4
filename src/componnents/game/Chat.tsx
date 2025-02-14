@@ -17,7 +17,7 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className="chat-container">
+    <div className="chat-container fade-in">
       <h2 className="chat-title">Chat</h2>
       <div className="chat-box">
         {messages.map((msg, index) => (
