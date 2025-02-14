@@ -1,53 +1,8 @@
-/* ---------- Police ---------- */
-@font-face {
-  font-family: "cowboy";
-  src: url("../assets/farwest.otf") format("truetype");
-  font-weight: normal;
-  font-style: normal;
-}
-
-/* ---------- Style Général ---------- */
-* {
-  box-sizing: border-box;
-  scroll-behavior: smooth;
-}
-
-body {
-  background: linear-gradient(to bottom, #0d0d3b, #2c0075);
-  color: white;
-  font-family: "cowboy", sans-serif;
-  text-align: center;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
-
-/* ---------- Animation ---------- */
-.fade-in {
-  opacity: 0;
-}
-
-.fade-in.is-visible {
-  animation: fadeInAnimation ease 2s;
-  animation-fill-mode: forwards;
-}
-
-@keyframes fadeInAnimation {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-/* ---------- Header Index.html ---------- */
 .headerLobby {
   background-image: url('../assets/bg-lobby.jpg');
   background-size: cover;
   background-position: center;
-  height: 120vh;
+  min-height: 120vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -82,26 +37,26 @@ body {
   }
 }
 
+@media (max-width: 768px) {
+  .PlayerList {
+    height: 40%;
+
+    width: 80% !important;
+    left: 10%;
+  }
+}
+
 .PlayerList {
   background-color: rgba(11, 18, 57, 0.63);
   backdrop-filter: blur(10px);
   border-radius: 25px;
 
   width: 30%;
-  height: 80%;
+  height: 75%;
 
   flex-direction: column;
   overflow: scroll;
   overflow-x: hidden;
-}
-
-@media (max-width: 768px) {
-  .PlayerList {
-    height: 40%;
-
-    width: 80%;
-    left: 10%;
-  }
 }
 
 .PlayerList .LobbyTitle {
@@ -161,28 +116,61 @@ body {
   background-color: rgba(11, 18, 57, 0.63);
   backdrop-filter: blur(10px);
   border-radius: 25px;
-
-  width: 50%;
   height: 45%;
 
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
 
-  justify-content: space-evenly;
+  justify-items: center;
   align-items: center;
 
-  overflow: scroll;
+  overflow-y: scroll;
   overflow-x: hidden;
+  padding: 10px;
+}
+
+.ArtefactsListContainer {
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+}
+
+.startButton{
+  background-color: #1E6E00;
+  border: #2A830C 2px solid;
+  border-radius: 5px;
+  color: #FFFFFF;
+  font-family: cowboy;
+  font-size: 24px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 50px;
+  transition: 0.5s;
+  text-decoration: none;
+}
+
+.startButton:hover {
+  background-color: #36a113;
+  cursor: pointer;
+  transition: 0.5s;
 }
 
 @media (max-width: 768px) {
   .ArtefactsList {
-    flex-direction: column;
-    height: 25%;
-
-    width: 80%;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    height: 50%;
     left: 10%;
+  }
+
+  .ArtefactsListContainer {
+    width: 80%;
+    margin: 0;
+    padding: 0;
+    height: 50%;
   }
 }
 
@@ -201,7 +189,7 @@ body {
   transition: 0.5s;
 }
 
-.Artefact:hover{
+.Artefact:hover {
   cursor: pointer;
   transform: scale(1.1);
   transition: 0.5s;

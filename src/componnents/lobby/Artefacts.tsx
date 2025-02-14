@@ -1,16 +1,20 @@
-export const ArtefactsList = (props: {artefacts: string[]}) => {
+export const ArtefactsList = (props: { artefacts: string[] }) => {
   return (
-    <div className="ArtefactsList">
-      {props.artefacts.map((artefact) => (
-        <Artefact artefact={artefact} />
-      ))}
+    <div className='ArtefactsListContainer'>
+      <div className="ArtefactsList">
+        {props.artefacts.map((artefact) => (
+          <Artefact artefact={artefact} />
+        ))}
+      </div>
+      <NavLink to="/game" className="startButton">START GAME</NavLink>
     </div>
   )
 }
 
+import { NavLink } from 'react-router-dom';
 import ArtefactInfo from '/assets/Artefacts/ArtefactInfo.svg';
 
-export const Artefact = (props: {artefact: string}) => {
+export const Artefact = (props: { artefact: string }) => {
   return (
     <div className="Artefact fade-in">
       <img className="ArtefactInfo" src={ArtefactInfo} />
