@@ -1,7 +1,9 @@
+import Playerpicture from '/assets/playerPicture.png';
+
 export const Player = (props: {player: string, self: boolean}) => {
   return (
     <div className="Player fade-in">
-      {!props.self ? <img className="playerPicture" src="/src/assets/playerPicture.png" alt="X" style={{
+      {!props.self ? <img className="playerPicture" src={Playerpicture} alt="X" style={{
         height: '50px',
       }}/> : null}
       {props.player}
@@ -10,10 +12,12 @@ export const Player = (props: {player: string, self: boolean}) => {
   )
 }
 
+import chatIcon from '/assets/chatIcon.svg';
+
 export const ChatButton = () => {
   return (
     <button className="ChatButton">
-      <img src="/src/assets/chatIcon.svg" alt="X" style={{
+      <img src={chatIcon} alt="X" style={{
         height: '20px',
       }}/>
       <p>Chat</p>
