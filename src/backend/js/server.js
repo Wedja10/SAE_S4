@@ -5,10 +5,12 @@ import gameRoutes from "../routes/gameRoutes.js";
 import articleRoutes from "../routes/articleRoutes.js";
 import artifactRoutes from "../routes/artifactRoutes.js";
 import challengeRoutes from "../routes/challengeRoutes.js";
+import dotenv from "dotenv";
+dotenv.config()
 
 const app = express();
 const PORT = 5000;
-const MONGODB_URI = "mongodb+srv://jawessahli:FaDVz5jmwCoedw8Z@cluster0.8sjgk.mongodb.net/main?retryWrites=true&w=majority&appName=Cluster0";
+const MONGODB_URI = process.env.MONGODB_URI;
 
 app.use(express.json());
 
