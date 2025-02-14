@@ -1,4 +1,4 @@
-import * as express from "express";
+import express from "express";
 import Player from "../models/Player.js";
 
 const router = express.Router();
