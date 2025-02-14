@@ -30,8 +30,18 @@
     font-size: 1rem;
     padding: 5px;
     transition: transform 0.2s ease-in-out;
+    text-align: left;
+    display: flex;
+    align-items: center;
 }
 
 .player-item:hover {
     transform: scale(1.1);
+}
+
+.ppGame{
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    margin-right: 10px;
 }
