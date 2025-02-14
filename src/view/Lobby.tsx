@@ -1,4 +1,3 @@
-import Footer from "../componnents/Footer.tsx";
 import Navbar from "../componnents/Navbar.tsx";
 import '../style/Lobby.css';
 import { PlayerList } from "../componnents/lobby/LobbyComponents.tsx";
@@ -19,7 +18,6 @@ const Lobby: React.FC = () => {
         <PlayerList players={players} />
         <ArtefactsList artefacts={artefacts} />
       </div>
-      <Footer />
     </>
   );
 };
