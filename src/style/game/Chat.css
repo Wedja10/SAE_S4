@@ -29,8 +29,8 @@
     flex-direction: column;
     justify-content: left;
     text-align: left;
-    height: 280px;
-    max-height: 280px;
+    height: 250px;
+    max-height: 250px;
     overflow-y: auto;
 }
 

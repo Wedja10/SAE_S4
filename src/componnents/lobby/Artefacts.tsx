@@ -6,7 +6,7 @@ export const ArtefactsList = (props: { artefacts: string[] }) => {
           <Artefact artefact={artefact} />
         ))}
       </div>
-      <NavLink to="/game" className="startButton">START GAME</NavLink>
+      <NavLink to="/game" className="startButton fade-in">START GAME</NavLink>
     </div>
   )
 }

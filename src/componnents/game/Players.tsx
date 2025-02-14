@@ -3,10 +3,10 @@ import '../../style/game/Players.css';
 
 const Players: React.FC = () => {
     const players = [
-        { name: "Joueur 1", score: 25 },
-        { name: "Joueur 2", score: 18 },
-        { name: "Joueur 3", score: 12 },
-        { name: "Joueur 4", score: 8 },
+        { name: "Joueur 1", score: 25, pp: '/assets/playerPicture.png' },
+        { name: "Joueur 2", score: 18, pp: '/assets/playerPicture.png' },
+        { name: "Joueur 3", score: 12, pp: '/assets/playerPicture.png' },
+        { name: "Joueur 4", score: 8, pp: '/assets/playerPicture.png' },
     ];
 
     return (
@@ -14,9 +14,12 @@ const Players: React.FC = () => {
             <h2 className="players-title">Joueurs</h2>
             <ul className="players-list">
                 {players.map((player, index) => (
-                    <li key={index} className="player-item">
-                        {player.name} - {player.score} pts
-                    </li>
+                    <div key={index}>
+                        <li className="player-item">
+                            <img src={player.pp} alt="" className="ppGame"/> - {player.name} - {player.score} pts
+                        </li>
+                        <hr />
+                    </div>
                 ))}
             </ul>
         </div>
