@@ -1,7 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-var mongoose_1 = require("mongoose");
-var PlayerSchema = new mongoose_1.default.Schema({
+import mongoose from 'mongoose';
+
+const PlayerSchema = new mongoose.Schema({
     pseudo: String,
     current_game: String,
     history: [
@@ -13,4 +12,5 @@ var PlayerSchema = new mongoose_1.default.Schema({
         }
     ]
 });
-exports.default = mongoose_1.default.model('Player', PlayerSchema);
+
+export default mongoose.model('Player', PlayerSchema, 'players');

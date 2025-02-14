@@ -1,10 +1,10 @@
 import express from "express";
 import mongoose from "mongoose";
-import playerRoutes from "../routes/playerRoutes.tsx";
+import playerRoutes from "../routes/playerRoutes.js";
 
 const app = express();
 const PORT = 5000;
-const MONGODB_URI = "mongodb+srv://:@cluster0.8sjgk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const MONGODB_URI = "mongodb+srv://:@cluster0.8sjgk.mongodb.net/main?retryWrites=true&w=majority&appName=Cluster0";
 
 app.use(express.json());
 
