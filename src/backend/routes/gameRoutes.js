@@ -1,16 +1,10 @@
 import express from "express";
-import Game from "../models/Game.js";
+import {getArticlesPlayer, createGame, getGamePlayers} from "../methods/gameMethods.js";
 
 const router = express.Router();
 
-// Route GET pour récupérer tous les games
-router.get("/", async (_req, res) => {
-    try {
-        const artifacts = await Game.find(); // Récupère tous les games
-        res.json(artifacts);
-    } catch (error) {
-        res.status(500).json({ message: "Erreur lors de la récupération des games" });
-    }
-});
+router.get("/:code/players", getGamePlayers);
+router.post("/", createGame);  // Route pour ajouter un jeu
+router.get('/players/:id/articles', getArticlesPlayer);
 
 export default router;
