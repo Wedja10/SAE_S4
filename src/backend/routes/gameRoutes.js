@@ -1,10 +1,11 @@
 import express from "express";
-import {getArticlesPlayer, createGame, getGamePlayers} from "../methods/gameMethods.js";
+import {getVisitedArticlesPlayer, createGame, getGamePlayers, changeArticle} from "../methods/gameMethods.js";
 
 const router = express.Router();
 
-router.get("/:code/players", getGamePlayers);
+router.get("/:id_game/players", getGamePlayers);
 router.post("/", createGame);  // Route pour ajouter un jeu
-router.get('/players/:id/articles', getArticlesPlayer);
+router.get('/:id_game/:id_player/articles', getVisitedArticlesPlayer);
+router.put("/:id_game/:id_player/article/:id_article", changeArticle);
 
 export default router;

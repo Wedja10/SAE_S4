@@ -1,63 +1,113 @@
 import Game from "../models/Game.js";
-import Player from "../models/Player.js";
-import Article from "../models/Article.js";
+import mongoose from "mongoose";
 
 // Récupérer tous les joueurs d'une partie spécifique
 export const getGamePlayers = async (req, res) => {
     try {
-        // Récupérer le code du jeu depuis les paramètres de la requête
-        const { code } = req.params;
-        if (!code) {
-            return res.status(400).json({ message: "Le code du jeu est requis." });
+        const { id_game } = req.params;
+        if (!id_game) {
+            return res.status(400).json({ message: "L'ID du jeu est requis." });
         }
-        const players = await Player.find({ current_game: code });
 
-        if (players.length === 0) {
+        // Attendre la récupération du jeu
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ message: "Jeu non trouvé." });
+        }
+
+        // Extraire les IDs des joueurs
+        const playerIds = game.players.map(player => player.player_id);
+
+        if (playerIds.length === 0) {
             return res.status(404).json({ message: "Aucun joueur trouvé pour ce jeu." });
         }
-        res.status(200).json(players);
+
+        // Retourner la liste des IDs des joueurs
+        res.status(200).json(playerIds);
     } catch (error) {
         console.error("Erreur dans getGamePlayers :", error);
         res.status(500).json({ message: "Erreur serveur" });
     }
 };
 
-export const getArticlesPlayer = async (req, res) => {
+export const changeArticle = async (req, res) => {
     try {
-        // Récupérer l'ID du joueur depuis les paramètres de la requête
-        const { id } = req.params;
+        const { id_game, id_player, id_article } = req.params;
 
-        // Vérifier si l'ID est fourni
-        if (!id) {
-            return res.status(400).json({ message: "L'ID du joueur est requis." });
+        if (!id_game || !id_player || !id_article) {
+            return res.status(400).json({ message: "Tous les identifiants sont requis." });
         }
 
-        // Trouver le joueur par son ID
-        const player = await Player.findById(id);
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ message: "Jeu non trouvé." });
+        }
 
-        // Si le joueur n'est pas trouvé, renvoyer une erreur 404
+        const playerIds = game.players.map(player => player.player_id.toString()); // Convert player_id to string
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+
+        const player = game.players.find(p => p.player_id.toString() === playerObjectId.toString()); // Convert both to string for comparison
         if (!player) {
-            return res.status(404).json({ message: "Joueur non trouvé." });
+            return res.status(404).json({ message: "Joueur non trouvé", playerObjectId, playerIds });
         }
 
-        // Extraire tous les articles visités (en combinant tous les tableaux articles_visited de l'historique)
-        const articlesVisited = player.history.flatMap(entry => entry.articles_visited);
-
-        // Si aucun article n'a été visité, renvoyer un tableau vide
-        if (articlesVisited.length === 0) {
-            return res.status(200).json([]);
+        // Vérifie si le joueur a un article en cours
+        if (!player.current_article) {
+            return res.status(400).json({ message: "Aucun article actuel trouvé." });
         }
 
-        // Trouver les articles dont le titre est dans la liste des articles visités
-        const articles = await Article.find({ title: { $in: articlesVisited } });
+        // Ajouter l'article actuel dans visited_articles
+        player.articles_visited = player.articles_visited || []; // Assure que visited_articles existe
+        player.articles_visited.push(player.current_article);
 
-        // Renvoyer les articles trouvés
-        res.status(200).json(articles);
+        // Mettre à jour current_article avec le nouvel id_article
+        player.current_article = id_article;
+
+        // Sauvegarder les modifications
+        await game.save();
+
+        res.status(200).json({ message: "Article changé avec succès.", id_article });
+
     } catch (error) {
-        console.error("Erreur dans getArticlesPlayer :", error);
+        console.error("Erreur dans changeArticle :", error);
         res.status(500).json({ message: "Erreur serveur" });
     }
 };
+
+// Récupére tous les articles visités d'un joueur dans une partie
+export const getVisitedArticlesPlayer = async (req, res) => {
+    try {
+        const { id_game, id_player } = req.params;
+
+        if (!id_game || !id_player) {
+            return res.status(400).json({ message: "Les IDs du jeu et du joueur sont requis." });
+        }
+
+        // Récupération du jeu
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ message: "Jeu non trouvé." });
+        }
+
+        // Convertir l'ID du joueur en ObjectId pour la comparaison
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+
+        // Trouver le joueur correspondant en utilisant player_id
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            console.log("Joueurs trouvés dans le jeu :", game.players);
+            return res.status(404).json({ message: "Joueur non trouvé dans ce jeu." });
+        }
+
+        // Récupérer les articles visités par ce joueur
+        const visitedArticles = player.articles_visited || [];
+        res.status(200).json(visitedArticles);
+    } catch (error) {
+        console.error("Erreur dans getVisitedArticlesPlayer :", error);
+        res.status(500).json({ message: "Erreur serveur" });
+    }
+};
+
 
 // Ajouter un jeu
 export const createGame = async (req, res) => {
