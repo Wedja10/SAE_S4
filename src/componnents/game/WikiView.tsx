@@ -2,36 +2,37 @@ import React from "react";
 import '../../style/game/WikiView.css';
 import { useEffect, useState } from 'react';
 
-async function getIdFromTitle(title: string): Promise<string> {
-    const url = `https://fr.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${encodeURIComponent(title)}&origin=*`;
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-    }
+const formatContent = (rawContent: string): string => {
+    let formattedContent = rawContent;
 
-    const data = await response.json();
-    if (data.error) {
-        throw new Error(data.error.info);
-    }
+    // remplace '''*''' par <b>*</b>
+    const boldRegex = /'''(.*?)'''/g;
+    formattedContent = formattedContent.replace(boldRegex, "<b>$1</b>");
 
-    const page = data.query.search[0];
-    if (!page) {
-        throw new Error('Page non trouvée.');
-    }
+    // remplace ''*'' par <i>*</i>
+    const italicRegex = /''(.*?)''/g;
+    formattedContent = formattedContent.replace(italicRegex, "<i>$1</i>");
 
-    return page.pageid;
-}
+    // remplace [[Lien]] par <a href="Lien">Lien</a> and [[Lien|Texte]] par <a href="Lien">Texte</a>
+    const linkRegex = /\[\[(.*?)(?:\|(.*?))?\]\]/g;
+    formattedContent = formattedContent.replace(linkRegex, (match, link, text) => {
+        const linkText = text || link;
+        //return `<a href="https://fr.wikipedia.org/wiki/${link}">${linkText}</a>`;
+        return `<a href="/game/${link}">${linkText}</a>`;
+    });
 
-const WikiView: React.FC<{ pageId: string }> = ({ pageId }) => {
-    const [title, setTitle] = useState<string | null>(null);
+    return formattedContent;
+};
+
+const WikiView: React.FC<{ title: string }> = ({ title }) => {
     const [content, setContent] = useState<string | null>(null);
-    const [links, setLinks] = useState<{ title: string }[]>([]); // ? : TS6133: links is declared but its value is never read.
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchWikipediaPage = async () => {
-            const url = `https://fr.wikipedia.org/w/api.php?action=query&prop=extracts|links&format=json&explaintext&pageids=${encodeURIComponent(pageId)}&origin=*`;
+            // URL de l'API Wikipedia pour récupérer le contenu brut (WikiText)
+            const url = `https://fr.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=${encodeURIComponent(title)}&origin=*`;
 
             try {
                 const response = await fetch(url);
@@ -44,52 +45,26 @@ const WikiView: React.FC<{ pageId: string }> = ({ pageId }) => {
                     throw new Error(data.error.info);
                 }
 
-                // Récupérer le titre, le contenu et les liens de la page
-                const page = data.query.pages[pageId];
-                if (!page) {
-                    throw new Error('Page non trouvée.');
+                // Récupérer la première page (la clé est dynamique, donc on utilise Object.values)
+                const pages = data.query.pages;
+                const page = Object.values(pages)[0] as { title?: string; revisions?: { "*": string }[] };
+
+                if (!page || !page.revisions || !page.revisions[0]) {
+                    throw new Error("Page non trouvée ou contenu vide.");
                 }
 
-                setTitle(page.title);
-                setLinks(page.links || []);
-
-                // Formater le contenu avec des balises <h1>, <h2>, <p> et intégrer les liens
-                const formattedContent = formatContent(page.extract, page.links || []);
-                //setContent(page.extract); // Afficher le contenu brut
-                setContent(formattedContent);
+                // Récupérer le contenu brut (WikiText)
+                const content = page.revisions[0]["*"];
+                setContent(formatContent(content));
             } catch (error) {
-                setError(error instanceof Error ? error.message : 'Une erreur est survenue.');
+                setError(error instanceof Error ? error.message : "Une erreur est survenue.");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchWikipediaPage();
-    }, [pageId]);
-
-    // Fonction pour formater le contenu et intégrer les liens
-    const formatContent = (text: string, links: { title: string }[]): string => {
-        // Remplacer les ==Titre== par <h1>Titre</h1>
-        text = text.replace(/==(.*?)==/g, '<h1>$1</h1>');
-        // Remplacer les ===Sous-titre=== par <h2>Sous-titre</h2>
-        text = text.replace(/===(.*?)===/g, '<h2>$1</h2>');
-        // Ajouter des balises <p> autour des paragraphes
-        text = text.replace(/(\n\n+)/g, '</p><p>');
-        // Intégrer les liens dans le contenu
-        text = integrateLinks(text, links);
-        return `<p>${text}</p>`;
-    };
-
-    // Fonction pour intégrer les liens dans le contenu
-    const integrateLinks = (text: string, links: { title: string }[]): string => {
-        links.forEach(link => {
-            const regex = new RegExp(`\\b${link.title}\\b`, 'g');
-            text = text.replace(regex, `<a href="http://localhost:5173/game/${
-                getIdFromTitle(link.title)
-            }">${link.title}</a>`);
-        });
-        return text;
-    };
+    }, [title]);
 
     if (loading) {
         return <div className="loading">Chargement en cours...</div>;
@@ -101,12 +76,13 @@ const WikiView: React.FC<{ pageId: string }> = ({ pageId }) => {
 
     return (
       <div className="wiki-container fade-in">
-          {title && <h1 className="wiki-title">{title}</h1>}
+          <h1 className="wiki-title">{title}</h1>
           {content && (
-            <div
-              className="wiki-content"
-              dangerouslySetInnerHTML={{ __html: content }} // Injecte le HTML brut dans la page
-            />
+            <pre className="wiki-raw-content">
+                    <code>
+                        <div dangerouslySetInnerHTML={{ __html: content }} />
+                    </code>
+                </pre>
           )}
       </div>
     );

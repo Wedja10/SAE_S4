@@ -1,6 +1,7 @@
 .wiki-container {
     color: black;
-    text-align: justify;
+    text-align: left;
+    font-family: Arial, sans-serif;
 
     width: 88%;
     height: 78%;
@@ -13,8 +14,6 @@
     background-color: #FFFFFF;
 
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
-
-    font-family: Arial, sans-serif;
 }
 
 /* Titre principal */
@@ -50,10 +49,42 @@
     font-family: "Times New Roman", Times, serif;
 }
 
+/* Sous-sous-titres (h3) */
+.wiki-content h3 {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-top: 20px;
+    margin-bottom: 5px;
+
+    font-family: "Times New Roman", Times, serif;
+}
+
+/* Sous-sous-sous-titres (h4) */
+.wiki-content h4 {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 5px;
+
+    font-family: "Times New Roman", Times, serif;
+}
+
+/* Sous-sous-sous-sous-titres (h5) */
+.wiki-content h5 {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 5px;
+
+    font-family: "Times New Roman", Times, serif;
+}
+
 /* Paragraphes */
 .wiki-content p {
     font-size: 1rem;
     margin-bottom: 15px;
+
+    font-family: Arial, sans-serif;
 }
 
 /* Liens */
