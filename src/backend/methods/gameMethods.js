@@ -247,6 +247,37 @@ export const getVisitedArticlesPlayer = async (req, res) => {
 };
 
 
+// Récupérer les articles cibles trouvés par un joueur
+export const getFoundTargetArticles = async (req, res) => {
+    const { id_game, id_player } = req.params;
+
+    if (!id_game || !id_player) {
+        return res.status(400).json({ message: "Les IDs du jeu et du joueur sont requis." });
+    }
+
+    try {
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ message: "Jeu non trouvé." });
+        }
+
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({ message: "Joueur non trouvé dans ce jeu." });
+        }
+        const findTarget = player.articles_visited.filter(article =>
+            game.articles_to_visit.includes(article)
+        );
+
+        res.status(200).json(findTarget);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des articles cibles:", error);
+        res.status(500).json({ message: "Erreur interne du serveur." });
+    }
+};
+
+
 // Ajouter un jeu
 export const createGame = async (req, res) => {
     try {
