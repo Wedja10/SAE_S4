@@ -1,4 +1,4 @@
-GET http://localhost:3000/games/67b1f4c36fe85f560dd86791/67a7bc84385c3dc88d87a747/TargetArticles
+GET http://localhost:3000/games/67b1f4c36fe85f560dd86791/67a7bc84385c3dc88d87a747/artifacts
 
 
 
