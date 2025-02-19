@@ -7,6 +7,10 @@ import Chat from "../componnents/game/Chat";
 
 const Game: React.FC = () => {
 
+  // Prendre le titre depuis l'URL
+  const url = window.location.href;
+  const title = url.split("/").pop();
+
   return (
     <div className="game-container">
       {/* Sidebar gauche */}
@@ -15,10 +19,12 @@ const Game: React.FC = () => {
       </aside>
 
       {/* Contenu principal */}
-      <main className="main-content">
-        <WikiView title={"Chien"} />
-        <Actions />
-      </main>
+      {title &&
+        <main className="main-content">
+          <WikiView title={title.split("#")[0]} />
+          <Actions />
+        </main>
+      }
 
       {/* Sidebar droite */}
       <aside className="sidebar-right">
