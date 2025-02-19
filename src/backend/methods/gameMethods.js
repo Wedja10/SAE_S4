@@ -1,7 +1,7 @@
 import Game from "../models/Game.js";
 import mongoose from "mongoose";
 import {createArticle} from "../methods/articleMethods.js";
-import player from "../models/Player.js";
+import Player from "../models/Player.js";
 const { ObjectId } = mongoose.Types;
 
 export const gameExists = async (gameId) => {
@@ -56,43 +56,35 @@ export const getGamePlayers = async (req, res) => {
     }
 };
 
-export const changeArticle = async (req, res) => {
-    try {
-        const { id_game, id_player, id_article } = req.params;
-
-        if (!id_game || !id_player || !id_article) {
-            return res.status(400).json({ message: "Tous les identifiants sont requis." });
-        }
-
-        if (!await gameExists(id_game)) {
-            return res.status(404).json({ message: "Jeu non trouvé." });
-        }
-
-        if (!await playerExistsInGame(id_game, id_player)) {
-            return res.status(404).json({ message: "Joueur non trouvé dans ce jeu." });
-        }
-
-        if (!await playerHasCurrentArticle(id_game, id_player)) {
-            return res.status(400).json({ message: "Aucun article actuel trouvé." });
-        }
-
-        const game = await Game.findById(id_game);
-        const playerObjectId = new mongoose.Types.ObjectId(id_player);
-        const player = game.players.find(p => p.player_id.equals(playerObjectId));
-
-        player.articles_visited = player.articles_visited || [];
-        player.articles_visited.push(player.current_article);
-        player.current_article = id_article;
-
-        await game.save();
-
-        res.status(200).json({ message: "Article changé avec succès.", id_article });
-
-    } catch (error) {
-        console.error("Erreur dans changeArticle :", error);
-        res.status(500).json({ message: "Erreur serveur" });
+export const changeArticle = async (gameId, playerId, articleId) => {
+    if (!gameId || !playerId || !articleId) {
+        throw new Error("Tous les identifiants sont requis.");
     }
+
+    if (!await gameExists(gameId)) {
+        throw new Error("Jeu non trouvé.");
+    }
+
+    if (!await playerExistsInGame(gameId, playerId)) {
+        throw new Error("Joueur non trouvé dans ce jeu.");
+    }
+
+    if (!await playerHasCurrentArticle(gameId, playerId)) {
+        throw new Error("Aucun article actuel trouvé.");
+    }
+
+    const game = await Game.findById(gameId);
+    const player = game.players.find(p => p.player_id.equals(playerId));
+
+    player.articles_visited = player.articles_visited || [];
+    player.current_article = articleId;
+    player.articles_visited.push(player.current_article);
+
+    await game.save();
+
+    return { message: "Article changé avec succès.", id_article: articleId };
 };
+
 
 export const generateRandomArticle = async () => {
     try {
@@ -305,22 +297,77 @@ export const getArticfactPlayer = async (req, res) => {
     }
 };
 
-
+export const generateCode = () => {
+    let code = '';
+    for(let i = 0; i<4; i++){
+        // Génère un nombre aléatoire entre 0 et 25
+        const randomNum = Math.floor(Math.random() * 26);
+        code += String.fromCharCode(65 + randomNum);
+    }
+    console.log(code);
+    return code;
+}
 
 // Ajouter un jeu
 export const createGame = async (req, res) => {
     try {
-        const { title, genre, rating } = req.body;
+        const { id_creator } = req.params; // Assuming id_creator is passed in the request body
 
-        // Vérifier les données reçues
-        if (!title || !genre) {
-            return res.status(400).json({ message: "Titre et genre sont obligatoires" });
+        const game_code = generateCode(); // Renamed secretCode to game_code
+        const status = "waiting";
+        const start_time = Date.now();
+
+        const player = await Player.findById(id_creator); // Added await
+        if (!player) {
+            return res.status(404).json({ message: "Player not found" });
         }
 
-        const newGame = new Game({ title, genre, rating });
+        const players = [{
+            player_id: player._id,
+            articles_visited: [],
+            current_article: null,
+            artifacts: [],
+            score: 0
+        }];
+
+        const newGame = new Game({ game_code, status, start_time, players });
+
         const savedGame = await newGame.save();
         res.status(201).json(savedGame);
     } catch (error) {
+        console.error(error); // Log the error for debugging
         res.status(400).json({ message: "Erreur lors de l'ajout du jeu" });
+    }
+};
+
+export const backArtifact = async (req, res) => {
+    const { id_game, id_player } = req.params;
+
+    try {
+        const gameObjectId = new mongoose.Types.ObjectId(id_game);
+        const game = await Game.findById(gameObjectId);
+        if (!game) {
+            return res.status(404).json({ message: "Jeu non trouvé." });
+        }
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => new mongoose.Types.ObjectId(p.player_id).equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({ message: "Joueur non trouvé dans ce jeu." });
+        }
+        if (player.artifacts.length === 0) {
+            return res.status(400).json({ message: "Aucun artefact disponible pour revenir en arrière." });
+        }
+        if (player.articles_visited.length < 2) {
+            return res.status(400).json({ message: "Pas assez d'articles visités pour revenir en arrière." });
+        }
+        const previousArticle = player.articles_visited[player.articles_visited.length - 2];
+        await changeArticle(gameObjectId, playerObjectId, previousArticle);
+
+        await game.save();
+
+        res.status(200).json({ message: "Retour à l'article précédent réussi.", previousArticle });
+    } catch (error) {
+        console.error("Erreur dans backArtifact :", error);
+        res.status(500).json({ message: "Erreur serveur", details: error.message });
     }
 };
