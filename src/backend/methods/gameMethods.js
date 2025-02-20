@@ -462,7 +462,7 @@ export const eraserArtifact = async (req, res) => {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-            game.articles_to_visit = game.articles_to_visit.filter(article => article !== latestArticle);
+            player.articles_visited = player.articles_visited.filter(article => article !== latestArticle);
             await game.save({ session });
             await session.commitTransaction();
         } catch (error) {
@@ -480,5 +480,57 @@ export const eraserArtifact = async (req, res) => {
     }
 };
 
+export const disorienterArtifact = async (req, res) => {
+    const { id_game, id_player } = req.body;
+
+    try {
+        const [game, player] = await gameAndPlayers(id_game, id_player);
+
+        // Check if the player has the "Disorienter" artifact
+        if (!player.artifacts.includes("Disorienter")) {
+            return res.status(400).json({ message: "Aucun artefact disponible pour désorienter le joueur." });
+        }
+
+        const randPage = await generateRandomArticle();
+
+        const generatedArticle = await createArticle(randPage.title, randPage.totalViews);
+
+        if (!generatedArticle || !generatedArticle._id) {
+            throw new Error("L'article n'a pas été correctement enregistré en base de données.");
+        }
+
+        await changeArticle(id_game, id_player, generatedArticle._id);
+
+        res.status(200).json({ message: "Joueur envoyé sur une page random.", randomArticle: [generatedArticle] });
+
+    } catch (error) {
+        console.error("Erreur dans disorienterArtifact :", error);
+        res.status(500).json({ message: "Erreur serveur", details: error.message });
+    }
+};
+
+export const dictatorArtifact = async (req, res) => {
+    const { id_game, id_player } = req.body;
+
+    try {
+        const [game, player] = await gameAndPlayers(id_game, id_player);
+
+        // Check if the player has the "Dictator" artifact
+        if (!player.artifacts.includes("Dictator")) {
+            return res.status(400).json({ message: "Aucun artefact disponible pour dicter le joueur." });
+        }
+
+        const notFoundArticle = game.articles_to_visit.filter(article => !player.articles_visited.includes(article));
+        const randNumber = Math.floor(Math.random() * notFoundArticle.length);
+
+        const dictateArticle = notFoundArticle[randNumber];
+
+        res.status(200).json({ message: "Article à trouver.", dictateArticle: [dictateArticle] });
+
+    } catch (error) {
+        console.error("Erreur dans dictatorArtifact :", error);
+        res.status(500).json({ message: "Erreur serveur", details: error.message });
+    }
+};
 
 

@@ -8,7 +8,9 @@ import {
     distributeRandomArticles,
     getFoundTargetArticles,
     getArticfactPlayer,
-    mineArtifact
+    mineArtifact,
+    disorienterArtifact,
+    dictatorArtifact
 } from "../methods/gameMethods.js";
 
 const router = express.Router();
@@ -22,5 +24,7 @@ router.post("/create-game", createGame);
 router.post("/back-artifact", backArtifact);
 router.post("/mine-artifact", mineArtifact);
 router.post("/eraser-artifact", eraserArtifact);
+router.post("/disorienter-artifact", disorienterArtifact);
+router.post("/dictator-artifact", dictatorArtifact);
 
 export default router;
