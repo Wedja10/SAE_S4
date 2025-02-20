@@ -1,15 +1,26 @@
 import express from "express";
-import {getVisitedArticlesPlayer, createGame, getGamePlayers, backArtifact, distributeRandomArticles, getFoundTargetArticles, getArticfactPlayer} from "../methods/gameMethods.js";
+import {
+    getVisitedArticlesPlayer,
+    eraserArtifact,
+    createGame,
+    getGamePlayers,
+    backArtifact,
+    distributeRandomArticles,
+    getFoundTargetArticles,
+    getArticfactPlayer,
+    mineArtifact
+} from "../methods/gameMethods.js";
 
 const router = express.Router();
 
-router.get("/:id_game/players", getGamePlayers);
-router.get('/:id_game/:id_player/articles', getVisitedArticlesPlayer);
-router.get('/:id_game/:id_player/TargetArticles', getFoundTargetArticles);
-router.get('/:id_game/:id_player/artifacts', getArticfactPlayer);
-
-router.put("/:id_game/:number/random", distributeRandomArticles);
-router.put("/:id_creator", createGame);
-router.put("/:id_game/:id_player/back", backArtifact);
+router.post("/players", getGamePlayers);
+router.post('/articles', getVisitedArticlesPlayer);
+router.post('/found-articles', getFoundTargetArticles);
+router.post('/artifacts', getArticfactPlayer);
+router.post("/random-articles", distributeRandomArticles);
+router.post("/create-game", createGame);
+router.post("/back-artifact", backArtifact);
+router.post("/mine-artifact", mineArtifact);
+router.post("/eraser-artifact", eraserArtifact);
 
 export default router;

@@ -10,7 +10,7 @@ export const createArticle = async (title, popularity) => {
         return await newArticle.save();
     } catch (error) {
         console.error("Erreur dans createArticle :", error);
-        return null; // <-- Actuellement, tu retournes peut-être undefined !
+        return null;
     }
 };
 
