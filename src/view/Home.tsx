@@ -3,6 +3,7 @@ import GameInfo from "../componnents/home/GameInfo.tsx";
 import Footer from "../componnents/Footer.tsx";
 import Welcome from "../componnents/home/Welcome.tsx";
 import Navbar from "../componnents/Navbar.tsx";
+import {PublicSaloonList} from "../componnents/home/PublicSaloon.tsx";
 
 const Home: React.FC = () => {
     return (
@@ -13,6 +14,7 @@ const Home: React.FC = () => {
             </header>
             <GameOption />
             <GameInfo />
+            <PublicSaloonList />
             <Footer />
         </>
     );
