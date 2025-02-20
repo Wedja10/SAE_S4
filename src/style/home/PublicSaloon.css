@@ -48,6 +48,8 @@
   top: -10px;
   left: 50%;
   transform: translateX(-50%);
+  color: #DBBE94;
+  -webkit-text-stroke: 1px black;
 }
 
 .players {
