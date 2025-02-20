@@ -7,17 +7,17 @@ const GameSchema = new mongoose.Schema({
     end_time: Date,
     players: [
         {
-            player_id: String,
-            articles_visited: [String],
-            current_article: String,
+            player_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+            articles_visited: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
+            current_article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
             artifacts: [String],
             score: Number
         }
     ],
-    articles_to_visit: [String],
+    articles_to_visit: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
     artifacts_distribution: [
         {
-            article: String,
+            article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
             artifact: String
         }
     ]
