@@ -1,0 +1,70 @@
+/* Saloon List */
+
+.PublicSaloon {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 5%;
+}
+
+.PublicSaloon .saloonImg {
+  float: left;
+  width: 75%;
+  margin-bottom: 5%;
+}
+
+.PublicSaloonList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  max-height: 80%;
+  overflow-y: auto;
+}
+
+/* Saloon Ticket */
+
+.PublicSaloonTicket {
+  flex: 0 0 calc(30%);
+  margin-left: 2.5%;
+  margin-bottom: 2.5%;
+  box-sizing: border-box;
+  position: relative;
+  width: fit-content;
+}
+
+.PublicSaloonTicket .ticketImg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.saloonName, .players, .code {
+  position: absolute;
+  color: black;
+}
+
+.saloonName {
+  font-size: 4vh;
+  width: 80%;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.players {
+  font-size: 3vh;
+  width: 20%;
+  bottom: 22.5%;
+  left: 30%;
+  transform: translateX(-50%);
+}
+
+.code {
+  font-size: 3vh;
+  width: 20%;
+  bottom: 22.5%;
+  right: 30%;
+  transform: translateX(50%);
+
+  border: solid 2px black;
+  border-radius: 50px;
+}
