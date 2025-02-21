@@ -2,6 +2,7 @@ import Game from "../models/Game.js";
 import mongoose from "mongoose";
 import {createArticle} from "./articleMethods.js";
 import Player from "../models/Player.js";
+import Article from "../models/Article.js";
 const { ObjectId } = mongoose.Types;
 
 export const gameExists = async (gameId) => {
@@ -386,24 +387,95 @@ export const backArtifact = async (req, res) => {
     }
 };
 
+async function getAllLinks(title) {
+    const baseUrl = "https://fr.wikipedia.org/w/api.php";
+    let params = {
+        action: "query",
+        titles: title,
+        prop: "links",
+        format: "json",
+        pllimit: "max",
+        origin: "*"
+    };
+    let allLinks = [];
+
+    while (true) {
+        const url = baseUrl + "?" + new URLSearchParams(params).toString();
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const page = Object.values(data.query.pages)[0];
+        if (page.links) {
+            allLinks.push(...page.links.map(link => link.title));
+        }
+
+        if (data.continue) {
+            params.plcontinue = data.continue.plcontinue;
+        } else {
+            break;
+        }
+    }
+
+    return allLinks;
+}
+
 export const teleporterArtifact = async (req, res) => {
     const { id_game, id_player } = req.body;
 
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
 
-        if (!(player.artifacts.includes("Teleporter"))) {
+        if (!player.artifacts.includes("Teleporter")) {
             return res.status(400).json({ message: "Aucun artefact disponible pour se téléporter." });
         }
 
+        const article = await Article.findById(player.current_article);
+        if (!article) {
+            return res.status(404).json({ message: "Article actuel non trouvé." });
+        }
+
+        const firstTeleport = (await getAllLinks(article.title)).filter(link => !link.includes("Module:"));
+        const randNumber = Math.floor(Math.random() * firstTeleport.length);
+        const firstArticle = firstTeleport[randNumber];
+        console.log(firstArticle);
+        const secondTeleporter = await getAllLinks(firstArticle);
+        const randSecondNumber = Math.floor(Math.random() * secondTeleporter.length);
+        const secondArticle = secondTeleporter[randSecondNumber];
+        console.log(secondArticle);
+        const formattedTitle = encodeURIComponent(secondArticle.replace(/ /g, '_'));
+
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const firstDayOfLastMonth = lastMonth.toISOString().slice(0, 10).replace(/-/g, '');
+        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10).replace(/-/g, '');
+
+        const pageviewsUrl = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/fr.wikipedia.org/all-access/user/${formattedTitle}/daily/${firstDayOfLastMonth}/${lastDayOfLastMonth}`;
+        const response2 = await fetch(pageviewsUrl);
+
+        let totalViews = 0;
+        if (response2.ok) {
+            const pageviewsData = await response2.json();
+            if (pageviewsData.items && pageviewsData.items.length > 0) {
+                totalViews = pageviewsData.items.reduce((sum, item) => sum + item.views, 0);
+            } else {
+                console.warn(`Pas de données de vues disponibles pour "${secondArticle}".`);
+            }
+        } else {
+            console.warn(`Aucune donnée de vues pour l'article "${secondArticle}". Erreur: ${response2.status} - ${response2.statusText}`);
+        }
+
+        const newArticle = await createArticle(secondArticle, totalViews);
+        await changeArticle(id_game, id_player, newArticle);
         await game.save();
 
-        res.status(200).json({ message: "Retour à l'article précédent réussi.", previousArticle });
+        // Répondre avec succès
+        res.status(200).json({ message: "Téléportation réussie.", newArticle });
     } catch (error) {
         console.error("Erreur dans teleporterArtifact :", error);
         res.status(500).json({ message: "Erreur serveur", details: error.message });
     }
-}
+};
 
 export const mineArtifact = async (req, res) => {
     const { id_game, id_player } = req.body;

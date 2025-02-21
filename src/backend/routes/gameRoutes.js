@@ -10,7 +10,8 @@ import {
     getArticfactPlayer,
     mineArtifact,
     disorienterArtifact,
-    dictatorArtifact
+    dictatorArtifact,
+    teleporterArtifact
 } from "../methods/gameMethods.js";
 
 const router = express.Router();
@@ -26,5 +27,6 @@ router.post("/mine-artifact", mineArtifact);
 router.post("/eraser-artifact", eraserArtifact);
 router.post("/disorienter-artifact", disorienterArtifact);
 router.post("/dictator-artifact", dictatorArtifact);
+router.post("/teleporter-artifact", teleporterArtifact);
 
 export default router;
