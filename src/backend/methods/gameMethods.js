@@ -232,7 +232,13 @@ export const getVisitedArticlesPlayer = async (req, res) => {
 
         // Récupérer les articles visités par ce joueur
         const visitedArticles = player.articles_visited || [];
-        res.status(200).json(visitedArticles);
+        const targets = await Promise.all(
+            visitedArticles.map(async (articleId) => {
+                const article = await Article.findById(articleId);
+                return article ? article.title : null; // Retourne le titre de l'article ou null si non trouvé
+            })
+        );
+        res.status(200).json(targets);
     } catch (error) {
         console.error("Erreur dans getVisitedArticlesPlayer :", error);
         res.status(500).json({ message: "Erreur serveur" });
@@ -264,6 +270,40 @@ export const getFoundTargetArticles = async (req, res) => {
         );
 
         res.status(200).json(findTarget);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des articles cibles:", error);
+        res.status(500).json({ message: "Erreur interne du serveur." });
+    }
+};
+
+// Récupérer les articles cibles
+export const getTargetArticles = async (req, res) => {
+    const { id_game } = req.body;
+
+    if (!id_game) {
+        return res.status(400).json({ message: "L'ID du jeu est requis." });
+    }
+
+    try {
+        // Trouver le jeu par son ID
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ message: "Jeu non trouvé." });
+        }
+
+        // Récupérer les titres des articles à visiter
+        const targets = await Promise.all(
+            game.articles_to_visit.map(async (articleId) => {
+                const article = await Article.findById(articleId);
+                return article ? article.title : null; // Retourne le titre de l'article ou null si non trouvé
+            })
+        );
+
+        // Filtrer les articles valides (supprimer les null)
+        const validTargets = targets.filter(title => title !== null);
+
+        // Renvoyer les titres des articles
+        res.status(200).json(validTargets);
     } catch (error) {
         console.error("Erreur lors de la récupération des articles cibles:", error);
         res.status(500).json({ message: "Erreur interne du serveur." });

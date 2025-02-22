@@ -11,13 +11,15 @@ import {
     mineArtifact,
     disorienterArtifact,
     dictatorArtifact,
-    teleporterArtifact
+    teleporterArtifact,
+    getTargetArticles
 } from "../methods/gameMethods.js";
 
 const router = express.Router();
 
 router.post("/players", getGamePlayers);
 router.post('/articles', getVisitedArticlesPlayer);
+router.post('/target-articles', getTargetArticles);
 router.post('/found-articles', getFoundTargetArticles);
 router.post('/artifacts', getArticfactPlayer);
 router.post("/random-articles", distributeRandomArticles);
