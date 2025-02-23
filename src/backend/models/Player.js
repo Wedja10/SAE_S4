@@ -11,7 +11,8 @@ const PlayerSchema = new mongoose.Schema({
             score: Number,
             rank: Number
         }
-    ]
+    ],
+    pp: String
 });
 
 export default mongoose.model('Player', PlayerSchema, 'players');
