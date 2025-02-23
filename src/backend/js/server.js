@@ -53,7 +53,7 @@ async function testAPI() {
     // await callAPI("/create-game", { id_creator: "67a7bc84385c3dc88d87a748" });
     // await callAPI("/target-articles", { id_game: "67b1f4c36fe85f560dd86791" });
     // await callAPI("/articles", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
-    // await callAPI("/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
+    await callAPI("/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
     // await callAPI("/random-articles", {id_game: "67b708100a007de8bbf95bc0", number: 5});
     // await callAPI("/back-artifact", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
     // await callAPI("/mine-artifact", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});

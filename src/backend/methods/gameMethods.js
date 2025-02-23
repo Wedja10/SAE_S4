@@ -432,9 +432,6 @@ export const backArtifact = async (req, res) => {
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
 
-        if (!(player.artifacts.includes("Backtrack"))) {
-            return res.status(400).json({ message: "Aucun artefact disponible pour revenir en arrière." });
-        }
         if (player.articles_visited.length < 2) {
             return res.status(400).json({ message: "Pas assez d'articles visités pour revenir en arrière." });
         }
@@ -490,9 +487,6 @@ export const teleporterArtifact = async (req, res) => {
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
 
-        if (!player.artifacts.includes("Teleporter")) {
-            return res.status(400).json({ message: "Aucun artefact disponible pour se téléporter." });
-        }
 
         const article = await Article.findById(player.current_article);
         if (!article) {
@@ -547,9 +541,6 @@ export const mineArtifact = async (req, res) => {
     try{
         const [game, player] = await gameAndPlayers(id_game, id_player);
 
-        if (!(player.artifacts.includes("Mine"))) {
-            return res.status(400).json({ message: "Aucun artefact disponible pour revenir en arrière." });
-        }
         if (player.articles_visited.length < 5) {
             return res.status(400).json({ message: "Ce joueur n'a pas assez d'articles visités pour appliquer la mine dessus." });
         }
@@ -576,11 +567,6 @@ export const eraserArtifact = async (req, res) => {
     try {
         let latestArticle = undefined;
         const [game, player] = await gameAndPlayers(id_game, id_player);
-
-        // Check if the player has the "Eraser" artifact
-        if (!player.artifacts.includes("Eraser")) {
-            return res.status(400).json({ message: "Aucun artefact disponible pour gommer l'article du joueur." });
-        }
 
         // Find the latest article visited by the player that is still in the game's articles_to_visit
         for (let i = player.articles_visited.length - 1; i >= 0; i--) {
@@ -622,10 +608,6 @@ export const disorienterArtifact = async (req, res) => {
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
 
-        // Check if the player has the "Disorienter" artifact
-        if (!player.artifacts.includes("Disorienter")) {
-            return res.status(400).json({ message: "Aucun artefact disponible pour désorienter le joueur." });
-        }
 
         const randPage = await generateRandomArticle();
 
@@ -650,11 +632,6 @@ export const dictatorArtifact = async (req, res) => {
 
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
-
-        // Check if the player has the "Dictator" artifact
-        if (!player.artifacts.includes("Dictator")) {
-            return res.status(400).json({ message: "Aucun artefact disponible pour dicter le joueur." });
-        }
 
         const notFoundArticle = game.articles_to_visit.filter(article => !player.articles_visited.includes(article));
         const randNumber = Math.floor(Math.random() * notFoundArticle.length);
