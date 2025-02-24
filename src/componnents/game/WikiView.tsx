@@ -40,11 +40,13 @@ const WikiView: React.FC = () => {
 
   // On utilise le titre passé en URL ou le titre aléatoire s'il n'y a pas de paramètre
   const articleTitle = title || randomTitle || "";
-  const wikiUrl = `https://fr.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(articleTitle)}`;
+  //const wikiUrl = `https://fr.wikipedia.org/wiki/${encodeURIComponent(articleTitle)}`; // affiche la page wikipedia de base
+  const wikiUrl = `https://fr.wikipedia.org/wiki/${encodeURIComponent(articleTitle)}?action=render`; // Pour afficher le contenu de la page directement seulement l'article sans css
+  // const wikiUrl = `https://fr.wikipedia.org/w/index.php?title=${encodeURIComponent(articleTitle)}&printable=yes`;
+
 
   return (
     <div className="wiki-container fade-in">
-      <h1 className="wiki-title">{articleTitle.replace(/_/g, " ")}</h1>
       <iframe
         src={wikiUrl}
         title={articleTitle || "Wiki Page"}
