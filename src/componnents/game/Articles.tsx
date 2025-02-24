@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import '../../style/game/Articles.css';
 import "../../backend/services/apiService.js";
-import { postRequest } from "C:/wamp64/www/SAE_S4/src/backend/services/apiService.js";
+import { postRequest } from "../../backend/services/apiService.js";
 
 const Articles: React.FC = () => {
     const [visitedArticles, setVisitedArticles] = useState<string[]>([]);

@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import '../../style/game/Actions.css';
-import { postRequest } from "C:/Users/jawes/WebstormProjects/SAE_S4/src/backend/services/apiService.js";
+import { postRequest } from "../../backend/services/apiService.js";
 
 const Actions: React.FC = () => {
     const [artifacts, setArtifacts] = useState<string[]>([]);
