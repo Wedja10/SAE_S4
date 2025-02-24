@@ -8,8 +8,8 @@ const escapeRegExp = (str: string): string => {
 
 const removeAccents = (str: string): string => {
     return str
-      .normalize('NFD') // Décompose les caractères accentués en caractères de base + diacritiques
-      .replace(/[\u0300-\u036f]/g, ''); // Supprime les diacritiques (accents)
+        .normalize('NFD') // Décompose les caractères accentués en caractères de base + diacritiques
+        .replace(/[\u0300-\u036f]/g, ''); // Supprime les diacritiques (accents)
 };
 
 const formatLinks = (htmlContent: string): string => {
@@ -93,15 +93,15 @@ const WikiView: React.FC<{ title: string }> = ({title}) => {
     }
 
     return (
-      <div className="wiki-container fade-in">
-          <h1 className="wiki-title">{title.replace("_", " ")}</h1>
-          {content && (
-            <div
-              className="wiki-content"
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
-          )}
-      </div>
+        <div className="wiki-container fade-in">
+            <h1 className="wiki-title">{title.replace("_", " ")}</h1>
+            {content && (
+                <div
+                    className="wiki-content"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                />
+            )}
+        </div>
     );
 };
 

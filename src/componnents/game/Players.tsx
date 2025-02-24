@@ -33,8 +33,6 @@ const Players: React.FC = () => {
         fetchTargetArticles();
     }, []);
 
-
-    console.log(players);
     return (
         <div className="players-container fade-in">
             <h2 className="players-title">Joueurs</h2>
