@@ -21,7 +21,7 @@ const Game: React.FC = () => {
       {/* Contenu principal */}
       {title &&
         <main className="main-content">
-          <WikiView title={title.split("#")[0]} />
+          <WikiView />
           <Actions />
         </main>
       }
