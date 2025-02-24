@@ -128,36 +128,15 @@
 .ArtefactsListContainer {
   display: flex;
   flex-direction: column;
-  width: 50%;
-}
-
-.startButton{
-  background-color: #1E6E00;
-  border: #2A830C 2px solid;
-  border-radius: 5px;
-  color: #FFFFFF;
-  font-family: cowboy;
-  font-size: 24px;
-  height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 50px;
-  transition: 0.5s;
-  text-decoration: none;
-}
-
-.startButton:hover {
-  background-color: #36a113;
-  cursor: pointer;
-  transition: 0.5s;
+  width: 100%;
 }
 
 @media (max-width: 768px) {
   .ArtefactsList {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
-    height: 50%;
+    width: 100%;
+    height: 100%;
     left: 10%;
   }
 
@@ -165,7 +144,7 @@
     width: 80%;
     margin: 0;
     padding: 0;
-    height: 50%;
+    height: 100%;
   }
 }
 
@@ -210,4 +189,150 @@
   bottom: -5%;
   left: 50%;
   transform: translateX(-50%);
+}
+
+/* ---------- Options Panel ---------- */
+
+.GameInfo {
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .GameInfo {
+    width: 100%;
+    margin-top: 50px;
+  }
+}
+
+.OptionsPanel {
+  background-color: rgba(11, 18, 57, 0.63);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  margin-top: 25px;
+}
+
+@media (max-width: 768px) {
+  .OptionsPanel {
+    width: 80%;
+    left: 10%;
+  }
+}
+
+.OptionsList {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  margin-top: 25px;
+  margin-bottom: 25px;
+  width: 100%;
+  height: 80%;
+}
+
+.Option {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 20%;
+  position: relative;
+}
+
+.Option img {
+  position: absolute;
+  width: 20px;
+  right: 8px;
+  bottom: 2px;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.OptionsList input, .OptionsList select {
+
+  background-color: #17141d;
+  border: none;
+  border-radius: 15px;
+  outline: none;
+  width: 100%;
+
+  color: #FFFFFF;
+  font-family: cowboy, sans-serif;
+  font-size: 2vh;
+  text-align: center;
+  padding: 15px;
+
+  overflow-x: clip;
+  scrollbar-width: none;
+
+  -moz-appearance: textfield
+}
+
+.OptionsList input::-webkit-outer-spin-button, .OptionsList input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.OptionsPanel label {
+  font-size: 1.5vh;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.disabled-input {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.SubmitOptions {
+  width: 25%;
+  height: 50px;
+  margin-bottom: 50px;
+
+  font-family: cowboy, sans-serif;
+  color: #FFFFFF;
+  font-size: 2vh;
+
+  border: none;
+  border-radius: 10px;
+  border-bottom: solid 5px #FFFFFF;
+  cursor: pointer;
+}
+
+.SubmitOptions:hover {
+  border-bottom: solid 2px #FFFFFF;
+  transition-duration: 300ms;
+}
+
+/* ---------- Start Button ---------- */
+
+.startButton{
+  width: 35%;
+  height: 75px;
+  margin-top: 25px;
+
+  font-family: cowboy, sans-serif;
+  color: #FFFFFF;
+  font-size: 3vh;
+  padding: 15px;
+  background-color: #17141d;
+
+  border: none;
+  border-radius: 15px;
+  border-bottom: solid 8px #f1b24a;
+  cursor: pointer;
+
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.startButton:hover {
+  border-bottom: solid 4px #f1b24a;
+  transition: 300ms;
 }
