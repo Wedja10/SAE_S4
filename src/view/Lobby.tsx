@@ -1,7 +1,7 @@
 import Navbar from "../componnents/Navbar.tsx";
 import '../style/Lobby.css';
-import { PlayerList } from "../componnents/lobby/LobbyComponents.tsx";
-import { ArtefactsList } from "../componnents/lobby/Artefacts.tsx";
+import {PlayerList} from "../componnents/lobby/LobbyComponents.tsx";
+import {ArtefactsList, OptionsPanel, StartButton} from "../componnents/lobby/Artefacts.tsx";
 
 const Lobby: React.FC = () => {
 
@@ -16,7 +16,11 @@ const Lobby: React.FC = () => {
       </div>
       <div className="lobbyContent">
         <PlayerList players={players} />
-        <ArtefactsList artefacts={artefacts} />
+        <div className={"GameInfo"}>
+          <ArtefactsList artefacts={artefacts} />
+          <OptionsPanel/>
+          <StartButton />
+        </div>
       </div>
     </>
   );
