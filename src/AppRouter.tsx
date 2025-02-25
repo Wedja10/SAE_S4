@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./view/Home";
 import Game from "./view/Game";
 import Lobby from "./view/Lobby.tsx";
+import Choice from "./view/Choice.tsx";
+import LobbySolo from "./view/LobbySolo.tsx";
 
 const AppRouter: React.FC = () => {
     return (
@@ -11,7 +13,9 @@ const AppRouter: React.FC = () => {
                 <Route path="/" element={<Home />} />
                 <Route path="/game" element={<Game />} />
                 <Route path="/lobby" element={<Lobby />} />
+                <Route path="/lobbySolo" element={<LobbySolo />} />
                 <Route path="/game/:title" element={<Game />} />
+                <Route path={"/choice"} element={<Choice />} />
             </Routes>
         </Router>
     );
