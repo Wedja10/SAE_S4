@@ -47,6 +47,7 @@ const WikiView: React.FC = () => {
 
   return (
     <div className="wiki-container fade-in">
+      <h2 className="wiki-title">{articleTitle}</h2>
       <iframe
         src={wikiUrl}
         title={articleTitle || "Wiki Page"}
