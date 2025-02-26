@@ -11,7 +11,7 @@ function GameOption() {
                 <div className="option">
                     <h2 className='start'>LAUNCH YOUR GAME</h2>
                     <div className="join-btnDiv">
-                        <NavLink to="/lobby" className="start-btn">
+                        <NavLink to="/choice" className="start-btn">
                             <svg width="15" height="15" viewBox="0 0 35 40" fill="none"
                                 xmlns="http://www.w3.org/2000/svg" style={{ marginRight: '10px' }}>
                                 <path

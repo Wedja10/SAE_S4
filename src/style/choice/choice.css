@@ -1,0 +1,80 @@
+.ChoicePanel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+
+  height: 75%;
+  width: 75%;
+
+  background-color: rgba(11, 18, 57, 0.63);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+}
+
+.Solo {
+  position: relative;
+  width: 30%;
+  height: 80%;
+  background-image: url("../../../public/assets/images/SoloImage.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+}
+
+.Multi {
+  position: relative;
+  width: 30%;
+  height: 80%;
+  background-image: url("../../../public/assets/images/MultiImage.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+}
+
+.Solo h1, .Multi h1 {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  color: white;
+  font-size: 4vh;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.Solo:hover, .Multi:hover {
+  transform: scale(1.1);
+  opacity: 0.75;
+  transition-duration: 300ms;
+}
+
+.Solo:hover h1, .Multi:hover h1 {
+  opacity: 1;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+@media screen and (max-width: 768px) {
+  .ChoicePanel {
+    height: 80%;
+    width: 60%;
+    flex-direction: column;
+  }
+
+  .Solo, .Multi {
+    width: 50%;
+    height: 50%;
+  }
+
+  .Solo h1, .Multi h1 {
+    font-size: 3vh;
+  }
+}

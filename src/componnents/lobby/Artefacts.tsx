@@ -98,6 +98,58 @@ export const OptionsPanel = () => {
   )
 }
 
+export const OptionsPanelSolo = () => {
+  const navigate = useNavigate();
+
+  const [unlimitedTime, setUnlimitedTime] = useState(true);
+
+  const handleUnlimitedTime = () => {
+    setUnlimitedTime(!unlimitedTime);
+  }
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+
+    alert(JSON.stringify(data, null, 2)); // -------------- Ici pour le back à ajouter
+
+    navigate(`/game`);
+  };
+
+  return (
+    <div className={"OptionsPanel"} >
+      <form method={"put"} onSubmit={handleSubmit}>
+        <div className={"OptionsList"}>
+
+          <div className={"Option"}>
+            <label htmlFor={"timeLimit"}>Time limit</label>
+
+            {unlimitedTime ?
+              <input type={"text"} name={"timeLimit"} id={"timeLimit"} value={"UNLIMITED"} readOnly/> :
+              <input type={"number"} name={"timeLimit"} id={"timeLimit"} min={1} required/>}
+
+            <img src={unlimitedTime ? "public/assets/UnlimitedButton.png" : "public/assets/LimitedButton.png"} onClick={handleUnlimitedTime} alt={"unlimited"}/>
+          </div>
+
+          <div className={"Option"}>
+            <label htmlFor={"articlesNumber"}>Number of articles</label>
+            <input type={"number"} name={"articlesNumber"} id={"articlesNumber"} defaultValue={5} min={2} max={16} required />
+          </div>
+
+        </div>
+
+        <input className={"SubmitOptions"} type={"submit"} value={"LAUCH"} style={{
+          backgroundColor: "#17141d",
+          borderColor: "#f1b24a"
+        }}/>
+      </form>
+
+    </div>
+  )
+}
+
 export const ArtefactsList = (props: { artefacts: string[] }) => {
   return (
     <div className='ArtefactsListContainer'>
