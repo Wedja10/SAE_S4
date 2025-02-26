@@ -1,3 +1,9 @@
+//====================================================================================================
+
+// Server API
+
+//====================================================================================================
+
 import express from "express";
 import mongoose from "mongoose";
 import playerRoutes from "../routes/playerRoutes.js";
@@ -41,7 +47,7 @@ async function callAPI(endpoint, body) {
         if (!response.ok) throw new Error(`Erreur ${response.status}`);
 
         const data = await response.json();
-        console.log(`Réponse de ${endpoint} :`, data);
+        // console.log(`Réponse de ${endpoint} :`, data);
         return data;
     } catch (error) {
         console.error(`Erreur lors de la requête vers ${endpoint} :`, error);
@@ -72,3 +78,44 @@ app.listen(PORT, () => {
     console.log(`Serveur en écoute sur http://localhost:${PORT}`);
     testAPI(); // Lancer le test après le démarrage
 });
+
+
+//====================================================================================================
+
+// Server WebSocket
+
+//====================================================================================================
+
+
+import { WebSocketServer } from "ws";
+
+dotenv.config();
+
+const PORT_WS = process.env.PORT_WS || 5001;
+const clients = new Set();
+
+const wss = new WebSocketServer({ port: PORT_WS });
+
+wss.on("connection", (ws) => {
+    console.log("Un utilisateur s'est connecté au WebSocket");
+    clients.add(ws);
+
+    ws.on("message", (message) => {
+        console.log(`Message reçu : ${message}`);
+
+        clients.forEach(client => {
+            if (client !== ws && client.readyState === 1) {
+                client.send(message); // Envoyer aux autres utilisateurs
+            }
+        });
+    });
+
+
+
+    ws.on("close", () => {
+        console.log("Un utilisateur s'est déconnecté");
+        clients.delete(ws);
+    });
+});
+
+console.log(`Serveur WebSocket en écoute sur ws://localhost:${PORT_WS}`);
