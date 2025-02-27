@@ -56,7 +56,8 @@ async function callAPI(endpoint, body) {
 
 async function testAPI() {
     await callAPI("/players", { id_game: "67b1f4c36fe85f560dd86791" });
-    // await callAPI("/create-game", { id_creator: "67a7bc84385c3dc88d87a748" });
+    // await callAPI("/create-game", { id_creator: "67a7bc84385c3dc88d87a747" });
+    // await callAPI("/random-articles", { id_game: "67be0e4acf5def5273133202", number: 5 });
     // await callAPI("/target-articles", { id_game: "67b1f4c36fe85f560dd86791" });
     // await callAPI("/articles", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
     await callAPI("/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
