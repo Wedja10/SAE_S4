@@ -164,7 +164,6 @@
 }
 
 .Artefact:hover {
-  cursor: pointer;
   transform: scale(1.1);
   transition: 0.5s;
 }
@@ -173,6 +172,7 @@
   position: absolute;
   top: 5%;
   right: 5%;
+  cursor: pointer;
 }
 
 .Artefact .ArtefactImage {
@@ -189,6 +189,42 @@
   bottom: -5%;
   left: 50%;
   transform: translateX(-50%);
+}
+
+.Artefact-info {
+  background-color: #FFFFFF;
+  color: #000000;
+  border-radius: 25px;
+  position: relative;
+
+  width: 165px;
+  height: 165px;
+
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin: 10px;
+  transition: 0.5s;
+
+  overflow-y: scroll;
+}
+
+.Artefact-info:hover {
+  transform: scale(1.1);
+  transition: 0.5s;
+}
+
+.Artefact-info .ArtefactInfo {
+  position: absolute;
+  top: 5%;
+  right: 5%;
+  cursor: pointer;
+}
+
+.ArtefactDescription {
+  font-size: 1.25vh;
+  text-align: left;
+  padding: 5px;
 }
 
 /* ---------- Options Panel ---------- */
