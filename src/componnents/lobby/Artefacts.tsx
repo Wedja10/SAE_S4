@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import ArtefactInfo from '/assets/Artefacts/ArtefactInfo.svg';
 import {useState} from "react";
+import descriptionData from "../../../public/assets/Artefacts/description.json";
 
 export const StartButton = () => {
   const navigate = useNavigate();
@@ -162,17 +163,45 @@ export const ArtefactsList = (props: { artefacts: string[] }) => {
   );
 };
 
+interface Artefact {
+  _id: { $oid: string };
+  name: string;
+  type: string;
+  effect: string;
+  __v: number;
+  storable: boolean;
+}
+
 export const Artefact = (props: { artefact: string }) => {
-  return (
-    <div className="Artefact fade-in">
-      <img className="ArtefactInfo" src={ArtefactInfo} alt="Artefact Info"/>
-      <img
-        className="ArtefactImage"
-        src={`/assets/Artefacts/${props.artefact}.png`}
-        alt="Artefact"
-        style={{ height: '100px' }}
-      />
-      <p>{props.artefact}</p>
-    </div>
-  );
+  const [info, setInfo] = useState(false);
+
+  const handleInfo = () => {
+    setInfo(!info);
+  }
+
+  const artefact = descriptionData.find((item: Artefact) => item.name === props.artefact);
+  const description = artefact ? artefact.effect : "Description not found";
+
+  if (!info) {
+    return (
+      <div className="Artefact fade-in">
+        <img onClick={handleInfo} className="ArtefactInfo" src={ArtefactInfo} alt="Artefact Info"/>
+        <img
+          className="ArtefactImage"
+          src={`/assets/Artefacts/${props.artefact}.png`}
+          alt="Artefact"
+          style={{height: '100px'}}
+        />
+        <p>{props.artefact}</p>
+      </div>
+    );
+  } else {
+    return (
+      <div className="Artefact-info fade-in">
+        <img onClick={handleInfo} className="ArtefactInfo" src={"public/assets/Artefacts/skipInfo.svg"} alt="Artefact Info"/>
+        <p>{props.artefact}</p>
+        <p className={"ArtefactDescription"}>{description}</p>
+      </div>
+    )
+  }
 };
