@@ -20,7 +20,8 @@ const GameSchema = new mongoose.Schema({
             article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
             artifact: String
         }
-    ]
+    ],
+    visibility: String
 });
 
 export default mongoose.model('Game', GameSchema);

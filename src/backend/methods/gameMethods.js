@@ -1,8 +1,9 @@
 import Game from "../models/Game.js";
 import mongoose from "mongoose";
-import {createArticle} from "./articleMethods.js";
+import "./articleMethods.js";
 import Player from "../models/Player.js";
 import Article from "../models/Article.js";
+import {createArticle, generateRandomArticle} from "./articleMethods.js";
 
 const { ObjectId } = mongoose.Types;
 
@@ -138,47 +139,59 @@ export const changeArticle = async (gameId, playerId, articleId) => {
     return { message: "Article changé avec succès.", id_article: articleId };
 };
 
-
-export const generateRandomArticle = async () => {
+export const changeArticleFront = async (req, res) => {
     try {
-        const url = 'https://fr.wikipedia.org/api/rest_v1/page/random/summary';
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Erreur lors de la récupération de l'article aléatoire : ${response.statusText}`);
-        }
-        const data = await response.json();
-        const formattedTitle = encodeURIComponent(data.title.replace(/ /g, '_'));
+        const { gameId, playerId, articleId } = req.body;
 
-        // Calculer la période pour le mois dernier
-        const now = new Date();
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const firstDayOfLastMonth = lastMonth.toISOString().slice(0, 10).replace(/-/g, '');
-        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10).replace(/-/g, '');
-
-        const pageviewsUrl = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/fr.wikipedia.org/all-access/user/${formattedTitle}/daily/${firstDayOfLastMonth}/${lastDayOfLastMonth}`;
-
-        const response2 = await fetch(pageviewsUrl);
-        if (!response2.ok) {
-            console.warn(`Aucune donnée de vues pour l'article "${data.title}". Erreur: ${response2.status} - ${response2.statusText}`);
-            return { title: data.title, pageviewsData: null, totalViews: 0 };
+        if (!gameId || !playerId || !articleId) {
+            return res.status(400).json({ error: "Tous les identifiants sont requis." });
         }
 
-
-        const pageviewsData = await response2.json();
-        if (!pageviewsData.items || pageviewsData.items.length === 0) {
-            console.warn(`Pas de données de vues disponibles pour "${data.title}".`);
-            return { title: data.title, pageviewsData: null, totalViews: 0 };
+        if (!await gameExists(gameId)) {
+            return res.status(404).json({ error: "Jeu non trouvé." });
         }
 
-        const totalViews = pageviewsData.items.reduce((sum, item) => sum + item.views, 0);
+        if (!await playerExistsInGame(gameId, playerId)) {
+            return res.status(404).json({ error: "Joueur non trouvé dans ce jeu." });
+        }
 
+        if (!await playerHasCurrentArticle(gameId, playerId)) {
+            return res.status(400).json({ error: "Aucun article actuel trouvé." });
+        }
 
-        return { title: data.title, totalViews };
+        const game = await Game.findById(gameId);
+        const player = game.players.find(p => p.player_id.equals(playerId));
+
+        if (!player) {
+            return res.status(404).json({ error: "Joueur introuvable." });
+        }
+
+        // Vérifier que l'article existe (optionnel selon la logique de votre application)
+        if (!await articleExists(articleId)) {
+            return res.status(404).json({ error: "Article non trouvé." });
+        }
+
+        player.articles_visited = player.articles_visited || [];
+
+        // Ajouter l'article actuel à l'historique avant de le modifier
+        if (!player.articles_visited.includes(player.current_article)) {
+            player.articles_visited.push(player.current_article);
+        }
+
+        player.current_article = articleId;
+        player.articles_visited.push(articleId);
+
+        await game.save();
+
+        return res.status(200).json({ message: "Article changé avec succès.", id_article: articleId });
+
     } catch (error) {
-        console.error("Erreur dans generateRandomArticle :", error);
-        throw error;
+        console.error("Erreur lors du changement d'article :", error);
+        return res.status(500).json({ error: "Une erreur interne est survenue." });
     }
 };
+
+
 
 
 // Distribute articles to players
@@ -231,7 +244,7 @@ export const distributeRandomArticles = async (req, res) => {
             }
 
             try {
-                const generatedArticle = await createArticle(newArticle.title, newArticle.totalViews);
+                const generatedArticle = await createArticle(newArticle.title);
 
                 if (!generatedArticle || !generatedArticle._id) {
                     throw new Error("L'article n'a pas été correctement enregistré en base de données.");
@@ -395,7 +408,9 @@ export const createGame = async (req, res) => {
             score: 0
         }];
 
-        const newGame = new Game({ game_code, status, start_time, players });
+        const visibility = "private";
+
+        const newGame = new Game({ game_code, status, start_time, players, visibility });
         player.current_game = newGame._id;
         await player.save();
         const savedGame = await newGame.save();
@@ -501,29 +516,8 @@ export const teleporterArtifact = async (req, res) => {
         const randSecondNumber = Math.floor(Math.random() * secondTeleporter.length);
         const secondArticle = secondTeleporter[randSecondNumber];
         console.log(secondArticle);
-        const formattedTitle = encodeURIComponent(secondArticle.replace(/ /g, '_'));
 
-        const now = new Date();
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const firstDayOfLastMonth = lastMonth.toISOString().slice(0, 10).replace(/-/g, '');
-        const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10).replace(/-/g, '');
-
-        const pageviewsUrl = `https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/fr.wikipedia.org/all-access/user/${formattedTitle}/daily/${firstDayOfLastMonth}/${lastDayOfLastMonth}`;
-        const response2 = await fetch(pageviewsUrl);
-
-        let totalViews = 0;
-        if (response2.ok) {
-            const pageviewsData = await response2.json();
-            if (pageviewsData.items && pageviewsData.items.length > 0) {
-                totalViews = pageviewsData.items.reduce((sum, item) => sum + item.views, 0);
-            } else {
-                console.warn(`Pas de données de vues disponibles pour "${secondArticle}".`);
-            }
-        } else {
-            console.warn(`Aucune donnée de vues pour l'article "${secondArticle}". Erreur: ${response2.status} - ${response2.statusText}`);
-        }
-
-        const newArticle = await createArticle(secondArticle, totalViews);
+        const newArticle = await createArticle(secondArticle);
         await changeArticle(id_game, id_player, newArticle);
         await game.save();
 
@@ -611,7 +605,7 @@ export const disorienterArtifact = async (req, res) => {
 
         const randPage = await generateRandomArticle();
 
-        const generatedArticle = await createArticle(randPage.title, randPage.totalViews);
+        const generatedArticle = await createArticle(randPage.title);
 
         if (!generatedArticle || !generatedArticle._id) {
             throw new Error("L'article n'a pas été correctement enregistré en base de données.");

@@ -88,3 +88,167 @@
 /* .vector-header-container{
     display: none;
 } */
+
+.wiki-container {
+    max-width: 800px;
+    height: 80vh; /* Prend 80% de la hauteur de l'écran */
+    margin: auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+
+.wiki-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+
+.wiki-content {
+    flex-grow: 1;
+    overflow-y: auto; /* Active le scroll vertical */
+    max-height: 70vh; /* Limite la hauteur et permet le scroll */
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+    color: #333;
+    background: #fafafa;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* Adapter les images */
+.wiki-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 10px auto;
+}
+
+
+/* Adapter les titres */
+.wiki-content h1 {
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.wiki-content h2, .wiki-content h3 {
+    font-size: 20px;
+    margin-top: 20px;
+}
+
+/* Adapter les liens */
+.wiki-content a {
+    color: #0078D7;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.wiki-content a:hover {
+    text-decoration: underline;
+}
+
+/* Améliorer les listes */
+.wiki-content ul, .wiki-content ol {
+    margin-left: 20px;
+}
+
+/* Cacher certains éléments inutiles */
+.wiki-content .infobox,
+.wiki-content .toc,
+.wiki-content .navbox,
+.wiki-content .metadata {
+    display: none;
+}
+
+.wiki-history {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f8f8;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto; /* Scroll si trop d'articles */
+}
+
+.wiki-history h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.wiki-history ul {
+    list-style: none;
+    padding: 0;
+}
+
+.wiki-history li {
+    font-size: 14px;
+    padding: 5px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.wiki-history li:last-child {
+    border-bottom: none;
+}
+
+.wiki-content {
+    min-height: 300px; /* Pour éviter un "saut" pendant le chargement */
+    transition: opacity 0.3s ease-in-out;
+}
+
+.wiki-content.fade-in {
+    opacity: 1;
+}
+
+.wiki-content.loading {
+    opacity: 0.5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px; /* Ajuste selon tes besoins */
+}
+
+.loading-spinner {
+    font-size: 1.2em;
+    color: #555;
+}
+
+.wiki-content {
+    min-height: 300px;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.wiki-content.fade-in {
+    opacity: 1;
+}
+
+.wiki-content.loading {
+    opacity: 0.5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+.loading-spinner {
+    font-size: 1.2em;
+    color: #555;
+}
+
+.back-button {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.back-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+

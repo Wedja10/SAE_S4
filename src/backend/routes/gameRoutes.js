@@ -12,7 +12,8 @@ import {
     disorienterArtifact,
     dictatorArtifact,
     teleporterArtifact,
-    getTargetArticles
+    getTargetArticles,
+    changeArticleFront
 } from "../methods/gameMethods.js";
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.post("/players", getGamePlayers);
 router.post('/articles', getVisitedArticlesPlayer);
 router.post('/target-articles', getTargetArticles);
 router.post('/artifacts', getArticfactPlayer);
+router.post('/change', changeArticleFront);
 router.post("/random-articles", distributeRandomArticles);
 router.post("/create-game", createGame);
 router.post("/back-artifact", backArtifact);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import '../../style/game/Chat.css';
 
-const WS_URL = "ws://localhost:5001"; // Nouveau port pour WebSocket
+const WS_URL = `ws://localhost:3001`;
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
