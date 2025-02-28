@@ -389,35 +389,64 @@ export const generateCode = () => {
 // Ajouter un jeu
 export const createGame = async (req, res) => {
     try {
-        const { id_creator } = req.body; // Assuming id_creator is passed in the request body
+        const { id_creator } = req.body;
 
-        const game_code = generateCode(); // Renamed secretCode to game_code
+        // First try to find the player by the exact ID
+        let player = await Player.findById(id_creator).catch(() => null);
+        
+        if (!player) {
+            // If not found, try to find by the ID as a string field
+            player = await Player.findOne({ _id: id_creator }).catch(() => null);
+        }
+
+        if (!player) {
+            return res.status(404).json({ 
+                message: "Player not found. Please log in again.",
+                error: "INVALID_PLAYER"
+            });
+        }
+
+        const game_code = generateCode();
         const status = "waiting";
         const start_time = Date.now();
-
-        const player = await Player.findById(id_creator); // Added await
-        if (!player) {
-            return res.status(404).json({ message: "Player not found" });
-        }
 
         const players = [{
             player_id: player._id,
             articles_visited: [],
             current_article: null,
             artifacts: [],
-            score: 0
+            score: 0,
+            is_host: true
         }];
 
-        const visibility = "private";
+        const newGame = new Game({
+            game_code,
+            status,
+            start_time,
+            players,
+            settings: {
+                max_players: null,
+                time_limit: null,
+                articles_number: 5,
+                visibility: "public",
+                allow_join: true
+            }
+        });
 
-        const newGame = new Game({ game_code, status, start_time, players, visibility });
         player.current_game = newGame._id;
         await player.save();
         const savedGame = await newGame.save();
-        res.status(201).json(savedGame);
+
+        res.status(201).json({
+            game_code: savedGame.game_code,
+            message: "Game created successfully"
+        });
     } catch (error) {
-        console.error(error); // Log the error for debugging
-        res.status(400).json({ message: "Erreur lors de l'ajout du jeu" });
+        console.error("Create game error:", error);
+        res.status(400).json({ 
+            message: "Error creating game. Please try again.",
+            error: error.message
+        });
     }
 };
 

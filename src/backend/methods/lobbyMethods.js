@@ -25,7 +25,8 @@ export const createLobby = async (req, res) => {
                 max_players: maxPlayers || null, // null = illimité
                 time_limit: timeLimit || null,
                 articles_number: articlesNumber || 5,
-                visibility: visibility || "public"
+                visibility: visibility || "public",
+                allow_join: true
             },
             players: [{
                 player_id: host._id,
@@ -58,6 +59,11 @@ export const joinLobby = async (req, res) => {
         const game = await Game.findOne({ game_code: gameCode });
         if (!game) {
             return res.status(404).json({ message: "Lobby non trouvé" });
+        }
+
+        // Vérifier si le lobby accepte les nouveaux joueurs
+        if (!game.settings.allow_join) {
+            return res.status(403).json({ message: "Le lobby n'accepte plus de nouveaux joueurs" });
         }
 
         // Vérifier si le jeu est complet
@@ -165,7 +171,7 @@ export const leaveLobby = async (req, res) => {
 // Mettre à jour les paramètres du lobby
 export const updateLobbySettings = async (req, res) => {
     try {
-        const { gameCode, maxPlayers, timeLimit, articlesNumber, visibility } = req.body;
+        const { gameCode, maxPlayers, timeLimit, articlesNumber, visibility, allowJoin } = req.body;
 
         const game = await Game.findOne({ game_code: gameCode });
         if (!game) {
@@ -178,7 +184,8 @@ export const updateLobbySettings = async (req, res) => {
             max_players: maxPlayers !== undefined ? maxPlayers : game.settings?.max_players,
             time_limit: timeLimit !== undefined ? timeLimit : game.settings?.time_limit,
             articles_number: articlesNumber !== undefined ? articlesNumber : game.settings?.articles_number,
-            visibility: visibility || game.settings?.visibility
+            visibility: visibility || game.settings?.visibility,
+            allow_join: allowJoin !== undefined ? allowJoin : game.settings?.allow_join
         };
 
         await game.save();

@@ -67,6 +67,31 @@
     margin-bottom: 20px;
 }
 
+.join-btn::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.join-btn:focus {
+    outline: none;
+    border-color: #1e6e00;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.join-submit {
+    background-color: #2a830c;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 5px;
+    padding: 0.75rem 2rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.join-submit:hover {
+    background-color: #1e6e00;
+}
+
 .jaune {
     background: #F1B24A;
     color: #F1B24A;
@@ -84,6 +109,19 @@
     top: -10px;
     right: -5px;
     width: 60px;
+}
+
+.error-message {
+    color: #ff3838;
+    margin-top: 1rem;
+    font-size: 1rem;
+}
+
+.join-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
 }
 
 @media screen and (max-width: 1200px) {
@@ -123,7 +161,6 @@
 
 /* Smartphones grands (iPhone 12+, Android grands écrans) */
 @media screen and (max-width: 768px) {
-
     .game-options {
         flex-direction: column;
         gap: 20px;
@@ -143,12 +180,10 @@
     .topright2 {
         right: -20px;
     }
-
 }
 
 /* Smartphones petits (iPhone SE, petits Android) */
 @media screen and (max-width: 480px) {
-
     .game-options {
         flex-direction: column;
         gap: 15px;

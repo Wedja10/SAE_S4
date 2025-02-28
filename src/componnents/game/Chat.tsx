@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import '../../style/game/Chat.css';
-
-const WS_URL = `ws://localhost:3001`;
+import { getWsUrl } from "../../utils/config";
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
@@ -10,7 +9,7 @@ const Chat: React.FC = () => {
 
   // Connexion au WebSocket
   useEffect(() => {
-    ws.current = new WebSocket(WS_URL);
+    ws.current = new WebSocket(getWsUrl());
 
     ws.current.onopen = () => console.log("✅ Connecté au WebSocket");
     ws.current.onerror = (error) => console.error("❌ Erreur WebSocket :", error);

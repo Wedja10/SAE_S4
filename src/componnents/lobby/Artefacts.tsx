@@ -1,101 +1,212 @@
 import { useNavigate } from "react-router-dom";
 import ArtefactInfo from '/assets/Artefacts/ArtefactInfo.svg';
-import {useState} from "react";
+import { useState, useEffect } from "react";
 
-export const StartButton = () => {
-  const navigate = useNavigate();
+interface StartButtonProps {
+  onStart: () => void;
+}
 
-  const handleStartGame = () => {
-    navigate(`/game`);
-  };
-
+export const StartButton = ({ onStart }: StartButtonProps) => {
   return (
-    <button onClick={handleStartGame} className="startButton fade-in">
-      <img src={"public/assets/StartArrow.png"} alt={""}/> LAUCH
+    <button onClick={onStart} className="startButton fade-in">
+      <img src="/assets/StartArrow.png" alt="Start"/> LAUNCH
     </button>
   );
 }
 
-export const OptionsPanel = () => {
-  const [unlimitedPlayers, setUnlimitedPlayers] = useState(true);
-  const [unlimitedTime, setUnlimitedTime] = useState(true);
+interface OptionsPanelProps {
+  settings: {
+    max_players: number | null;
+    time_limit: number | null;
+    articles_number: number;
+    visibility: string;
+    allow_join: boolean;
+  };
+  onSettingsUpdate: (settings: OptionsPanelProps['settings']) => void;
+  isHost: boolean;
+}
+
+export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPanelProps) => {
+  const [unlimitedPlayers, setUnlimitedPlayers] = useState(settings.max_players === null);
+  const [unlimitedTime, setUnlimitedTime] = useState(settings.time_limit === null);
+
+  useEffect(() => {
+    setUnlimitedPlayers(settings.max_players === null);
+    setUnlimitedTime(settings.time_limit === null);
+  }, [settings]);
 
   const handleUnlimitedPlayers = () => {
+    if (!isHost) return;
     setUnlimitedPlayers(!unlimitedPlayers);
+    onSettingsUpdate({
+      ...settings,
+      max_players: !unlimitedPlayers ? null : 2
+    });
   };
 
   const handleUnlimitedTime = () => {
+    if (!isHost) return;
     setUnlimitedTime(!unlimitedTime);
+    onSettingsUpdate({
+      ...settings,
+      time_limit: !unlimitedTime ? null : 60
+    });
   }
 
-  const [allowToJoin, setAllowToJoin] = useState(false);
-
-  const handleAllowToJoin = () => {
-    setAllowToJoin(!allowToJoin);
+  const handleAllowToJoin = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent form submission
+    if (!isHost) return;
+    onSettingsUpdate({
+      ...settings,
+      allow_join: !settings.allow_join
+    });
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!isHost) return;
 
-    handleAllowToJoin();
+    const formData = new FormData(event.currentTarget);
+    const newSettings = {
+      max_players: unlimitedPlayers ? null : Number(formData.get('playersNumber')),
+      time_limit: unlimitedTime ? null : Number(formData.get('timeLimit')),
+      articles_number: Number(formData.get('articlesNumber')),
+      visibility: formData.get('visibility') as string,
+      allow_join: settings.allow_join
+    };
 
-    if (allowToJoin) {
-      return
-    }
-
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
-
-    alert(JSON.stringify(data, null, 2)); // -------------- Ici pour le back à ajouter
+    onSettingsUpdate(newSettings);
   };
 
   return (
     <div className={"OptionsPanel"} >
       <form method={"put"} onSubmit={handleSubmit}>
         <div className={"OptionsList"}>
-
           <div className={"Option"}>
             <label htmlFor={"playerNumber"}>Number of players</label>
-
-            {unlimitedPlayers ?
-              <input type={"text"} name={"playersNumber"} id={"playerNumber"} value={"UNLIMITED"} readOnly disabled={allowToJoin} className={allowToJoin ? "disabled-input" : ""}/> :
-              <input type={"number"} name={"playersNumber"} id={"playerNumber"} min={1} required disabled={allowToJoin} className={allowToJoin ? "disabled-input" : ""}/>}
-
-            <img src={unlimitedPlayers ? "public/assets/UnlimitedButton.png" : "public/assets/LimitedButton.png"} onClick={allowToJoin ? undefined : handleUnlimitedPlayers} alt={"unlimited"}/>
+            {unlimitedPlayers ? (
+              <input
+                type={"text"}
+                name={"playersNumber"}
+                id={"playerNumber"}
+                value={"UNLIMITED"}
+                readOnly
+                disabled={!isHost || !settings.allow_join}
+                className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+              />
+            ) : (
+              <input
+                type={"number"}
+                name={"playersNumber"}
+                id={"playerNumber"}
+                min={1}
+                value={settings.max_players || ''}
+                onChange={(e) => onSettingsUpdate({
+                  ...settings,
+                  max_players: Number(e.target.value)
+                })}
+                required
+                disabled={!isHost || !settings.allow_join}
+                className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+              />
+            )}
+            <img
+              src={unlimitedPlayers ? "/assets/UnlimitedButton.png" : "/assets/LimitedButton.png"}
+              onClick={isHost && settings.allow_join ? handleUnlimitedPlayers : undefined}
+              alt={"unlimited"}
+              style={{ cursor: isHost && settings.allow_join ? 'pointer' : 'default' }}
+            />
           </div>
 
           <div className={"Option"}>
             <label htmlFor={"timeLimit"}>Time limit</label>
-
-            {unlimitedTime ?
-              <input type={"text"} name={"timeLimit"} id={"timeLimit"} value={"UNLIMITED"} readOnly disabled={allowToJoin} className={allowToJoin ? "disabled-input" : ""}/> :
-              <input type={"number"} name={"timeLimit"} id={"timeLimit"} min={1} required disabled={allowToJoin} className={allowToJoin ? "disabled-input" : ""}/>}
-
-            <img src={unlimitedTime ? "public/assets/UnlimitedButton.png" : "public/assets/LimitedButton.png"} onClick={allowToJoin ? undefined : handleUnlimitedTime} alt={"unlimited"}/>
+            {unlimitedTime ? (
+              <input
+                type={"text"}
+                name={"timeLimit"}
+                id={"timeLimit"}
+                value={"UNLIMITED"}
+                readOnly
+                disabled={!isHost || !settings.allow_join}
+                className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+              />
+            ) : (
+              <input
+                type={"number"}
+                name={"timeLimit"}
+                id={"timeLimit"}
+                min={1}
+                value={settings.time_limit || ''}
+                onChange={(e) => onSettingsUpdate({
+                  ...settings,
+                  time_limit: Number(e.target.value)
+                })}
+                required
+                disabled={!isHost || !settings.allow_join}
+                className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+              />
+            )}
+            <img
+              src={unlimitedTime ? "/assets/UnlimitedButton.png" : "/assets/LimitedButton.png"}
+              onClick={isHost && settings.allow_join ? handleUnlimitedTime : undefined}
+              alt={"unlimited"}
+              style={{ cursor: isHost && settings.allow_join ? 'pointer' : 'default' }}
+            />
           </div>
 
           <div className={"Option"}>
             <label htmlFor={"articlesNumber"}>Number of articles</label>
-            <input type={"number"} name={"articlesNumber"} id={"articlesNumber"} defaultValue={5} min={2} max={16} required disabled={allowToJoin} className={allowToJoin ? "disabled-input" : ""}/>
+            <input
+              type={"number"}
+              name={"articlesNumber"}
+              id={"articlesNumber"}
+              defaultValue={settings.articles_number}
+              min={2}
+              max={16}
+              onChange={(e) => onSettingsUpdate({
+                ...settings,
+                articles_number: Number(e.target.value)
+              })}
+              required
+              disabled={!isHost || !settings.allow_join}
+              className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+            />
           </div>
 
           <div className={"Option"}>
             <label htmlFor={"visibility"}>Visibility</label>
-            <select name={"visibility"} id={"visibility"} disabled={allowToJoin} className={allowToJoin ? "disabled-input" : ""}>
+            <select
+              name={"visibility"}
+              id={"visibility"}
+              value={settings.visibility}
+              onChange={(e) => onSettingsUpdate({
+                ...settings,
+                visibility: e.target.value
+              })}
+              disabled={!isHost || !settings.allow_join}
+              className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+            >
               <option value={"public"}>Public</option>
               <option value={"private"}>Private</option>
             </select>
           </div>
-
         </div>
 
-        <input className={"SubmitOptions"} type={"submit"} value={allowToJoin ? "Close room" : "Allow to join"} style={{
-          backgroundColor: allowToJoin ? "#ff3838" : "#2a830c"
-        }}/>
+        <button
+          className={"SubmitOptions"}
+          type={"button"}
+          onClick={handleAllowToJoin}
+          style={{
+            backgroundColor: settings.allow_join ? "#2a830c" : "#ff3838",
+            cursor: isHost ? 'pointer' : 'default'
+          }}
+          disabled={!isHost}
+        >
+          {settings.allow_join ? "Allow to join" : "Close room"}
+        </button>
       </form>
-
     </div>
-  )
+  );
 }
 
 export const OptionsPanelSolo = () => {
@@ -107,10 +218,10 @@ export const OptionsPanelSolo = () => {
     setUnlimitedTime(!unlimitedTime);
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const formData = new FormData(event.target);
+    const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
 
     alert(JSON.stringify(data, null, 2)); // -------------- Ici pour le back à ajouter

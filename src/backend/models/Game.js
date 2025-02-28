@@ -5,13 +5,21 @@ const GameSchema = new mongoose.Schema({
     status: String,
     start_time: Date,
     end_time: Date,
+    settings: {
+        max_players: Number,
+        time_limit: Number,
+        articles_number: Number,
+        visibility: String,
+        allow_join: Boolean
+    },
     players: [
         {
             player_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
             articles_visited: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
             current_article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
             artifacts: [String],
-            score: Number
+            score: Number,
+            is_host: Boolean
         }
     ],
     articles_to_visit: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
@@ -20,8 +28,7 @@ const GameSchema = new mongoose.Schema({
             article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
             artifact: String
         }
-    ],
-    visibility: String
+    ]
 });
 
 export default mongoose.model('Game', GameSchema);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import '../../style/game/Players.css';
 import { postRequest } from "../../backend/services/apiService.js";
+import { getApiUrl } from "../../utils/config";
 
 // Définir un type pour les joueurs
 interface Player {
@@ -15,14 +16,14 @@ const Players: React.FC = () => {
     const [articlesToFind, setArticlesToFind] = useState<string[]>([]);
 
     const fetchPlayers = async () => {
-        const data = await postRequest('http://localhost:3000/games/players', {
+        const data = await postRequest(getApiUrl('/games/players'), {
             id_game: "67b1f4c36fe85f560dd86791"
         });
         setPlayers(data);
     };
 
     const fetchTargetArticles = async () => {
-        const data = await postRequest('http://localhost:3000/games/target-articles', {
+        const data = await postRequest(getApiUrl('/games/target-articles'), {
             id_game: "67b1f4c36fe85f560dd86791"
         });
         setArticlesToFind(data);
