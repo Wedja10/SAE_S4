@@ -467,27 +467,27 @@ async function getAllLinks(title) {
     const baseUrl = "https://fr.wikipedia.org/w/api.php";
     let params = {
         action: "query",
-        titles: title,
-        prop: "links",
+        list: "backlinks",
+        bltitle: title,
+        bllimit: "max",
         format: "json",
-        pllimit: "max",
+        blnamespace: 0,
         origin: "*"
     };
     let allLinks = [];
 
     while (true) {
         const url = baseUrl + "?" + new URLSearchParams(params).toString();
-
+        console.log(`Requête Wikipedia : ${url}`);
         const response = await fetch(url);
         const data = await response.json();
 
-        const page = Object.values(data.query.pages)[0];
-        if (page.links) {
-            allLinks.push(...page.links.map(link => link.title));
+        if (data.query && data.query.backlinks) {
+            allLinks.push(...data.query.backlinks.map(link => link.title));
         }
 
-        if (data.continue) {
-            params.plcontinue = data.continue.plcontinue;
+        if (data.continue && data.continue.blcontinue) {
+            params.blcontinue = data.continue.blcontinue;
         } else {
             break;
         }
@@ -496,38 +496,55 @@ async function getAllLinks(title) {
     return allLinks;
 }
 
+
 export const teleporterArtifact = async (req, res) => {
     const { id_game, id_player } = req.body;
 
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
 
+        const rand = Math.floor(Math.random() * game.articles_to_visit.length);
+        console.log(`Article aléatoire choisi: index ${rand}`);
 
-        const article = await Article.findById(player.current_article);
+        const article = await Article.findById(game.articles_to_visit[rand].toString());
+
         if (!article) {
-            return res.status(404).json({ message: "Article actuel non trouvé." });
+            return res.status(404).json({ message: "Article à visiter non trouvé." });
+        }
+        console.log(`Article trouvé : ${article.title}`);
+
+        const firstAllLinks = await getAllLinks(article.title);
+        if (firstAllLinks.length === 0) {
+            return res.status(404).json({ message: "Aucun lien interne trouvé dans cet article." });
         }
 
-        const firstTeleport = (await getAllLinks(article.title)).filter(link => !link.includes("Module:"));
-        const randNumber = Math.floor(Math.random() * firstTeleport.length);
-        const firstArticle = firstTeleport[randNumber];
-        console.log(firstArticle);
-        const secondTeleporter = await getAllLinks(firstArticle);
-        const randSecondNumber = Math.floor(Math.random() * secondTeleporter.length);
-        const secondArticle = secondTeleporter[randSecondNumber];
-        console.log(secondArticle);
+        const firstArticleRand = Math.floor(Math.random() * firstAllLinks.length);
+        const firstArticle = firstAllLinks[firstArticleRand];
+
+        console.log(`Premier article intermédiaire : ${firstArticle}`);
+
+        const secondAllLinks = await getAllLinks(firstArticle);
+        if (secondAllLinks.length === 0) {
+            return res.status(404).json({ message: "Aucun lien interne trouvé dans le deuxième article." });
+        }
+
+        const secondArticleRand = Math.floor(Math.random() * secondAllLinks.length);
+        const secondArticle = secondAllLinks[secondArticleRand];
+
+        console.log(`Article destination choisi : ${secondArticle}`);
 
         const newArticle = await createArticle(secondArticle);
         await changeArticle(id_game, id_player, newArticle);
+
         await game.save();
 
-        // Répondre avec succès
         res.status(200).json({ message: "Téléportation réussie.", newArticle });
     } catch (error) {
         console.error("Erreur dans teleporterArtifact :", error);
         res.status(500).json({ message: "Erreur serveur", details: error.message });
     }
 };
+
 
 export const mineArtifact = async (req, res) => {
     const { id_game, id_player } = req.body;
