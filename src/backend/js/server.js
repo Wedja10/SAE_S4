@@ -15,6 +15,7 @@ import dotenv from "dotenv";
 import cors from 'cors';
 import Game from "../models/Game.js";
 import Player from "../models/Player.js";
+import {WebSocketServer} from "ws";
 
 dotenv.config();
 
@@ -47,10 +48,8 @@ async function callAPI(endpoint, body) {
         });
 
         if (!response.ok) throw new Error(`Erreur ${response.status}`);
-
-        const data = await response.json();
         // console.log(`Réponse de ${endpoint} :`, data);
-        return data;
+        return await response.json();
     } catch (error) {
         console.error(`Erreur lors de la requête vers ${endpoint} :`, error);
     }
@@ -78,8 +77,8 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
+    testAPI();
     console.log(`Serveur en écoute sur http://localhost:${PORT}`);
-    testAPI(); // Lancer le test après le démarrage
 });
 
 
@@ -88,9 +87,6 @@ app.listen(PORT, () => {
 // Server WebSocket
 
 //====================================================================================================
-
-
-import { WebSocketServer } from "ws";
 
 dotenv.config();
 

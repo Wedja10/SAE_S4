@@ -1,0 +1,80 @@
+[{
+  "_id": {
+    "$oid": "67afd06bf3e90fea39e4893b"
+  },
+  "name": "GPS",
+  "type": "positive",
+  "effect": "Indicates the distance in number of jumps from the current article to all articles to visit, with the preferred link to use.",
+  "__v": 0,
+  "storable": true
+},
+  {
+    "_id": {
+      "$oid": "67afd06bf3e90fea39e4893c"
+    },
+    "name": "BACK",
+    "type": "positive",
+    "effect": "Allows the player to return to the previous article when stuck or landing on an article with no outgoing links.",
+    "__v": 0,
+    "storable": true
+  },
+  {
+    "_id": {
+      "$oid": "67afd06bf3e90fea39e4893d"
+    },
+    "name": "TELEPORT",
+    "type": "positive",
+    "effect": "Allows the player to teleport to an article that is 2 links away from one of the articles to visit.",
+    "__v": 0,
+    "storable": false
+  },
+  {
+    "_id": {
+      "$oid": "67afd06bf3e90fea39e4893e"
+    },
+    "name": "MINE",
+    "type": "positive",
+    "effect": "Traps an article. If an opponent lands on the mined article or an article linked to it, they are sent back 5 articles in their visit history.",
+    "__v": 0,
+    "storable": true
+  },
+  {
+    "_id": {
+      "$oid": "67afd06bf3e90fea39e4893f"
+    },
+    "name": "SNAIL",
+    "type": "negative",
+    "effect": "Forces the player to stay on the article for at least 1 minute without being able to click on any links.",
+    "__v": 0,
+    "storable": false
+  },
+  {
+    "_id": {
+      "$oid": "67afd06bf3e90fea39e48940"
+    },
+    "name": "ERASER",
+    "type": "negative",
+    "effect": "Removes the most recently visited target article from the player's progress, forcing them to revisit it.",
+    "__v": 0,
+    "storable": false
+  },
+  {
+    "_id": {
+      "$oid": "67afd06bf3e90fea39e48941"
+    },
+    "name": "DISORIENTATOR",
+    "type": "negative",
+    "effect": "Sends the player randomly to any article on Wikipedia.",
+    "__v": 0,
+    "storable": false
+  },
+  {
+    "_id": {
+      "$oid": "67afd06bf3e90fea39e48942"
+    },
+    "name": "DICTATOR",
+    "type": "negative",
+    "effect": "Forces the player to immediately visit one of the target articles, ignoring any other articles visited along the way.",
+    "__v": 0,
+    "storable": false
+  }]
