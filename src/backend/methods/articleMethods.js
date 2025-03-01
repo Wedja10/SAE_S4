@@ -33,7 +33,7 @@ export const getViews = async (title) => {
 
 export const createArticle = async (title) => {
     try {
-        const popularity = getViews(title);
+        const popularity = await getViews(title);
         const newArticle = new Article({ title, popularity });
         return await newArticle.save();
     } catch (error) {
