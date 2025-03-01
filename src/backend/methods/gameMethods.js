@@ -159,29 +159,18 @@ export const changeArticleFront = async (req, res) => {
             return res.status(400).json({ error: "Aucun article actuel trouvé." });
         }
 
-        const game = await Game.findById(gameId);
-        const player = game.players.find(p => p.player_id.equals(playerId));
+        // Mise à jour directe avec `$push` et `$set`
+        const result = await Game.updateOne(
+            { _id: gameId, "players.player_id": playerId },
+            {
+                $set: { "players.$.current_article": articleId },
+                $addToSet: { "players.$.articles_visited": articleId }
+            }
+        );
 
-        if (!player) {
-            return res.status(404).json({ error: "Joueur introuvable." });
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ error: "Impossible de mettre à jour l'article du joueur." });
         }
-
-        // Vérifier que l'article existe (optionnel selon la logique de votre application)
-        if (!await articleExists(articleId)) {
-            return res.status(404).json({ error: "Article non trouvé." });
-        }
-
-        player.articles_visited = player.articles_visited || [];
-
-        // Ajouter l'article actuel à l'historique avant de le modifier
-        if (!player.articles_visited.includes(player.current_article)) {
-            player.articles_visited.push(player.current_article);
-        }
-
-        player.current_article = articleId;
-        player.articles_visited.push(articleId);
-
-        await game.save();
 
         return res.status(200).json({ message: "Article changé avec succès.", id_article: articleId });
 
