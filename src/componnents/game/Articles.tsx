@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import '../../style/game/Articles.css';
 import "../../backend/services/apiService.js";
 import { postRequest } from "../../backend/services/apiService.js";
+import { getApiUrl } from "../../utils/config";
 
 const Articles: React.FC = () => {
     const [visitedArticles, setVisitedArticles] = useState<string[]>([]);
@@ -9,7 +10,7 @@ const Articles: React.FC = () => {
     const [data, setData] = useState<any>(null);
 
     const fetchTargetArticles = async () => {
-        const data = await postRequest('http://localhost:3000/games/target-articles', {
+        const data = await postRequest(getApiUrl('/games/target-articles'), {
             id_game: "67b1f4c36fe85f560dd86791"
         });
         setData(data);
@@ -17,7 +18,7 @@ const Articles: React.FC = () => {
     };
 
     const postVisitedArticles = async () => {
-        const data = await postRequest('http://localhost:3000/games/articles', {
+        const data = await postRequest(getApiUrl('/games/articles'), {
             id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"
         });
         setData(data);

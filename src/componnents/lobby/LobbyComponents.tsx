@@ -1,37 +1,66 @@
 import Playerpicture from '/assets/playerPicture.png';
+import chatIcon from '/assets/chatIcon.svg';
 
-export const Player = (props: {player: string, self: boolean}) => {
-  return (
-    <div className="Player fade-in">
-      {!props.self ? <img className="playerPicture" src={Playerpicture} alt="X" style={{
-        height: '50px',
-      }}/> : null}
-      {props.player}
-      <ChatButton />
-    </div>
-  )
+interface PlayerProps {
+  player: {
+    id: string;
+    pseudo: string;
+    pp: string;
+    is_host: boolean;
+  };
+  self: boolean;
 }
 
-import chatIcon from '/assets/chatIcon.svg';
+export const Player = ({ player, self }: PlayerProps) => {
+  return (
+    <div className="Player fade-in">
+      {!self ? (
+        <img
+          className="playerPicture"
+          src={player.pp || Playerpicture}
+          alt="X"
+          style={{ height: '50px' }}
+        />
+      ) : null}
+      <div className="player-info">
+        {player.pseudo}
+        {player.is_host && <span className="host-badge">HOST</span>}
+      </div>
+      <ChatButton />
+    </div>
+  );
+};
 
 export const ChatButton = () => {
   return (
     <button className="ChatButton">
-      <img src={chatIcon} alt="X" style={{
-        height: '20px',
-      }}/>
+      <img src={chatIcon} alt="X" style={{ height: '20px' }} />
       <p>Chat</p>
     </button>
-  )
+  );
+};
+
+interface PlayerListProps {
+  players: Array<{
+    id: string;
+    pseudo: string;
+    pp: string;
+    is_host: boolean;
+  }>;
+  currentPlayerId?: string;
 }
 
-export const PlayerList = (props: { players: string[] }) => { // A voir ce que vous mettez pour le back
+export const PlayerList = ({ players, currentPlayerId }: PlayerListProps) => {
   return (
     <div className="PlayerList">
       <div className="LobbyTitle fade-in">LOBBY</div>
-      {props.players.map((player) => (
-        <Player player={player} self={false} /> // Afficher le bouton de chat
+      {players.map((player) => (
+        <Player
+          key={player.id}
+          player={player}
+          self={player.id === currentPlayerId}
+        />
       ))}
     </div>
-  )
-}
+  );
+};

@@ -1,9 +1,54 @@
-
-
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { NavLink } from 'react-router-dom'
 import '../../style/GameOption.css'
+import { Storage } from '../../utils/storage';
 
 function GameOption() {
+    const [gameCode, setGameCode] = useState('');
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    const handleJoinGame = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        if (!gameCode.trim()) {
+            setError('Please enter a game code');
+            return;
+        }
+
+        try {
+            const playerId = Storage.getPlayerId();
+            if (!playerId) {
+                setError('You must be logged in to join a game');
+                return;
+            }
+
+            const response = await fetch('/games/join', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    gameCode: gameCode.toUpperCase(),
+                    playerId
+                }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                setError(data.message || 'Failed to join game');
+                return;
+            }
+
+            Storage.setGameCode(gameCode.toUpperCase());
+            navigate(`/lobby/${gameCode.toUpperCase()}`);
+        } catch (error) {
+            console.error('Error joining game:', error);
+            setError('Failed to join game');
+        }
+    };
 
     return (
         <>
@@ -30,22 +75,26 @@ function GameOption() {
                             </defs>
                         </svg>
                     </div>
-
                 </div>
                 <div className="option">
                     <h2>JOIN YOUR FRIENDS</h2>
-                    <div className="join-btnDiv">
-                        <input type="text" className="join-btn" placeholder="ENTER THE CODE" name="code" />
-                            <svg className="topright topright2" width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
-                                <rect width="100" height="100" fill="url(#pattern0_111_8)" />
-                                <defs>
-                                    <pattern id="pattern0_111_8" patternContentUnits="objectBoundingBox" width="1" height="1">
-                                        <use xlinkHref="#image0_111_8" transform="scale(0.01)" />
-                                    </pattern>
-                                    <image id="image0_111_8" width="100" height="100" xlinkHref="data:image/png;base64,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" />
-                                </defs>
-                            </svg>
-                    </div>
+                    <form onSubmit={handleJoinGame} className="join-form">
+                        <div className="join-btnDiv">
+                            <input
+                                type="text"
+                                className="join-btn"
+                                placeholder="ENTER THE CODE"
+                                name="code"
+                                value={gameCode}
+                                onChange={(e) => setGameCode(e.target.value.toUpperCase())}
+                                maxLength={6}
+                            />
+                            <button type="submit" className="join-submit">
+                                JOIN
+                            </button>
+                        </div>
+                    </form>
+                    {error && <p className="error-message">{error}</p>}
                 </div>
             </section>
         </>

@@ -83,6 +83,22 @@
   justify-content: space-between;
 }
 
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.host-badge {
+  background-color: #E09D2D;
+  color: #FFFFFF;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
 .ChatButton {
   display: flex;
   align-items: center;
