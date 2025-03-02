@@ -7,8 +7,6 @@ import artifactRoutes from "../routes/artifactRoutes.js";
 import challengeRoutes from "../routes/challengeRoutes.js";
 import dotenv from "dotenv";
 import cors from 'cors';
-import Game from "../models/Game.js";
-import {WebSocketServer} from "ws";
 dotenv.config();
 
 const app = express();
