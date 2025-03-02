@@ -45,6 +45,37 @@ const WikiView: React.FC = () => {
     }
   }
 
+  const backArtifact = async () => {
+    try {
+      await postRequest("http://localhost:3000/games/back-artifact", {id_game: gameId, id_player: playerId});
+    } catch (e){
+      console.error("Erreur lors du backArtifact de wikiview : ", e);
+    }
+  }
+
+  const eraserArtifact = async () => {
+    try {
+      await postRequest("http://localhost:3000/games/eraser-artifact", {id_game: gameId, id_player: playerId});
+    } catch (e){
+      console.error("Erreur lors du eraserArtifact de wikiview : ", e);
+    }
+  }
+
+  const mineArtifact = async () => {
+    try {
+      await postRequest("http://localhost:3000/games/mine-artifact", {id_game: gameId, id_player: playerId});
+    } catch (e){
+      console.error("Erreur lors du mineArtifact de wikiview : ", e);
+    }
+  }
+
+  const disorienterArtifact = async () => {
+    try {
+      await postRequest("http://localhost:3000/games/disorienter-artifact", {id_game: gameId, id_player: playerId});
+    } catch (e){
+      console.error("Erreur lors du disorienterArtifact de wikiview : ", e);
+    }
+  }
 
 
   const handleTeleportClick = async () => {
@@ -52,9 +83,41 @@ const WikiView: React.FC = () => {
     const newTitle = await getCurrentArticle();
     if (newTitle) {
       setCurrentTitle(newTitle);
-      setHistory((prev) => [...prev, newTitle]);
     }
   };
+
+  const handleBackClick = async () => {
+    await backArtifact();
+    const newTitle = await getCurrentArticle();
+    if (newTitle) {
+      setCurrentTitle(newTitle);
+    }
+  };
+
+  const handleEraserClick = async () => {
+    await eraserArtifact();
+    const newTitle = await getCurrentArticle();
+    if (newTitle) {
+      setCurrentTitle(newTitle);
+    }
+  };
+
+  const handleMineClick = async () => {
+    await mineArtifact();
+    const newTitle = await getCurrentArticle();
+    if (newTitle) {
+      setCurrentTitle(newTitle);
+    }
+  };
+
+  const handleDisorienterClick = async () => {
+    await disorienterArtifact();
+    const newTitle = await getCurrentArticle();
+    if (newTitle) {
+      setCurrentTitle(newTitle);
+    }
+  };
+
 
 
   useEffect(() => {
@@ -123,16 +186,6 @@ const WikiView: React.FC = () => {
   };
 
 
-  const handleGoBack = () => {
-    if (history.length > 1) {
-      const newHistory = [...history];
-      newHistory.pop();
-      const previousTitle = newHistory[newHistory.length - 1];
-      setHistory(newHistory);
-      setCurrentTitle(previousTitle);
-    }
-  };
-
 
 
   return (
@@ -148,20 +201,13 @@ const WikiView: React.FC = () => {
         </div>
 
         {/* Intégration du composant Actions ici */}
-        <Actions onTeleport={handleTeleportClick} />
-
-        <div className="wiki-history">
-          <button onClick={handleGoBack} disabled={history.length <= 1} className="back-button">
-            ◀️ Article précédent
-          </button>
-
-          <h3>Historique des articles visités :</h3>
-          <ul>
-            {history.map((item, index) => (
-                <li key={index}>{item}</li>
-            ))}
-          </ul>
-        </div>
+        <Actions
+            onTeleport={handleTeleportClick}
+            onBack={handleBackClick}
+            onEraser={handleEraserClick}
+            onMine={handleMineClick}
+            onDisorienter={handleDisorienterClick}
+        />
       </div>
   );
 };
