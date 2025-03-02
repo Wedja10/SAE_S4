@@ -22,7 +22,6 @@ const Game: React.FC = () => {
       {title &&
         <main className="main-content">
           <WikiView />
-          <Actions />
         </main>
       }
 
