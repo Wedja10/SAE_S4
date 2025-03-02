@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import "../../style/game/WikiView.css";
-import { postRequest } from "../../backend/services/apiService.js";
+import {postRequest} from "../../backend/services/apiService.js";
 
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
@@ -14,11 +14,9 @@ const WikiView: React.FC = () => {
   // Fonction pour notifier la base de données lors de chaque changement d'article
   const updateArticleInDB = async (title: string) => {
     try {
-      // Étape 1 : Créer l'article
       const createdArticle = await postRequest("http://localhost:3000/articles/create-article", { title });
 
       if (createdArticle && createdArticle._id) {
-        // Étape 2 : Mettre à jour l'article courant du joueur
         await postRequest("http://localhost:3000/games/change", {
           gameId: gameId,
           playerId: playerId,
@@ -29,6 +27,22 @@ const WikiView: React.FC = () => {
       console.error("Erreur lors de la mise à jour de l'article dans la base de données :", error);
     }
   };
+
+  const getCurrentArticle = async() => {
+    try {
+      return await postRequest("http://localhost:3000/games/current-article", {id_game: gameId, id_player: playerId});
+    } catch (e){
+      console.error("Erreur lors du getCurrentArticle de wikiview : ", e);
+    }
+  }
+
+  const teleportArtifact = async () => {
+    try {
+      await postRequest("http://localhost:3000/games/teleporter-artifact", {id_game: gameId, id_player: playerId});
+    } catch (e){
+      console.error("Erreur lors du teleportArtifact de wikiview : ", e);
+    }
+  }
 
   useEffect(() => {
     const blockBackNavigation = () => {
@@ -96,15 +110,27 @@ const WikiView: React.FC = () => {
   };
 
 
-  const handleGoBack = () => {
+  // const handleGoBack = () => {
+  //   if (history.length > 1) {
+  //     const newHistory = [...history];
+  //     newHistory.pop();
+  //     const previousTitle = newHistory[newHistory.length - 1];
+  //     setHistory(newHistory);
+  //     setCurrentTitle(previousTitle);
+  //   }
+  // };
+
+  const handleGoTeleport = async () => {
     if (history.length > 1) {
-      const newHistory = [...history];
-      newHistory.pop();
-      const previousTitle = newHistory[newHistory.length - 1];
-      setHistory(newHistory);
-      setCurrentTitle(previousTitle);
+      await teleportArtifact();
+      const newTitle = await getCurrentArticle();
+      if (newTitle) {
+        setCurrentTitle(newTitle);
+        setHistory((prev) => [...prev, newTitle]);  // Mise à jour de l'historique
+      }
     }
   };
+
 
   return (
       <div className="wiki-container">
@@ -119,7 +145,7 @@ const WikiView: React.FC = () => {
         </div>
 
         <div className="wiki-history">
-          <button onClick={handleGoBack} disabled={history.length <= 1} className="back-button">
+          <button onClick={handleGoTeleport} disabled={history.length <= 1} className="back-button">
             ◀️ Article précédent
           </button>
 

@@ -63,6 +63,23 @@ export const getFoundTargetArticles = async (id_game, id_player) => {
     }
 };
 
+export const getCurrentArticle = async (req, res) => {
+    const {id_game, id_player} = req.body;
+
+    try {
+        const [game, player] = await gameAndPlayers(id_game, id_player);
+
+        const current = await Article.findById(player.current_article.toString());
+        if (!current) {
+            res.status(404).json({message: "Aucun article courant"});
+        }
+
+        res.status(200).json(current.title);
+    } catch (e){
+        console.error('Erreur dans getCurrentArticle',e);
+    }
+}
+
 // Récupérer tous les joueurs d'une partie spécifique
 export const getGamePlayers = async (req, res) => {
     try {
