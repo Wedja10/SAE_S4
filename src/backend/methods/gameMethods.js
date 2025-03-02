@@ -507,7 +507,6 @@ async function getAllLinks(title) {
         bllimit: "max",
         format: "json",
         blnamespace: 0,
-        origin: "*"
     };
     let allLinks = [];
 

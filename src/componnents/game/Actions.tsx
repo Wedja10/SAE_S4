@@ -1,16 +1,21 @@
 import React, {useEffect, useState} from "react";
 import '../../style/game/Actions.css';
-import { postRequest } from "../../backend/services/apiService.js";
-import { getApiUrl } from "../../utils/config";
+import {postRequest} from "../../backend/services/apiService.js";
+import {getApiUrl} from "../../utils/config";
 
 // 1. Définir les props attendues
 interface ActionsProps {
-    onTeleport: () => void;
+    onTeleport: () => void,
+    onBack: () => void,
+    onEraser: () => void,
+    onMine: () => void,
+    onDisorienter: () => void,
+    onSnail: () => void
 }
 
 // 2. Récupérer les props en argument
-const Actions: React.FC<ActionsProps> = ({ onTeleport }) => {
-    console.log('Props reçues par Actions:', { onTeleport });
+const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, onDisorienter, onSnail}) => {
+    console.log('Props reçues par Actions:', {onTeleport});
     const [artifacts, setArtifacts] = useState<string[]>([]);
 
     const fetchArtifacts = async () => {
@@ -35,6 +40,16 @@ const Actions: React.FC<ActionsProps> = ({ onTeleport }) => {
                         onClick={() => {
                             if (artifact === "Teleporter") {
                                 onTeleport();
+                            } else if (artifact === "Backtrack") {
+                                onBack();
+                            } else if (artifact === "Eraser") {
+                                onEraser();
+                            } else if (artifact === "Mine") {
+                                onMine();
+                            } else if (artifact === "Disorienter") {
+                                onDisorienter();
+                            } else if(artifact === "Snail") {
+                                onSnail();
                             }
                         }}
                     >
