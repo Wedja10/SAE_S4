@@ -14,7 +14,6 @@ import challengeRoutes from "../routes/challengeRoutes.js";
 import dotenv from "dotenv";
 import cors from 'cors';
 import Game from "../models/Game.js";
-import Player from "../models/Player.js";
 import {WebSocketServer} from "ws";
 
 dotenv.config();
