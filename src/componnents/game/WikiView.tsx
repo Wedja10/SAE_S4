@@ -8,6 +8,7 @@ const WikiView: React.FC = () => {
   const [wikiContent, setWikiContent] = useState<string>("");
   const [history, setHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isBlocked, setIsBlocked] = useState<boolean>(false);
 
   const gameId = "67b1f4c36fe85f560dd86791"; // Exemple, tu devras le passer dynamiquement selon ta logique
   const playerId = "67a7bc84385c3dc88d87a747"; // Idem ici
@@ -118,7 +119,12 @@ const WikiView: React.FC = () => {
     }
   };
 
-
+  const handleSnailClick = async() => {
+    setIsBlocked(true);
+    setTimeout(() => {
+      setIsBlocked(false);
+    }, 10000);
+  };
 
   useEffect(() => {
     const blockBackNavigation = () => {
@@ -176,6 +182,11 @@ const WikiView: React.FC = () => {
   }
 
   const handleLinkClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if(isBlocked){
+      event.preventDefault();
+      alert("Les liens sont temporairement désactivés");
+      return;
+    }
     const link = (event.target as HTMLElement).closest("a");
     if (link && link.href.includes("/wiki/")) {
       event.preventDefault();
@@ -184,7 +195,6 @@ const WikiView: React.FC = () => {
       updateArticleInDB(newTitle);  // Création ici pour les nouveaux articles cliqués
     }
   };
-
 
 
 
@@ -207,6 +217,7 @@ const WikiView: React.FC = () => {
             onEraser={handleEraserClick}
             onMine={handleMineClick}
             onDisorienter={handleDisorienterClick}
+            onSnail={handleSnailClick}
         />
       </div>
   );

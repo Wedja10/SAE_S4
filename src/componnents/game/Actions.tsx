@@ -9,11 +9,12 @@ interface ActionsProps {
     onBack: () => void,
     onEraser: () => void,
     onMine: () => void,
-    onDisorienter: () => void
+    onDisorienter: () => void,
+    onSnail: () => void
 }
 
 // 2. Récupérer les props en argument
-const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, onDisorienter}) => {
+const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, onDisorienter, onSnail}) => {
     console.log('Props reçues par Actions:', {onTeleport});
     const [artifacts, setArtifacts] = useState<string[]>([]);
 
@@ -47,6 +48,8 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
                                 onMine();
                             } else if (artifact === "Disorienter") {
                                 onDisorienter();
+                            } else if(artifact === "Snail") {
+                                onSnail();
                             }
                         }}
                     >
