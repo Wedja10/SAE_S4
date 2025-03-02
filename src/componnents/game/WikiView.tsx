@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from "react";
 import "../../style/game/WikiView.css";
 import {postRequest} from "../../backend/services/apiService.js";
+import Actions from "./Actions.tsx";
 
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
@@ -43,6 +44,18 @@ const WikiView: React.FC = () => {
       console.error("Erreur lors du teleportArtifact de wikiview : ", e);
     }
   }
+
+
+
+  const handleTeleportClick = async () => {
+    await teleportArtifact();
+    const newTitle = await getCurrentArticle();
+    if (newTitle) {
+      setCurrentTitle(newTitle);
+      setHistory((prev) => [...prev, newTitle]);
+    }
+  };
+
 
   useEffect(() => {
     const blockBackNavigation = () => {
@@ -110,26 +123,16 @@ const WikiView: React.FC = () => {
   };
 
 
-  // const handleGoBack = () => {
-  //   if (history.length > 1) {
-  //     const newHistory = [...history];
-  //     newHistory.pop();
-  //     const previousTitle = newHistory[newHistory.length - 1];
-  //     setHistory(newHistory);
-  //     setCurrentTitle(previousTitle);
-  //   }
-  // };
-
-  const handleGoTeleport = async () => {
+  const handleGoBack = () => {
     if (history.length > 1) {
-      await teleportArtifact();
-      const newTitle = await getCurrentArticle();
-      if (newTitle) {
-        setCurrentTitle(newTitle);
-        setHistory((prev) => [...prev, newTitle]);  // Mise à jour de l'historique
-      }
+      const newHistory = [...history];
+      newHistory.pop();
+      const previousTitle = newHistory[newHistory.length - 1];
+      setHistory(newHistory);
+      setCurrentTitle(previousTitle);
     }
   };
+
 
 
   return (
@@ -144,8 +147,11 @@ const WikiView: React.FC = () => {
           )}
         </div>
 
+        {/* Intégration du composant Actions ici */}
+        <Actions onTeleport={handleTeleportClick} />
+
         <div className="wiki-history">
-          <button onClick={handleGoTeleport} disabled={history.length <= 1} className="back-button">
+          <button onClick={handleGoBack} disabled={history.length <= 1} className="back-button">
             ◀️ Article précédent
           </button>
 
