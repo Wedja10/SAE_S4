@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import ArtefactInfo from '/assets/Artefacts/ArtefactInfo.svg';
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import descriptionData from "../../../public/assets/Artefacts/description.json";
 
 interface StartButtonProps {
