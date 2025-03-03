@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import "../../style/game/WikiView.css";
-import {postRequest} from "../../backend/services/apiService.js";
+import { postRequest } from "../../backend/services/apiService.js";
 import {getApiUrl} from "../../utils/config";
 import Actions from "./Actions.tsx";
 import { Storage } from "../../utils/storage";
