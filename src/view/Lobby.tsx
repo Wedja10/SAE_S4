@@ -148,11 +148,11 @@ const Lobby: React.FC = () => {
         });
         
         // Check if current user is host
-        const isCurrentPlayerHost = normalizedPlayers.some(p => p.id === currentPlayerId && p.is_host);
+        const isCurrentPlayerHost = normalizedPlayers.some((p: { id: string; is_host: any; }) => p.id === currentPlayerId && p.is_host);
         setIsHost(isCurrentPlayerHost);
 
         // Send join event through WebSocket
-        const currentPlayer = normalizedPlayers.find(p => p.id === currentPlayerId);
+        const currentPlayer = normalizedPlayers.find((p: { id: string; }) => p.id === currentPlayerId);
         if (currentPlayer) {
           ws.sendEvent({
             type: 'player_join',

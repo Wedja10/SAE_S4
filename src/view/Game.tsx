@@ -1,7 +1,6 @@
 import '../style/game/Game.css';
 import Articles from "../componnents/game/Articles";
 import WikiView from "../componnents/game/WikiView";
-import Actions from "../componnents/game/Actions";
 import Players from "../componnents/game/Players";
 import Chat from "../componnents/game/Chat";
 

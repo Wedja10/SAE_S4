@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 const Articles: React.FC = () => {
     const [visitedArticles, setVisitedArticles] = useState<string[]>([]);
     const [articlesToFind, setArticlesToFind] = useState<string[]>([]);
-    const [data, setData] = useState<any>(null);
+    const [setData] = useState<any>(null);
     const navigate = useNavigate();
 
     // Get dynamic IDs from storage
