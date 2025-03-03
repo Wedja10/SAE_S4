@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
   const [wikiContent, setWikiContent] = useState<string>("");
-  const [history, setHistory] = useState<string[]>([]);
+  const [, setHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const navigate = useNavigate();

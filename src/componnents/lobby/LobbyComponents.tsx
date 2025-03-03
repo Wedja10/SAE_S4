@@ -11,7 +11,7 @@ interface PlayerProps {
   self: boolean;
 }
 
-export const Player = ({ player, self }: PlayerProps) => {
+export const Player = ({ player }: PlayerProps) => {
   return (
     <div className="Player fade-in">
       <img
