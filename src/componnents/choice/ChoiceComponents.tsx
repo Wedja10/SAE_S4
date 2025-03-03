@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { Storage } from "../../utils/storage";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const Multi = () => {
   const navigate = useNavigate();

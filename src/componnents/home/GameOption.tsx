@@ -7,7 +7,35 @@ import { Storage } from '../../utils/storage';
 function GameOption() {
     const [gameCode, setGameCode] = useState('');
     const [error, setError] = useState('');
+    const [isCreatingPlayer, setIsCreatingPlayer] = useState(false);
     const navigate = useNavigate();
+
+    // Create a player if one doesn't exist
+    const ensurePlayer = async () => {
+        const playerId = Storage.getPlayerId();
+        if (playerId) return playerId;
+
+        try {
+            setIsCreatingPlayer(true);
+            const response = await fetch('http://localhost:5000/players/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
+
+            Storage.setPlayerId(data.id);
+            return data.id;
+        } catch (error) {
+            console.error('Error creating player:', error);
+            throw error;
+        } finally {
+            setIsCreatingPlayer(false);
+        }
+    };
 
     const handleJoinGame = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,13 +47,10 @@ function GameOption() {
         }
 
         try {
-            const playerId = Storage.getPlayerId();
-            if (!playerId) {
-                setError('You must be logged in to join a game');
-                return;
-            }
+            // First ensure we have a player
+            const playerId = await ensurePlayer();
 
-            const response = await fetch('/games/join', {
+            const response = await fetch('http://localhost:5000/games/join', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -38,7 +63,12 @@ function GameOption() {
 
             if (!response.ok) {
                 const data = await response.json();
-                setError(data.message || 'Failed to join game');
+                if (data.error === 'INVALID_PLAYER') {
+                    Storage.clear(); // Clear invalid credentials
+                    setError('Failed to create player. Please try again.');
+                } else {
+                    setError(data.message || 'Failed to join game');
+                }
                 return;
             }
 
@@ -46,7 +76,7 @@ function GameOption() {
             navigate(`/lobby/${gameCode.toUpperCase()}`);
         } catch (error) {
             console.error('Error joining game:', error);
-            setError('Failed to join game');
+            setError('Failed to join game. Please try again.');
         }
     };
 
@@ -89,8 +119,8 @@ function GameOption() {
                                 onChange={(e) => setGameCode(e.target.value.toUpperCase())}
                                 maxLength={6}
                             />
-                            <button type="submit" className="join-submit">
-                                JOIN
+                            <button type="submit" className="join-submit" disabled={isCreatingPlayer}>
+                                {isCreatingPlayer ? 'JOINING...' : 'JOIN'}
                             </button>
                         </div>
                     </form>

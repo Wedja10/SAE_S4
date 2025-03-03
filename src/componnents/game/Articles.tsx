@@ -2,33 +2,50 @@ import React, { useEffect, useState } from "react";
 import '../../style/game/Articles.css';
 import "../../backend/services/apiService.js";
 import { postRequest } from "../../backend/services/apiService.js";
+import { getApiUrl } from "../../utils/config";
+import { Storage } from "../../utils/storage";
+import { useNavigate } from "react-router-dom";
 
 const Articles: React.FC = () => {
     const [visitedArticles, setVisitedArticles] = useState<string[]>([]);
     const [articlesToFind, setArticlesToFind] = useState<string[]>([]);
     const [data, setData] = useState<any>(null);
+    const navigate = useNavigate();
 
-    const fetchTargetArticles = async () => {
-        const data = await postRequest('http://localhost:3000/games/target-articles', {
-            id_game: "67b1f4c36fe85f560dd86791"
-        });
-        setData(data);
-        setArticlesToFind(data);
-    };
-
-    const postVisitedArticles = async () => {
-        const data = await postRequest('http://localhost:3000/games/articles', {
-            id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"
-        });
-        setData(data);
-        setVisitedArticles(data);
-    };
+    // Get dynamic IDs from storage
+    const gameId = Storage.getGameId();
+    const playerId = Storage.getPlayerId();
 
     useEffect(() => {
-        fetchTargetArticles();
-        postVisitedArticles();
-    }, []);
+        // Redirect to home if no game ID or player ID
+        if (!gameId || !playerId) {
+            navigate('/');
+            return;
+        }
 
+        const fetchData = async () => {
+            try {
+                // Fetch target articles
+                const targetData = await postRequest(getApiUrl('/games/target-articles'), {
+                    id_game: gameId
+                });
+                setData(targetData);
+                setArticlesToFind(targetData);
+
+                // Fetch visited articles
+                const visitedData = await postRequest(getApiUrl('/games/articles'), {
+                    id_game: gameId,
+                    id_player: playerId
+                });
+                setData(visitedData);
+                setVisitedArticles(visitedData);
+            } catch (error) {
+                console.error('Error fetching articles:', error);
+            }
+        };
+
+        fetchData();
+    }, [gameId, playerId]);
 
     return (
         <div className="articles-container fade-in">

@@ -14,14 +14,18 @@ interface PlayerProps {
 export const Player = ({ player, self }: PlayerProps) => {
   return (
     <div className="Player fade-in">
-      {!self ? (
-        <img
-          className="playerPicture"
-          src={player.pp || Playerpicture}
-          alt="X"
-          style={{ height: '50px' }}
-        />
-      ) : null}
+      <img
+        className="playerPicture"
+        src={player.pp || Playerpicture}
+        alt={player.pseudo}
+        style={{
+          height: '50px',
+          width: '50px',
+          borderRadius: '50%',
+          objectFit: 'cover',
+          border: player.is_host ? '2px solid #E09D2D' : '2px solid #FFFFFF'
+        }}
+      />
       <div className="player-info">
         {player.pseudo}
         {player.is_host && <span className="host-badge">HOST</span>}
