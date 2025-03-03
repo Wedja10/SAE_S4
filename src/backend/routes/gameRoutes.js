@@ -13,7 +13,8 @@ import {
     dictatorArtifact,
     teleporterArtifact,
     getTargetArticles,
-    changeArticleFront
+    changeArticleFront,
+    getCurrentArticle
 } from "../methods/gameMethods.js";
 import Game from "../models/Game.js";
 
@@ -56,6 +57,7 @@ router.get("/lobby/:gameCode", async (req, res) => {
 });
 
 router.post("/players", getGamePlayers);
+router.post("/current-article", getCurrentArticle);
 router.post('/articles', getVisitedArticlesPlayer);
 router.post('/target-articles', getTargetArticles);
 router.post('/artifacts', getArticfactPlayer);

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import "../../style/game/WikiView.css";
+import {postRequest} from "../../backend/services/apiService.js";
 
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
@@ -7,17 +8,55 @@ const WikiView: React.FC = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const gameId = "67b1f4c36fe85f560dd86791"; // Exemple, tu devras le passer dynamiquement selon ta logique
+  const playerId = "67a7bc84385c3dc88d87a747"; // Idem ici
+
+  // Fonction pour notifier la base de données lors de chaque changement d'article
+  const updateArticleInDB = async (title: string) => {
+    try {
+      const createdArticle = await postRequest("http://localhost:3000/articles/create-article", { title });
+
+      if (createdArticle && createdArticle._id) {
+        await postRequest("http://localhost:3000/games/change", {
+          gameId: gameId,
+          playerId: playerId,
+          articleId: createdArticle._id,
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de l'article dans la base de données :", error);
+    }
+  };
+
+  const getCurrentArticle = async() => {
+    try {
+      return await postRequest("http://localhost:3000/games/current-article", {id_game: gameId, id_player: playerId});
+    } catch (e){
+      console.error("Erreur lors du getCurrentArticle de wikiview : ", e);
+    }
+  }
+
+  const teleportArtifact = async () => {
+    try {
+      await postRequest("http://localhost:3000/games/teleporter-artifact", {id_game: gameId, id_player: playerId});
+    } catch (e){
+      console.error("Erreur lors du teleportArtifact de wikiview : ", e);
+    }
+  }
+
   useEffect(() => {
     const blockBackNavigation = () => {
       window.history.pushState(null, "", window.location.href);
     };
 
-    // Empêche la navigation arrière dès le montage
     blockBackNavigation();
     window.addEventListener("popstate", blockBackNavigation);
 
     if (!currentTitle) {
-      getRandomWikipediaTitle().then(setCurrentTitle).catch(console.error);
+      getRandomWikipediaTitle().then((title) => {
+        setCurrentTitle(title);
+        updateArticleInDB(title);  // Création uniquement au tout début
+      }).catch(console.error);
     } else {
       fetchWikiContent(currentTitle);
     }
@@ -26,6 +65,7 @@ const WikiView: React.FC = () => {
       window.removeEventListener("popstate", blockBackNavigation);
     };
   }, [currentTitle]);
+
 
   async function getRandomWikipediaTitle(): Promise<string> {
     const url = "https://fr.wikipedia.org/api/rest_v1/page/random/title";
@@ -65,27 +105,38 @@ const WikiView: React.FC = () => {
       event.preventDefault();
       const newTitle = decodeURIComponent(link.href.split("/wiki/")[1]);
       setCurrentTitle(newTitle);
+      updateArticleInDB(newTitle);  // Création ici pour les nouveaux articles cliqués
     }
   };
 
-  const handleGoBack = () => {
+
+  // const handleGoBack = () => {
+  //   if (history.length > 1) {
+  //     const newHistory = [...history];
+  //     newHistory.pop();
+  //     const previousTitle = newHistory[newHistory.length - 1];
+  //     setHistory(newHistory);
+  //     setCurrentTitle(previousTitle);
+  //   }
+  // };
+
+  const handleGoTeleport = async () => {
     if (history.length > 1) {
-      const newHistory = [...history];
-      newHistory.pop(); // Retire le dernier (article actuel)
-      const previousTitle = newHistory[newHistory.length - 1]; // Récupère l'article précédent
-      setHistory(newHistory); // Met à jour l'historique
-      setCurrentTitle(previousTitle); // Charge l'article précédent
+      await teleportArtifact();
+      const newTitle = await getCurrentArticle();
+      if (newTitle) {
+        setCurrentTitle(newTitle);
+        setHistory((prev) => [...prev, newTitle]);  // Mise à jour de l'historique
+      }
     }
   };
+
 
   return (
       <div className="wiki-container">
         <h2 className="wiki-title">{currentTitle}</h2>
 
-        <div
-            className={`wiki-content ${isLoading ? "loading" : "fade-in"}`}
-            onClick={handleLinkClick}
-        >
+        <div className={`wiki-content ${isLoading ? "loading" : "fade-in"}`} onClick={handleLinkClick}>
           {isLoading ? (
               <div className="loading-spinner">Chargement...</div>
           ) : (
@@ -94,11 +145,7 @@ const WikiView: React.FC = () => {
         </div>
 
         <div className="wiki-history">
-          <button
-              onClick={handleGoBack}
-              disabled={history.length <= 1}
-              className="back-button"
-          >
+          <button onClick={handleGoTeleport} disabled={history.length <= 1} className="back-button">
             ◀️ Article précédent
           </button>
 
