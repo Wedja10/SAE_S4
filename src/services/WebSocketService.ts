@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { getWsUrl } from '../utils/config';
 
 export type LobbyEvent = {
-  type: 'player_join' | 'player_leave' | 'settings_update' | 'game_start' | 'chat_message';
+  type: 'player_join' | 'player_leave' | 'settings_update' | 'game_start' | 'chat_message' | 'host_change';
   data: any;
 };
 

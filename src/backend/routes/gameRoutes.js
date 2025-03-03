@@ -16,6 +16,7 @@ import {
     changeArticleFront,
     getCurrentArticle
 } from "../methods/gameMethods.js";
+import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
 
 const router = express.Router();
@@ -70,5 +71,6 @@ router.post("/eraser-artifact", eraserArtifact);
 router.post("/disorienter-artifact", disorienterArtifact);
 router.post("/dictator-artifact", dictatorArtifact);
 router.post("/teleporter-artifact", teleporterArtifact);
+router.post("/join", joinLobby);
 
 export default router;

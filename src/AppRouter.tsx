@@ -11,7 +11,7 @@ const AppRouter: React.FC = () => {
         <Router>
             <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/game" element={<Game />} />
+                <Route path="/game/:gameCode" element={<Game />} />
                 <Route path="/lobby/:gameCode" element={<Lobby />} />
                 <Route path="/lobbySolo" element={<LobbySolo />} />
                 <Route path={"/choice"} element={<Choice />} />

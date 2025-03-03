@@ -78,7 +78,8 @@ export const joinLobby = async (req, res) => {
         }
 
         // Vérifier si le joueur est déjà dans le jeu
-        if (game.players.some(p => p.player_id.equals(playerId))) {
+        const playerObjectId = new mongoose.Types.ObjectId(playerId);
+        if (game.players.some(p => p.player_id.toString() === playerObjectId.toString())) {
             return res.status(400).json({ message: "Joueur déjà dans le lobby" });
         }
 

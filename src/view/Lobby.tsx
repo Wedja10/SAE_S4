@@ -5,7 +5,7 @@ import { ArtefactsList, OptionsPanel, StartButton } from "../componnents/lobby/A
 import { useEffect, useState } from "react";
 import { useWebSocket, type LobbyEvent } from "../services/WebSocketService";
 import { useParams, useNavigate } from "react-router-dom";
-import { Storage, StorageKeys } from "../utils/storage";
+import { Storage } from "../utils/storage";
 
 interface LobbySettings {
   max_players: number | null;
@@ -15,8 +15,15 @@ interface LobbySettings {
   allow_join: boolean;
 }
 
+interface Player {
+  id: string;
+  pseudo: string;
+  pp: string;
+  is_host: boolean;
+}
+
 const Lobby: React.FC = () => {
-  const [players, setPlayers] = useState<Array<{ id: string; pseudo: string; pp: string; is_host: boolean }>>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [settings, setSettings] = useState<LobbySettings>({
     max_players: null,
     time_limit: null,
@@ -42,43 +49,66 @@ const Lobby: React.FC = () => {
 
   const artefacts: string[] = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"];
 
+  const normalizePlayerId = (player: any): string => {
+    if (typeof player.id === 'string') return player.id;
+    if (typeof player.player_id === 'string') return player.player_id;
+    if (player.player_id?._id) return player.player_id._id;
+    if (player.player_id) return player.player_id.toString();
+    return '';
+  };
+
+  const normalizePlayer = (player: any): Player => {
+    return {
+      id: normalizePlayerId(player),
+      pseudo: player.pseudo || '',
+      pp: player.pp || '',
+      is_host: !!player.is_host
+    };
+  };
+
   const ws = useWebSocket((event: LobbyEvent) => {
     console.log('Received WebSocket event:', event);
     switch (event.type) {
       case 'player_join':
         setPlayers(prevPlayers => {
-          // Make sure the player has the correct structure
-          const newPlayer = event.data.player;
-          if (!newPlayer.id && newPlayer.player_id) {
-            newPlayer.id = typeof newPlayer.player_id === 'string' ? newPlayer.player_id : newPlayer.player_id.toString();
+          const newPlayer = normalizePlayer(event.data.player);
+          
+          // Check if player already exists
+          const playerExists = prevPlayers.some((p: Player) => p.id === newPlayer.id);
+          if (playerExists) {
+            return prevPlayers; // Don't add duplicate player
           }
           
           const newPlayers = [...prevPlayers, newPlayer];
           // Update host status when players change
-          const isCurrentPlayerHost = newPlayers.some(p => p.id === currentPlayerId && p.is_host);
+          const isCurrentPlayerHost = newPlayers.some((p: Player) => p.id === currentPlayerId && p.is_host);
           setIsHost(isCurrentPlayerHost);
           return newPlayers;
         });
         break;
       case 'player_leave':
         setPlayers(prevPlayers => {
-          const newPlayers = prevPlayers.filter(p => p.id !== event.data.playerId);
+          const newPlayers = prevPlayers.filter((p: Player) => p.id !== event.data.playerId);
           // Update host status when players change
-          const isCurrentPlayerHost = newPlayers.some(p => p.id === currentPlayerId && p.is_host);
+          const isCurrentPlayerHost = newPlayers.some((p: Player) => p.id === currentPlayerId && p.is_host);
           setIsHost(isCurrentPlayerHost);
           return newPlayers;
         });
         break;
-      case 'settings_update':
-        console.log('Received settings update:', event.data.settings);
-        setSettings(prevSettings => {
-          const newSettings = {
-            ...prevSettings,
-            ...event.data.settings
-          };
-          console.log('Updated settings:', newSettings);
-          return newSettings;
+      case 'host_change':
+        setPlayers(prevPlayers => {
+          return prevPlayers.map((player: Player) => ({
+            ...player,
+            is_host: player.id === event.data.newHostId
+          }));
         });
+        setIsHost(currentPlayerId === event.data.newHostId);
+        break;
+      case 'settings_update':
+        setSettings(prevSettings => ({
+          ...prevSettings,
+          ...event.data.settings
+        }));
         break;
       case 'game_start':
         navigate(`/game/${gameCode}`);
@@ -104,8 +134,11 @@ const Lobby: React.FC = () => {
         
         const data = await response.json();
         console.log('Lobby data received:', data);
-        console.log('Current player ID:', currentPlayerId);
-        setPlayers(data.players || []);
+        
+        // Normalize all players
+        const normalizedPlayers = (data.players || []).map(normalizePlayer);
+        setPlayers(normalizedPlayers);
+        
         setSettings(data.settings || {
           max_players: null,
           time_limit: null,
@@ -115,33 +148,23 @@ const Lobby: React.FC = () => {
         });
         
         // Check if current user is host
-        console.log('Players from API:', data.players);
-        const isCurrentPlayerHost = (data.players || []).some(
-          (p: any) => {
-            console.log('Checking player:', p);
-            // Check both id and player_id fields
-            const matchesId = p.id === currentPlayerId || 
-                             (p.player_id && (p.player_id === currentPlayerId || 
-                                             p.player_id._id === currentPlayerId || 
-                                             p.player_id.toString() === currentPlayerId));
-            console.log('Matches ID:', matchesId, 'Is host:', p.is_host);
-            return matchesId && p.is_host;
-          }
-        );
-        console.log('Is current player host?', isCurrentPlayerHost);
+        const isCurrentPlayerHost = normalizedPlayers.some(p => p.id === currentPlayerId && p.is_host);
         setIsHost(isCurrentPlayerHost);
 
-        // Join the lobby via WebSocket
-        ws.sendEvent({
-          type: 'player_join',
-          data: {
-            gameCode,
-            player: data.players?.find((p: { id: string }) => p.id === currentPlayerId)
-          }
-        });
+        // Send join event through WebSocket
+        const currentPlayer = normalizedPlayers.find(p => p.id === currentPlayerId);
+        if (currentPlayer) {
+          ws.sendEvent({
+            type: 'player_join',
+            data: {
+              gameCode,
+              player: currentPlayer
+            }
+          });
+        }
+
       } catch (error) {
         console.error('Error fetching lobby data:', error);
-        // Don't navigate away immediately, show error state
         setError('Failed to load lobby data. Please try again.');
       }
     };
@@ -166,7 +189,6 @@ const Lobby: React.FC = () => {
 
   const handleSettingsUpdate = (newSettings: LobbySettings) => {
     if (isHost && gameCode) {
-      console.log('Sending settings update:', newSettings);
       ws.sendEvent({
         type: 'settings_update',
         data: {

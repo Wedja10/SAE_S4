@@ -1,7 +1,10 @@
 import React, {useEffect, useState} from "react";
 import "../../style/game/WikiView.css";
 import {postRequest} from "../../backend/services/apiService.js";
+import {getApiUrl} from "../../utils/config";
 import Actions from "./Actions.tsx";
+import { Storage } from "../../utils/storage";
+import { useNavigate } from "react-router-dom";
 
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
@@ -9,17 +12,27 @@ const WikiView: React.FC = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
+  const navigate = useNavigate();
 
-  const gameId = "67b1f4c36fe85f560dd86791"; // Exemple, tu devras le passer dynamiquement selon ta logique
-  const playerId = "67a7bc84385c3dc88d87a747"; // Idem ici
+  // Get dynamic IDs from storage
+  const gameId = Storage.getGameId();
+  const playerId = Storage.getPlayerId();
+
+  useEffect(() => {
+    // Redirect to home if no game ID or player ID
+    if (!gameId || !playerId) {
+      navigate('/');
+      return;
+    }
+  }, [gameId, playerId]);
 
   // Fonction pour notifier la base de données lors de chaque changement d'article
   const updateArticleInDB = async (title: string) => {
     try {
-      const createdArticle = await postRequest("http://localhost:3000/articles/create-article", { title });
+      const createdArticle = await postRequest(getApiUrl("/articles/create-article"), { title });
 
       if (createdArticle && createdArticle._id) {
-        await postRequest("http://localhost:3000/games/change", {
+        await postRequest(getApiUrl("/games/change"), {
           gameId: gameId,
           playerId: playerId,
           articleId: createdArticle._id,
@@ -32,7 +45,7 @@ const WikiView: React.FC = () => {
 
   const getCurrentArticle = async() => {
     try {
-      return await postRequest("http://localhost:3000/games/current-article", {id_game: gameId, id_player: playerId});
+      return await postRequest(getApiUrl("/games/current-article"), {id_game: gameId, id_player: playerId});
     } catch (e){
       console.error("Erreur lors du getCurrentArticle de wikiview : ", e);
     }
@@ -40,7 +53,7 @@ const WikiView: React.FC = () => {
 
   const teleportArtifact = async () => {
     try {
-      await postRequest("http://localhost:3000/games/teleporter-artifact", {id_game: gameId, id_player: playerId});
+      await postRequest(getApiUrl("/games/teleporter-artifact"), {id_game: gameId, id_player: playerId});
     } catch (e){
       console.error("Erreur lors du teleportArtifact de wikiview : ", e);
     }
@@ -48,7 +61,7 @@ const WikiView: React.FC = () => {
 
   const backArtifact = async () => {
     try {
-      await postRequest("http://localhost:3000/games/back-artifact", {id_game: gameId, id_player: playerId});
+      await postRequest(getApiUrl("/games/back-artifact"), {id_game: gameId, id_player: playerId});
     } catch (e){
       console.error("Erreur lors du backArtifact de wikiview : ", e);
     }
@@ -56,7 +69,7 @@ const WikiView: React.FC = () => {
 
   const eraserArtifact = async () => {
     try {
-      await postRequest("http://localhost:3000/games/eraser-artifact", {id_game: gameId, id_player: playerId});
+      await postRequest(getApiUrl("/games/eraser-artifact"), {id_game: gameId, id_player: playerId});
     } catch (e){
       console.error("Erreur lors du eraserArtifact de wikiview : ", e);
     }
@@ -64,7 +77,7 @@ const WikiView: React.FC = () => {
 
   const mineArtifact = async () => {
     try {
-      await postRequest("http://localhost:3000/games/mine-artifact", {id_game: gameId, id_player: playerId});
+      await postRequest(getApiUrl("/games/mine-artifact"), {id_game: gameId, id_player: playerId});
     } catch (e){
       console.error("Erreur lors du mineArtifact de wikiview : ", e);
     }
@@ -72,7 +85,7 @@ const WikiView: React.FC = () => {
 
   const disorienterArtifact = async () => {
     try {
-      await postRequest("http://localhost:3000/games/disorienter-artifact", {id_game: gameId, id_player: playerId});
+      await postRequest(getApiUrl("/games/disorienter-artifact"), {id_game: gameId, id_player: playerId});
     } catch (e){
       console.error("Erreur lors du disorienterArtifact de wikiview : ", e);
     }
