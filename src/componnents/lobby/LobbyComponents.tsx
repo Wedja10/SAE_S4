@@ -1,5 +1,6 @@
 import Playerpicture from '/assets/playerPicture.png';
 import chatIcon from '/assets/chatIcon.svg';
+import {useState} from "react";
 
 interface PlayerProps {
   player: {
@@ -9,9 +10,25 @@ interface PlayerProps {
     is_host: boolean;
   };
   self: boolean;
+  onChatClick: () => void;
 }
 
-export const Player = ({ player }: PlayerProps) => {
+interface ChatButtonProps {
+  onClick: () => void;
+}
+
+export const ChatButton = ({ onClick }: ChatButtonProps) => {
+  return (
+    <button className="ChatButton" onClick={onClick}>
+      <img src={chatIcon} alt="X" style={{ height: '20px' }} />
+      <p>Chat</p>
+    </button>
+  );
+};
+
+export const Player = ({ player, onChatClick }: PlayerProps) => {
+  const currentUserId = localStorage.getItem('playerId');
+
   return (
     <div className="Player fade-in">
       <img
@@ -30,17 +47,8 @@ export const Player = ({ player }: PlayerProps) => {
         {player.pseudo}
         {player.is_host && <span className="host-badge">HOST</span>}
       </div>
-      <ChatButton />
+      {currentUserId !== player.id && <ChatButton onClick={onChatClick} />}
     </div>
-  );
-};
-
-export const ChatButton = () => {
-  return (
-    <button className="ChatButton">
-      <img src={chatIcon} alt="X" style={{ height: '20px' }} />
-      <p>Chat</p>
-    </button>
   );
 };
 
@@ -55,16 +63,61 @@ interface PlayerListProps {
 }
 
 export const PlayerList = ({ players, currentPlayerId }: PlayerListProps) => {
-  return (
-    <div className="PlayerList">
-      <div className="LobbyTitle fade-in">LOBBY</div>
-      {players.map((player) => (
-        <Player
-          key={player.id}
-          player={player}
-          self={player.id === currentPlayerId}
-        />
-      ))}
-    </div>
-  );
+
+  const [chatOpen, setChatOpen] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleChatClick = (playerName: string) => { // Gestion des clicks sur ChatButton ou sur CloseChatbox
+    if (chatOpen === '') {
+      setChatOpen(playerName);
+    } else {
+      setChatOpen('');
+    }
+  };
+
+  const handleTypeMessage = () => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    setMessage(document.querySelector('.textInput').value);
+  };
+
+  const handleSendMessage = () => {
+    console.log('Message envoyé : ' + message);
+  }
+
+  if (chatOpen === '') { // Affichage de la liste des joueurs
+    return (
+      <div className="PlayerList">
+        <div className="LobbyTitle fade-in">LOBBY</div>
+        {players.map((player) => (
+          <Player
+            key={player.id}
+            player={player}
+            self={player.id === currentPlayerId}
+            onChatClick={() => handleChatClick(player.pseudo)}
+          />
+        ))}
+      </div>
+    );
+  } else { // Affichage de la boite de chat du joueur
+    return (
+      <div className="PrivateChatbox">
+        <div className="ChatboxHeader">
+          <img src={"/public/assets/closeChatbox.svg"} alt="X" onClick={() => handleChatClick('')} style={{
+            cursor: 'pointer',
+            height: '25px'
+          }}/>
+          <p>{chatOpen}</p>
+        </div>
+        <div className="ChatboxContent"></div>
+        <div className="ChatboxInput">
+          <input type="text" className="textInput" placeholder="Message..." onChange={handleTypeMessage} />
+          <img src={"/public/assets/sendPlane.svg"} alt={"Send"} onClick={() => handleSendMessage()} style={{
+            cursor: 'pointer',
+            height: '25px'
+          }} />
+        </div>
+      </div>
+    );
+  }
 };
