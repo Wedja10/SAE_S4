@@ -264,10 +264,12 @@ async function callAPI(endpoint, body) {
 
 async function testAPI() {
     await callAPI("/players", { id_game: "67b1f4c36fe85f560dd86791" });
+    await callAPI("/public-games", {});
     await callAPI("/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
     await callAPI("/current-article", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
 }
 
 app.get("/", (req, res) => {
     res.send("API fonctionne !");
+    testAPI();
 });
