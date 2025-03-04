@@ -10,9 +10,8 @@ function GameInfo() {
                 <div className="content fade-in">
                     <img src={card} alt="Game Image" />
                     <p>
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer blandit feugiat ex.
-                        Nam at sagittis turpis, vel consequat dolor. Suspendisse potenti. Cras eget fringilla urna.
-                        Nullam eu volutpat nulla. Duis mollis pretium enim sit amet molestie.
+                        Préparez vos colts, affûtez vos éperons et rassemblez votre bande. Ici, seuls les plus malins et les plus rapides survivront. Lancez votre partie ou rejoignez vos partenaires pour une aventure où chaque choix compte.
+                        Serez-vous un shérif intrépide ou un hors-la-loi redouté ? Le Far West vous attend, cow-boy !
                     </p>
                 </div>
             </section>

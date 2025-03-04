@@ -17,11 +17,12 @@ import Game from "../models/Game.js";
 import Player from "../models/Player.js";
 import {WebSocketServer} from "ws";
 
+const PORT = process.env.PORT || 5000;
+
 dotenv.config();
 
 const app = express();
 app.use(cors());
-const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
 const WS_PORT = process.env.WS_PORT || 4000;
 
@@ -101,8 +102,78 @@ async function handleGameStateChange(gameCode, event) {
                 break;
 
             case 'game_start':
-                game.status = 'in_progress';
-                game.start_time = new Date();
+                if (currentLobby) {
+                    try {
+                        // First handle the game state change
+                        const game = await Game.findOne({ game_code: currentLobby });
+                        if (!game) {
+                            console.error(`Game not found: ${currentLobby}`);
+                            return;
+                        }
+
+                        game.status = 'in_progress';
+                        game.start_time = new Date();
+
+                        // Save the game first to ensure we have a valid ID
+                        await game.save();
+
+                        console.log('Game saved with ID:', game._id.toString());
+
+                        // Distribute random articles
+                        const articlesNumber = game.settings?.articles_number || 5;
+                        const response = await fetch(`http://localhost:${PORT}/games/random-articles`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id_game: game._id,
+                                number: articlesNumber
+                            })
+                        });
+
+                        if (!response.ok) {
+                            console.error('Failed to distribute random articles');
+                        }
+
+                        // Create the game start event
+                        const gameStartEvent = {
+                            type: 'game_start',
+                            data: {
+                                gameCode: currentLobby,
+                                gameId: game._id.toString()
+                            }
+                        };
+
+                        // Log the event before broadcasting
+                        console.log('Broadcasting game start event:', gameStartEvent);
+
+                        // Broadcast to all clients
+                        broadcastToLobby(currentLobby, gameStartEvent);
+
+                        // Save game state again after all operations
+                        await game.save();
+                    } catch (error) {
+                        console.error('Error handling game start:', error);
+                    }
+                }
+                break;
+
+            case 'player_rename':
+                const { playerId: playerIdToRename, newName } = event.data;
+                const playerToRename = game.players.find(p => p.player_id.equals(playerIdToRename));
+                if (playerToRename) {
+                    const player = await Player.findById(playerIdToRename);
+                    if (player) {
+                        player.pseudo = newName;
+                        await player.save();
+                        broadcastToLobby(gameCode, {
+                            type: 'player_rename',
+                            data: {
+                                playerId: playerIdToRename.toString(),
+                                newName: newName
+                            }
+                        });
+                    }
+                }
                 break;
         }
 
@@ -159,6 +230,14 @@ function setupWebSocketServer() {
                     case 'game_start':
                         if (currentLobby) {
                             // For settings and game start, broadcast to ALL clients including sender
+                            broadcastToLobby(currentLobby, event, null);
+                            await handleGameStateChange(currentLobby, event);
+                        }
+                        break;
+
+                    case 'player_rename':
+                        if (currentLobby) {
+                            // For rename, broadcast to ALL clients including sender
                             broadcastToLobby(currentLobby, event, null);
                             await handleGameStateChange(currentLobby, event);
                         }
@@ -264,12 +343,10 @@ async function callAPI(endpoint, body) {
 
 async function testAPI() {
     await callAPI("/players", { id_game: "67b1f4c36fe85f560dd86791" });
-    await callAPI("/public-games", {});
     await callAPI("/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
     await callAPI("/current-article", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
 }
 
 app.get("/", (req, res) => {
     res.send("API fonctionne !");
-    testAPI();
 });

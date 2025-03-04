@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import "../../backend/services/apiService.js";
 import { postRequest } from "../../backend/services/apiService.js";
 import { getApiUrl } from "../../utils/config";
+import {NavLink} from "react-router-dom";
 
 interface Game {
     code: string;
@@ -14,12 +15,16 @@ interface Game {
 
 export const PublicSaloonTicket = (props: {saloonName: string, players: number, maxPlayers: number, code: string}) => {
     return (
-    <div className={"PublicSaloonTicket"}>
-      <img className={"ticketImg"} src={'/public/assets/PublicSaloonTicket.png'} alt="Ticket" />
-      <p className={"saloonName"}>{props.saloonName}</p>
-      <p className={"players"}>{props.players + "/" + props.maxPlayers}</p>
-      <p className={"code"}>{props.code}</p>
-    </div>
+        <NavLink
+            to={`/lobby/${props.code}`}
+            className="PublicSaloonTicket"
+        >
+              <img className={"ticketImg"} src={'/public/assets/PublicSaloonTicket.png'} alt="Ticket" />
+              <p className={"saloonName"}>{props.saloonName}</p>
+              <p className={"players"}>{props.players + "/" + props.maxPlayers}</p>
+              <p className={"code"}>{props.code}</p>
+
+        </NavLink>
   )
 }
 
@@ -52,16 +57,17 @@ export const PublicSaloonList = () => {
             <img className={"saloonImg"} src={'/public/assets/PublicSaloonTitle.png'} alt="Saloon" />
             <div className={"PublicSaloonList"}>
                 {games.map((saloon, index) => (
-                    <PublicSaloonTicket
-                        key={`${saloon.code}-${index}`}  // Temporary unique key
-                        saloonName={saloon.name}
-                        players={saloon.number}
-                        maxPlayers={saloon.max_players}
-                        code={saloon.code}
-                    />
+                        <PublicSaloonTicket
+                            key={`${saloon.code}-${index}`}
+                            saloonName={saloon.name}
+                            players={saloon.number}
+                            maxPlayers={saloon.max_players}
+                            code={saloon.code}
+                        />
                 ))}
             </div>
         </div>
     )
+
 
 }
