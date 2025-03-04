@@ -1,6 +1,8 @@
 import Playerpicture from '/assets/playerPicture.png';
 import chatIcon from '/assets/chatIcon.svg';
-import {useState} from "react";
+import { PlayerName } from './PlayerName';
+import { useWebSocket } from '../../services/WebSocketService';
+import { Storage } from '../../utils/storage';
 
 interface PlayerProps {
   player: {
@@ -13,6 +15,22 @@ interface PlayerProps {
   onChatClick: () => void;
 }
 
+export const Player = ({ player, self }: PlayerProps) => {
+  const ws = useWebSocket(() => {});
+  const gameCode = Storage.getGameCode();
+
+  const handleRename = (newName: string) => {
+    if (gameCode) {
+      ws.sendEvent({
+        type: 'player_rename',
+        data: {
+          gameCode,
+          playerId: player.id,
+          newName
+        }
+      });
+    }
+  };
 interface ChatButtonProps {
   onClick: () => void;
 }
@@ -44,7 +62,11 @@ export const Player = ({ player, onChatClick }: PlayerProps) => {
         }}
       />
       <div className="player-info">
-        {player.pseudo}
+        <PlayerName
+          name={player.pseudo}
+          isCurrentPlayer={self}
+          onRename={handleRename}
+        />
         {player.is_host && <span className="host-badge">HOST</span>}
       </div>
       {currentUserId !== player.id && <ChatButton onClick={onChatClick} />}
