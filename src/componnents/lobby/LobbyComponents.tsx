@@ -3,6 +3,7 @@ import chatIcon from '/assets/chatIcon.svg';
 import { PlayerName } from './PlayerName';
 import { useWebSocket } from '../../services/WebSocketService';
 import { Storage } from '../../utils/storage';
+import { useState } from 'react';
 
 interface PlayerProps {
   player: {
@@ -15,7 +16,22 @@ interface PlayerProps {
   onChatClick: () => void;
 }
 
-export const Player = ({ player, self }: PlayerProps) => {
+interface ChatButtonProps {
+  onClick: () => void;
+}
+
+export const ChatButton = ({ onClick }: ChatButtonProps) => {
+  return (
+    <button className="ChatButton" onClick={onClick}>
+      <img src={chatIcon} alt="X" style={{ height: '20px' }} />
+      <p>Chat</p>
+    </button>
+  );
+};
+
+export const Player = ({ player, onChatClick, self }: PlayerProps) => {
+  const currentUserId = localStorage.getItem('playerId');
+
   const ws = useWebSocket(() => {});
   const gameCode = Storage.getGameCode();
 
@@ -31,21 +47,6 @@ export const Player = ({ player, self }: PlayerProps) => {
       });
     }
   };
-interface ChatButtonProps {
-  onClick: () => void;
-}
-
-export const ChatButton = ({ onClick }: ChatButtonProps) => {
-  return (
-    <button className="ChatButton" onClick={onClick}>
-      <img src={chatIcon} alt="X" style={{ height: '20px' }} />
-      <p>Chat</p>
-    </button>
-  );
-};
-
-export const Player = ({ player, onChatClick }: PlayerProps) => {
-  const currentUserId = localStorage.getItem('playerId');
 
   return (
     <div className="Player fade-in">
