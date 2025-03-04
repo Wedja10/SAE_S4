@@ -67,18 +67,32 @@ export const getCurrentArticle = async (req, res) => {
     const {id_game, id_player} = req.body;
 
     try {
-        const [game, player] = await gameAndPlayers(id_game, id_player);
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({message: "Jeu non trouvé"});
+        }
+
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({message: "Joueur non trouvé"});
+        }
+
+        if (!player.current_article) {
+            return res.status(200).json(null);
+        }
 
         const current = await Article.findById(player.current_article.toString());
         if (!current) {
-            res.status(404).json({message: "Aucun article courant"});
+            return res.status(200).json(null);
         }
 
-        res.status(200).json(current.title);
-    } catch (e){
-        console.error('Erreur dans getCurrentArticle',e);
+        return res.status(200).json(current.title);
+    } catch (error) {
+        console.error('Erreur dans getCurrentArticle:', error);
+        return res.status(500).json({message: "Erreur serveur"});
     }
-}
+};
 
 // Récupérer tous les joueurs d'une partie spécifique
 export const getGamePlayers = async (req, res) => {
@@ -158,37 +172,35 @@ export const changeArticle = async (gameId, playerId, articleId) => {
 
 export const changeArticleFront = async (req, res) => {
     try {
-        const { gameId, playerId, articleId } = req.body;
+        const { id_game, id_player, articleId } = req.body;
 
-        if (!gameId || !playerId || !articleId) {
+        if (!id_game || !id_player || !articleId) {
             return res.status(400).json({ error: "Tous les identifiants sont requis." });
         }
 
-        if (!await gameExists(gameId)) {
+        const game = await Game.findById(id_game);
+        if (!game) {
             return res.status(404).json({ error: "Jeu non trouvé." });
         }
 
-        if (!await playerExistsInGame(gameId, playerId)) {
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
             return res.status(404).json({ error: "Joueur non trouvé dans ce jeu." });
         }
 
-        if (!await playerHasCurrentArticle(gameId, playerId)) {
-            return res.status(400).json({ error: "Aucun article actuel trouvé." });
+        // Initialize arrays if they don't exist
+        if (!player.articles_visited) {
+            player.articles_visited = [];
         }
 
-        // Mise à jour directe avec `$push` et `$set`
-        const result = await Game.updateOne(
-            { _id: gameId, "players.player_id": playerId },
-            {
-                $set: { "players.$.current_article": articleId },
-                $addToSet: { "players.$.articles_visited": articleId }
-            }
-        );
-
-        if (result.modifiedCount === 0) {
-            return res.status(404).json({ error: "Impossible de mettre à jour l'article du joueur." });
+        // Update the current article and add to visited articles
+        player.current_article = new mongoose.Types.ObjectId(articleId);
+        if (!player.articles_visited.some(id => id.equals(articleId))) {
+            player.articles_visited.push(player.current_article);
         }
 
+        await game.save();
         return res.status(200).json({ message: "Article changé avec succès.", id_article: articleId });
 
     } catch (error) {
@@ -197,23 +209,29 @@ export const changeArticleFront = async (req, res) => {
     }
 };
 
-
-
-
 // Distribute articles to players
 export const distributeToPlayers = async (game) => {
     try {
-        game.players.forEach(player => {
-            const randNumber = Math.floor(Math.random() * game.articles_to_visit.length);
-            if (!player.current_article) {player.current_article = game.articles_to_visit[randNumber]}
-            else {player.current_article = game.articles_to_visit[randNumber]};
+        if (!game.articles_to_visit || game.articles_to_visit.length === 0) {
+            console.error("No articles to distribute");
+            return;
+        }
 
-            // Append the current article to the list of visited articles
+        for (const player of game.players) {
+            const randNumber = Math.floor(Math.random() * game.articles_to_visit.length);
+            const randomArticle = game.articles_to_visit[randNumber];
+            
+            // Initialize arrays if they don't exist
             if (!player.articles_visited) {
                 player.articles_visited = [];
             }
-            player.articles_visited.push(player.current_article);
-        });
+
+            // Set current article and add to visited
+            player.current_article = randomArticle;
+            if (!player.articles_visited.includes(randomArticle)) {
+                player.articles_visited.push(randomArticle);
+            }
+        }
 
         await game.save(); // Save the game once after all players are updated
     } catch (error) {
@@ -274,8 +292,6 @@ export const distributeRandomArticles = async (req, res) => {
     }
 };
 
-
-
 // Récupérer tous les articles visités d'un joueur dans une partie
 export const getVisitedArticlesPlayer = async (req, res) => {
     try {
@@ -315,9 +331,6 @@ export const getVisitedArticlesPlayer = async (req, res) => {
         res.status(500).json({ message: "Erreur serveur" });
     }
 };
-
-
-
 
 // Récupérer les articles cibles
 export const getTargetArticles = async (req, res) => {
@@ -434,7 +447,7 @@ export const createGame = async (req, res) => {
                 max_players: null,
                 time_limit: null,
                 articles_number: 5,
-                visibility: "public",
+                visibility: "private",
                 allow_join: true
             }
         });
@@ -530,7 +543,6 @@ async function getAllLinks(title) {
     return allLinks;
 }
 
-
 export const teleporterArtifact = async (req, res) => {
     const { id_game, id_player } = req.body;
 
@@ -579,7 +591,6 @@ export const teleporterArtifact = async (req, res) => {
     }
 };
 
-
 export const mineArtifact = async (req, res) => {
     const { id_game, id_player } = req.body;
 
@@ -597,7 +608,6 @@ export const mineArtifact = async (req, res) => {
 
         res.status(200).json({ message: "Retour à 5 articles précédent réussi.", previousArticle });
 
-
     } catch(error){
         console.error("Erreur dans mineArtifact :", error);
         res.status(500).json({ message: "Erreur serveur", details: error.message });
@@ -605,7 +615,6 @@ export const mineArtifact = async (req, res) => {
 }
 
 //Artefact qui swap les joueurs d'articles
-
 export const eraserArtifact = async (req, res) => {
     const { id_game, id_player } = req.body;
 
@@ -652,7 +661,6 @@ export const disorienterArtifact = async (req, res) => {
 
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
-
 
         const randPage = await generateRandomArticle();
 

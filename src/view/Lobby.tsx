@@ -28,7 +28,7 @@ const Lobby: React.FC = () => {
     max_players: null,
     time_limit: null,
     articles_number: 5,
-    visibility: "public",
+    visibility: "private",
     allow_join: true
   });
   const [isHost, setIsHost] = useState(false);
@@ -110,8 +110,34 @@ const Lobby: React.FC = () => {
           ...event.data.settings
         }));
         break;
+      case 'player_rename':
+        setPlayers(prevPlayers => {
+          return prevPlayers.map(player => 
+            player.id === event.data.playerId 
+              ? { ...player, pseudo: event.data.newName }
+              : player
+          );
+        });
+        break;
       case 'game_start':
-        navigate(`/game/${gameCode}`);
+        console.log('Received game_start event:', event);
+        // Store the game ID before navigating
+        if (event.data.gameId) {
+          console.log('Setting game ID:', event.data.gameId);
+          Storage.setGameId(event.data.gameId);
+          // Small delay to ensure storage is set
+          setTimeout(() => {
+            const storedGameId = Storage.getGameId();
+            console.log('Stored game ID:', storedGameId);
+            if (storedGameId) {
+              navigate(`/game/${gameCode}`);
+            } else {
+              console.error('Failed to store game ID');
+            }
+          }, 100);
+        } else {
+          console.error('No game ID received in game_start event');
+        }
         break;
     }
   });
@@ -139,13 +165,21 @@ const Lobby: React.FC = () => {
         const normalizedPlayers = (data.players || []).map(normalizePlayer);
         setPlayers(normalizedPlayers);
         
-        setSettings(data.settings || {
+        // Ensure visibility is private by default if not set
+        const settings = data.settings || {
           max_players: null,
           time_limit: null,
           articles_number: 5,
-          visibility: "public",
+          visibility: "private",
           allow_join: true
-        });
+        };
+        
+        // Force visibility to private if not set
+        if (!settings.visibility) {
+          settings.visibility = "private";
+        }
+        
+        setSettings(settings);
         
         // Check if current user is host
         const isCurrentPlayerHost = normalizedPlayers.some((p: { id: string; is_host: any; }) => p.id === currentPlayerId && p.is_host);

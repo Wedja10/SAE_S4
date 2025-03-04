@@ -2,6 +2,18 @@ import { useNavigate } from "react-router-dom";
 import ArtefactInfo from '/assets/Artefacts/ArtefactInfo.svg';
 import {useState, useEffect} from "react";
 import descriptionData from "../../../public/assets/Artefacts/description.json";
+import './Artefacts.css';
+
+// Add styles for the tooltip
+const tooltipStyle = {
+  tooltip: {
+    fontSize: '0.8rem',
+    color: '#666',
+    marginTop: '4px',
+    fontStyle: 'italic',
+    textAlign: 'center' as const,
+  }
+};
 
 interface StartButtonProps {
   onStart: () => void;
@@ -37,7 +49,7 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
   }, [settings]);
 
   const handleUnlimitedPlayers = () => {
-    if (!isHost) return;
+    if (!isHost || settings.allow_join) return;
     setUnlimitedPlayers(!unlimitedPlayers);
     onSettingsUpdate({
       ...settings,
@@ -79,6 +91,9 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
     onSettingsUpdate(newSettings);
   };
 
+  // Helper function to determine if max players should be disabled
+  const isMaxPlayersDisabled = !isHost || settings.allow_join;
+
   return (
     <div className={"OptionsPanel"} >
       <form method={"put"} onSubmit={handleSubmit}>
@@ -92,8 +107,8 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                 id={"playerNumber"}
                 value={"UNLIMITED"}
                 readOnly
-                disabled={!isHost || !settings.allow_join}
-                className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+                disabled={isMaxPlayersDisabled}
+                className={isMaxPlayersDisabled ? "disabled-input" : ""}
               />
             ) : (
               <input
@@ -107,16 +122,17 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                   max_players: Number(e.target.value)
                 })}
                 required
-                disabled={!isHost || !settings.allow_join}
-                className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+                disabled={isMaxPlayersDisabled}
+                className={isMaxPlayersDisabled ? "disabled-input" : ""}
               />
             )}
             <img
               src={unlimitedPlayers ? "/assets/UnlimitedButton.png" : "/assets/LimitedButton.png"}
-              onClick={isHost && settings.allow_join ? handleUnlimitedPlayers : undefined}
+              onClick={settings.allow_join ? undefined : handleUnlimitedPlayers}
               alt={"unlimited"}
-              style={{ cursor: isHost && settings.allow_join ? 'pointer' : 'default' }}
+              style={{ cursor: (!isHost || settings.allow_join) ? 'default' : 'pointer' }}
             />
+            {settings.allow_join && <div className="tooltip">Lock room to edit</div>}
           </div>
 
           <div className={"Option"}>
@@ -128,8 +144,8 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                 id={"timeLimit"}
                 value={"UNLIMITED"}
                 readOnly
-                disabled={!isHost || !settings.allow_join}
-                className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+                disabled={!isHost}
+                className={!isHost ? "disabled-input" : ""}
               />
             ) : (
               <input
@@ -143,15 +159,15 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                   time_limit: Number(e.target.value)
                 })}
                 required
-                disabled={!isHost || !settings.allow_join}
-                className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+                disabled={!isHost}
+                className={!isHost ? "disabled-input" : ""}
               />
             )}
             <img
               src={unlimitedTime ? "/assets/UnlimitedButton.png" : "/assets/LimitedButton.png"}
-              onClick={isHost && settings.allow_join ? handleUnlimitedTime : undefined}
+              onClick={isHost ? handleUnlimitedTime : undefined}
               alt={"unlimited"}
-              style={{ cursor: isHost && settings.allow_join ? 'pointer' : 'default' }}
+              style={{ cursor: isHost ? 'pointer' : 'default' }}
             />
           </div>
 
@@ -161,7 +177,7 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
               type={"number"}
               name={"articlesNumber"}
               id={"articlesNumber"}
-              defaultValue={settings.articles_number}
+              value={settings.articles_number}
               min={2}
               max={16}
               onChange={(e) => onSettingsUpdate({
@@ -169,8 +185,8 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                 articles_number: Number(e.target.value)
               })}
               required
-              disabled={!isHost || !settings.allow_join}
-              className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+              disabled={!isHost}
+              className={!isHost ? "disabled-input" : ""}
             />
           </div>
 
@@ -184,11 +200,12 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                 ...settings,
                 visibility: e.target.value
               })}
-              disabled={!isHost || !settings.allow_join}
-              className={!isHost || !settings.allow_join ? "disabled-input" : ""}
+              disabled={!isHost}
+              className={!isHost ? "disabled-input" : ""}
+              defaultValue="private"
             >
-              <option value={"public"}>Public</option>
               <option value={"private"}>Private</option>
+              <option value={"public"}>Public</option>
             </select>
           </div>
         </div>
@@ -198,12 +215,12 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
           type={"button"}
           onClick={handleAllowToJoin}
           style={{
-            backgroundColor: settings.allow_join ? "#2a830c" : "#ff3838",
+            backgroundColor: settings.allow_join ? "#ff3838" : "#2a830c",
             cursor: isHost ? 'pointer' : 'default'
           }}
           disabled={!isHost}
         >
-          {settings.allow_join ? "Allow to join" : "Close room"}
+          {settings.allow_join ? "Lock room" : "Open room"}
         </button>
       </form>
     </div>

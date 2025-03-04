@@ -25,7 +25,7 @@ export const createLobby = async (req, res) => {
                 max_players: maxPlayers || null, // null = illimité
                 time_limit: timeLimit || null,
                 articles_number: articlesNumber || 5,
-                visibility: visibility || "public",
+                visibility: visibility || "private",
                 allow_join: true
             },
             players: [{

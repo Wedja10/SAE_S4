@@ -397,3 +397,73 @@
   border-bottom: solid 4px #f1b24a;
   transition: 300ms;
 }
+
+/* ---------- Private Chatbox ---------- */
+
+.PrivateChatbox {
+  background-color: rgba(11, 18, 57, 0.63);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+
+  width: 30%;
+  height: 75%;
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  overflow: hidden;
+
+  color: #FFFFFF;
+  font-family: cowboy, sans-serif;
+}
+
+.ChatboxHeader {
+  font-size: 32px;
+  border-bottom: #817D7D 0.25px solid;
+
+  height: 15%;
+  width: 100%;
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 10%;
+  padding-left: 10%;
+}
+
+.ChatboxHeader img {
+  position: absolute;
+  right: 10%;
+}
+
+.ChatboxInput {
+  position: absolute;
+  bottom: 0;
+
+  border-top: #817D7D 0.25px solid;
+
+  height: 15%;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 10%;
+  padding-left: 10%;
+}
+
+.textInput {
+  background-color: #17141d;
+  border: none;
+  border-radius: 15px;
+  outline: none;
+  width: 80%;
+  height: 55%;
+  padding-left: 20px;
+
+  color: #FFFFFF;
+  font-family: cowboy, sans-serif;
+}
