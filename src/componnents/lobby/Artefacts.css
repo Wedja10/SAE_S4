@@ -1,0 +1,17 @@
+.Option {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.tooltip {
+    font-size: 0.7rem;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    width: calc(100% - 40px);
+    display: inline-block;
+    position: absolute;
+    z-index: 1;
+    margin-left: -8px;
+    bottom: -14px;
+} 
