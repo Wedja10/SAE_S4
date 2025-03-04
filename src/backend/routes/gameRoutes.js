@@ -14,7 +14,8 @@ import {
     teleporterArtifact,
     getTargetArticles,
     changeArticleFront,
-    getCurrentArticle
+    getCurrentArticle,
+    getPublicGames
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -63,6 +64,7 @@ router.post('/articles', getVisitedArticlesPlayer);
 router.post('/target-articles', getTargetArticles);
 router.post('/artifacts', getArticfactPlayer);
 router.post('/change', changeArticleFront);
+router.post('/public-games', getPublicGames);
 router.post("/random-articles", distributeRandomArticles);
 router.post("/create-game", createGame);
 router.post("/back-artifact", backArtifact);

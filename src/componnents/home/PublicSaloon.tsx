@@ -1,21 +1,19 @@
 import '../../style/home/PublicSaloon.css'
+import React, { useEffect, useState } from "react";
+import "../../backend/services/apiService.js";
+import { postRequest } from "../../backend/services/apiService.js";
+import { getApiUrl } from "../../utils/config";
 
-class PublicSaloon {
-  saloonName: string;
-  players: number;
-  maxPlayers: number;
-  code: string;
-
-  constructor(saloonName: string, players: number, maxPlayers: number, code: string) {
-    this.saloonName = saloonName;
-    this.players = players;
-    this.maxPlayers = maxPlayers;
-    this.code = code;
-  }
+interface Game {
+    code: string;
+    name: string;
+    number: number;
+    max_players: number;
 }
 
+
 export const PublicSaloonTicket = (props: {saloonName: string, players: number, maxPlayers: number, code: string}) => {
-  return (
+    return (
     <div className={"PublicSaloonTicket"}>
       <img className={"ticketImg"} src={'/public/assets/PublicSaloonTicket.png'} alt="Ticket" />
       <p className={"saloonName"}>{props.saloonName}</p>
@@ -26,26 +24,44 @@ export const PublicSaloonTicket = (props: {saloonName: string, players: number, 
 }
 
 export const PublicSaloonList = () => {
+    const [games, setGames] = useState<Game[]>([]);
 
-  // Temp, à remplacer par un prop
-  const saloon1 = new PublicSaloon("Jawed's room", 4, 10, "284059");
-  const saloon2 = new PublicSaloon("Andrei's room", 7, 12, "002817");
-  const saloon3 = new PublicSaloon("Abdel's room", 3, 8, "182662");
-  const saloon4 = new PublicSaloon("Victor's room", 5, 10, "338541");
-  const saloon5 = new PublicSaloon("Public room", 8, 8, "123456");
+    const fetchPublicGames = async () => {
+        const data = await postRequest(getApiUrl('/games/public-games'), {});
 
-  const saloons = [saloon1, saloon2, saloon3, saloon4, saloon5];
+        const gamesFormatted = data.map((game: any[]) => ({
+            code: game[0],
+            name: game[1],
+            number: game[2],
+            max_players: game[3] ?? 0  // Si null, mettre 0 ou une valeur par défaut
+        }));
 
-  return (
-    <div className={"PublicSaloon"}>
-      <img className={"saloonImg"} src={'/public/assets/PublicSaloonTitle.png'} alt="Saloon" />
-      <div className={"PublicSaloonList"}>
-        {saloons.map((saloon) => {
-          return (
-              <PublicSaloonTicket saloonName={saloon.saloonName} players={saloon.players} maxPlayers={saloon.maxPlayers} code={saloon.code}/>
-          )
-        })}
-      </div>
-    </div>
-  )
+        console.log("Données formatées :", gamesFormatted);  // Pour vérifier
+
+        setGames(gamesFormatted);
+    };
+
+
+
+    useEffect(() => {
+        fetchPublicGames();
+    }, []);
+
+    return (
+        <div className={"PublicSaloon"}>
+            <img className={"saloonImg"} src={'/public/assets/PublicSaloonTitle.png'} alt="Saloon" />
+            <div className={"PublicSaloonList"}>
+                {games.map((saloon, index) => (
+                    <PublicSaloonTicket
+                        key={`${saloon.code}-${index}`}  // Temporary unique key
+                        saloonName={saloon.name}
+                        players={saloon.number}
+                        maxPlayers={saloon.max_players}
+                        code={saloon.code}
+                    />
+                ))}
+            </div>
+        </div>
+    )
+
 }
