@@ -83,7 +83,7 @@ export const generateRandomArticle = async () => {
         }
 
         const data = await response.json();
-        const totalViews = await getViews(data.title);  // ✅ Ajout de "await"
+        const totalViews = await getViews(data.title);
 
         return { title: data.title, totalViews };
     } catch (error) {

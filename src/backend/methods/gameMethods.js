@@ -699,4 +699,22 @@ export const dictatorArtifact = async (req, res) => {
     }
 };
 
+export const getPublicGames = async (req, res) => {
+    try {
+        const publicGames = await Game.find({ "settings.visibility": "public", status: "waiting" });
+
+
+        const infoGames = await Promise.all(publicGames.map(async (game) => {
+            const player = await Player.findById(game.players[0].player_id);
+            const playerName = player ? player.pseudo : "Joueur inconnu";
+            return [game.game_code, playerName, game.players.length, game.settings.max_players];
+        }));
+
+        res.json(infoGames);
+    } catch (e) {
+        console.error("Erreur getPublicGames :", e);
+        res.status(500).json({ message: "Erreur lors de la récupération des parties publiques." });
+    }
+};
+
 

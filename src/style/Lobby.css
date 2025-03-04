@@ -314,7 +314,8 @@
   cursor: pointer;
 }
 
-.OptionsList input, .OptionsList select {
+.OptionsList input,
+.OptionsList select {
 
   background-color: #17141d;
   border: none;
@@ -334,7 +335,8 @@
   -moz-appearance: textfield
 }
 
-.OptionsList input::-webkit-outer-spin-button, .OptionsList input::-webkit-inner-spin-button {
+.OptionsList input::-webkit-outer-spin-button,
+.OptionsList input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
@@ -372,7 +374,7 @@
 
 /* ---------- Start Button ---------- */
 
-.startButton{
+.startButton {
   width: 35%;
   height: 75px;
   margin-top: 25px;
@@ -466,4 +468,51 @@
 
   color: #FFFFFF;
   font-family: cowboy, sans-serif;
+}
+
+@media (max-width: 900px) {
+  .OptionsList {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .Option {
+    width: 80%;
+  }
+
+  .OptionsList input,
+  .OptionsList select {
+    width: 100%;
+  }
+
+  .SubmitOptions {
+    width: 50%;
+    margin-bottom: 100px;
+  }
+
+  .startButton {
+    width: 50%;
+    margin-bottom: 50px;
+  }
+
+  .Artefact {
+    width: 130px;
+    height: 100px;
+  }
+
+  .Artefact p {
+    font-size: 12px;
+    max-width: 100%;
+  }
+  .Artefact-info p {
+    font-size: 12px;
+    max-width: 100%;
+  }
+
+  .ArtefactImage {
+    width: 50px;
+    height: 50px !important;
+  }
 }
