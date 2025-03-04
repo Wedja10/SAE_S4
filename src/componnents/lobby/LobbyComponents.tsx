@@ -1,5 +1,8 @@
 import Playerpicture from '/assets/playerPicture.png';
 import chatIcon from '/assets/chatIcon.svg';
+import { PlayerName } from './PlayerName';
+import { useWebSocket } from '../../services/WebSocketService';
+import { Storage } from '../../utils/storage';
 
 interface PlayerProps {
   player: {
@@ -11,7 +14,23 @@ interface PlayerProps {
   self: boolean;
 }
 
-export const Player = ({ player }: PlayerProps) => {
+export const Player = ({ player, self }: PlayerProps) => {
+  const ws = useWebSocket(() => {});
+  const gameCode = Storage.getGameCode();
+
+  const handleRename = (newName: string) => {
+    if (gameCode) {
+      ws.sendEvent({
+        type: 'player_rename',
+        data: {
+          gameCode,
+          playerId: player.id,
+          newName
+        }
+      });
+    }
+  };
+
   return (
     <div className="Player fade-in">
       <img
@@ -27,7 +46,11 @@ export const Player = ({ player }: PlayerProps) => {
         }}
       />
       <div className="player-info">
-        {player.pseudo}
+        <PlayerName
+          name={player.pseudo}
+          isCurrentPlayer={self}
+          onRename={handleRename}
+        />
         {player.is_host && <span className="host-badge">HOST</span>}
       </div>
       <ChatButton />

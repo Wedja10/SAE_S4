@@ -19,12 +19,105 @@ const WikiView: React.FC = () => {
   const playerId = Storage.getPlayerId();
 
   useEffect(() => {
-    // Redirect to home if no game ID or player ID
-    if (!gameId || !playerId) {
-      navigate('/');
-      return;
-    }
-  }, [gameId, playerId]);
+    let retryCount = 0;
+    const maxRetries = 5;
+    const retryInterval = 1000;
+
+    const checkCredentials = () => {
+      const currentGameId = Storage.getGameId();
+      const currentPlayerId = Storage.getPlayerId();
+
+      console.log('Checking credentials (attempt ' + (retryCount + 1) + '/' + maxRetries + '):', {
+        gameId: currentGameId || 'missing',
+        playerId: currentPlayerId || 'missing',
+        retryCount,
+        localStorage: {
+          gameId: localStorage.getItem('gameId'),
+          playerId: localStorage.getItem('playerId'),
+          gameCode: localStorage.getItem('gameCode')
+        }
+      });
+
+      if (!currentGameId || !currentPlayerId) {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying in ${retryInterval}ms...`);
+          setTimeout(checkCredentials, retryInterval);
+        } else {
+          console.error("Failed to get credentials after retries:", {
+            gameId: currentGameId || 'missing',
+            playerId: currentPlayerId || 'missing',
+            localStorage: {
+              gameId: localStorage.getItem('gameId'),
+              playerId: localStorage.getItem('playerId'),
+              gameCode: localStorage.getItem('gameCode')
+            }
+          });
+          navigate('/');
+        }
+        return;
+      }
+
+      console.log('Credentials found, initializing game with:', {
+        gameId: currentGameId,
+        playerId: currentPlayerId
+      });
+
+      // If we have both IDs, initialize the game
+      initializeArticle();
+    };
+
+    const initializeArticle = async () => {
+      try {
+        const gameId = Storage.getGameId();
+        const playerId = Storage.getPlayerId();
+
+        if (!gameId || !playerId) {
+          console.error("Missing credentials during initialization");
+          return;
+        }
+
+        console.log('Initializing article for:', {
+          gameId,
+          playerId
+        });
+
+        // First try to get the current article from the game
+        const currentArticle = await getCurrentArticle();
+        console.log('Current article response:', currentArticle);
+
+        if (currentArticle) {
+          setCurrentTitle(currentArticle);
+          fetchWikiContent(currentArticle);
+        } else {
+          console.log('No current article found, getting random article');
+          // If no current article, get a random one
+          const title = await getRandomWikipediaTitle();
+          console.log('Got random title:', title);
+          setCurrentTitle(title);
+          await updateArticleInDB(title);
+          fetchWikiContent(title);
+        }
+      } catch (error) {
+        console.error("Error initializing article:", error);
+      }
+    };
+
+    const blockBackNavigation = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    blockBackNavigation();
+    window.addEventListener("popstate", blockBackNavigation);
+
+    // Start the credential check process
+    console.log('Starting credential check process');
+    checkCredentials();
+
+    return () => {
+      window.removeEventListener("popstate", blockBackNavigation);
+    };
+  }, [navigate]);
 
   // Fonction pour notifier la base de données lors de chaque changement d'article
   const updateArticleInDB = async (title: string) => {
@@ -33,8 +126,8 @@ const WikiView: React.FC = () => {
 
       if (createdArticle && createdArticle._id) {
         await postRequest(getApiUrl("/games/change"), {
-          gameId: gameId,
-          playerId: playerId,
+          id_game: Storage.getGameId(),
+          id_player: Storage.getPlayerId(),
           articleId: createdArticle._id,
         });
       }
@@ -45,9 +138,14 @@ const WikiView: React.FC = () => {
 
   const getCurrentArticle = async() => {
     try {
-      return await postRequest(getApiUrl("/games/current-article"), {id_game: gameId, id_player: playerId});
+      const response = await postRequest(getApiUrl("/games/current-article"), {
+        id_game: Storage.getGameId(),
+        id_player: Storage.getPlayerId()
+      });
+      return response;
     } catch (e){
       console.error("Erreur lors du getCurrentArticle de wikiview : ", e);
+      return null;
     }
   }
 
@@ -138,29 +236,6 @@ const WikiView: React.FC = () => {
       setIsBlocked(false);
     }, 10000);
   };
-
-  useEffect(() => {
-    const blockBackNavigation = () => {
-      window.history.pushState(null, "", window.location.href);
-    };
-
-    blockBackNavigation();
-    window.addEventListener("popstate", blockBackNavigation);
-
-    if (!currentTitle) {
-      getRandomWikipediaTitle().then((title) => {
-        setCurrentTitle(title);
-        updateArticleInDB(title);  // Création uniquement au tout début
-      }).catch(console.error);
-    } else {
-      fetchWikiContent(currentTitle);
-    }
-
-    return () => {
-      window.removeEventListener("popstate", blockBackNavigation);
-    };
-  }, [currentTitle]);
-
 
   async function getRandomWikipediaTitle(): Promise<string> {
     const url = "https://fr.wikipedia.org/api/rest_v1/page/random/title";
