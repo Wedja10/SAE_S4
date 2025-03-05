@@ -16,6 +16,7 @@ import cors from 'cors';
 import Game from "../models/Game.js";
 import Player from "../models/Player.js";
 import {WebSocketServer} from "ws";
+import http from 'http';
 
 const PORT = process.env.PORT || 5000;
 
@@ -49,7 +50,22 @@ async function handleGameStateChange(gameCode, event) {
 
         switch (event.type) {
             case 'player_join':
-                // Player join is handled by the REST API
+                // When a player joins, broadcast their complete information including skin color
+                const joiningPlayer = await Player.findById(event.data.playerId);
+                if (joiningPlayer) {
+                    broadcastToLobby(gameCode, {
+                        type: 'player_join',
+                        data: {
+                            player: {
+                                id: joiningPlayer._id.toString(),
+                                pseudo: joiningPlayer.pseudo,
+                                pp: joiningPlayer.pp,
+                                pp_color: joiningPlayer.pp_color || '#FFAD80',
+                                is_host: event.data.isHost
+                            }
+                        }
+                    });
+                }
                 break;
 
             case 'player_leave':
@@ -76,6 +92,7 @@ async function handleGameStateChange(gameCode, event) {
                                     id: game.players[0].player_id.toString(),
                                     pseudo: newHost.pseudo,
                                     pp: newHost.pp,
+                                    pp_color: newHost.pp_color || '#FFAD80',
                                     is_host: true
                                 }
                             }
@@ -175,6 +192,27 @@ async function handleGameStateChange(gameCode, event) {
                     }
                 }
                 break;
+
+            case 'profile_picture_change':
+                const { playerId: playerIdToUpdate, pictureUrl, pp_color } = event.data;
+                const playerToUpdate = game.players.find(p => p.player_id.equals(playerIdToUpdate));
+                if (playerToUpdate) {
+                    const player = await Player.findById(playerIdToUpdate);
+                    if (player) {
+                        player.pp = pictureUrl;
+                        player.pp_color = pp_color;
+                        await player.save();
+                        broadcastToLobby(gameCode, {
+                            type: 'profile_picture_change',
+                            data: {
+                                playerId: playerIdToUpdate.toString(),
+                                pictureUrl,
+                                pp_color
+                            }
+                        });
+                    }
+                }
+                break;
         }
 
         await game.save();
@@ -186,10 +224,14 @@ async function handleGameStateChange(gameCode, event) {
 
 function setupWebSocketServer() {
     wss = new WebSocketServer({ port: WS_PORT });
+    
+    // Map to track which WebSocket belongs to which player
+    const playerSockets = new Map(); // playerId -> ws
 
     wss.on("connection", (ws) => {
         console.log("Un utilisateur s'est connecté au WebSocket");
         let currentLobby = null;
+        let currentPlayerId = null;
 
         ws.on("message", async (message) => {
             try {
@@ -204,6 +246,13 @@ function setupWebSocketServer() {
                         }
                         lobbies.get(gameCode).add(ws);
                         currentLobby = gameCode;
+                        
+                        // Store the player ID associated with this WebSocket
+                        if (player && player.id) {
+                            currentPlayerId = player.id;
+                            playerSockets.set(currentPlayerId, { ws, gameCode });
+                            console.log(`Tracking player ${currentPlayerId} in lobby ${gameCode}`);
+                        }
 
                         // Broadcast to all clients in the same lobby
                         broadcastToLobby(gameCode, {
@@ -221,8 +270,18 @@ function setupWebSocketServer() {
                                     lobbies.delete(currentLobby);
                                 }
                             }
+                            
+                            // Remove player from tracking
+                            if (event.data.playerId) {
+                                playerSockets.delete(event.data.playerId);
+                            }
+                            
                             broadcastToLobby(currentLobby, event, ws);
                             await handleGameStateChange(currentLobby, event);
+                            
+                            // Reset current lobby and player ID
+                            currentLobby = null;
+                            currentPlayerId = null;
                         }
                         break;
 
@@ -243,6 +302,13 @@ function setupWebSocketServer() {
                         }
                         break;
 
+                    case 'profile_picture_change':
+                        if (currentLobby) {
+                            broadcastToLobby(currentLobby, event, null);
+                            await handleGameStateChange(currentLobby, event);
+                        }
+                        break;
+
                     case 'chat_message':
                         if (currentLobby) {
                             broadcastToLobby(currentLobby, event, ws);
@@ -256,7 +322,39 @@ function setupWebSocketServer() {
 
         ws.on("close", async () => {
             console.log("Un utilisateur s'est déconnecté");
-            if (currentLobby) {
+            
+            // Handle player disconnection
+            if (currentPlayerId) {
+                console.log(`Player ${currentPlayerId} disconnected from lobby ${currentLobby}`);
+                
+                // Remove from player tracking
+                playerSockets.delete(currentPlayerId);
+                
+                // Create and broadcast player_leave event
+                if (currentLobby) {
+                    const leaveEvent = {
+                        type: 'player_leave',
+                        data: {
+                            gameCode: currentLobby,
+                            playerId: currentPlayerId
+                        }
+                    };
+                    
+                    // Remove from lobby clients
+                    const lobbyClients = lobbies.get(currentLobby);
+                    if (lobbyClients) {
+                        lobbyClients.delete(ws);
+                        if (lobbyClients.size === 0) {
+                            lobbies.delete(currentLobby);
+                        }
+                    }
+                    
+                    // Broadcast leave event and update game state
+                    broadcastToLobby(currentLobby, leaveEvent);
+                    await handleGameStateChange(currentLobby, leaveEvent);
+                }
+            } else if (currentLobby) {
+                // If we have a lobby but no player ID, just remove from lobby
                 const lobbyClients = lobbies.get(currentLobby);
                 if (lobbyClients) {
                     lobbyClients.delete(ws);
@@ -266,6 +364,61 @@ function setupWebSocketServer() {
                 }
             }
         });
+    });
+    
+    // Handle HTTP endpoint for navigator.sendBeacon
+    const server = http.createServer((req, res) => {
+        if (req.url === '/leave' && req.method === 'POST') {
+            let body = '';
+            req.on('data', chunk => {
+                body += chunk.toString();
+            });
+            
+            req.on('end', async () => {
+                try {
+                    const event = JSON.parse(body);
+                    console.log('Received leave event via HTTP:', event);
+                    
+                    if (event.type === 'player_leave' && event.data.gameCode && event.data.playerId) {
+                        const { gameCode, playerId } = event.data;
+                        
+                        // Remove player from tracking
+                        const playerData = playerSockets.get(playerId);
+                        if (playerData) {
+                            const { ws } = playerData;
+                            playerSockets.delete(playerId);
+                            
+                            // Remove from lobby clients
+                            const lobbyClients = lobbies.get(gameCode);
+                            if (lobbyClients && ws) {
+                                lobbyClients.delete(ws);
+                                if (lobbyClients.size === 0) {
+                                    lobbies.delete(gameCode);
+                                }
+                            }
+                        }
+                        
+                        // Broadcast leave event and update game state
+                        broadcastToLobby(gameCode, event);
+                        await handleGameStateChange(gameCode, event);
+                    }
+                    
+                    res.writeHead(200);
+                    res.end('OK');
+                } catch (error) {
+                    console.error('Error handling leave event via HTTP:', error);
+                    res.writeHead(500);
+                    res.end('Error');
+                }
+            });
+        } else {
+            res.writeHead(404);
+            res.end('Not Found');
+        }
+    });
+    
+    server.listen(WS_PORT + 1, () => {
+        console.log(`✅ HTTP server for leave events started on port ${WS_PORT + 1}`);
     });
 
     console.log(`✅ WebSocket server started on port ${WS_PORT}`);

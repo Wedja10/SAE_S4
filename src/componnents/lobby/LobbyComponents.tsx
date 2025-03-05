@@ -3,13 +3,16 @@ import chatIcon from '/assets/chatIcon.svg';
 import { PlayerName } from './PlayerName';
 import { useWebSocket } from '../../services/WebSocketService';
 import { Storage } from '../../utils/storage';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { ProfilePicture } from './ProfilePicture';
+import './LobbyComponents.css';
 
 interface PlayerProps {
   player: {
     id: string;
     pseudo: string;
     pp: string;
+    pp_color?: string;
     is_host: boolean;
   };
   self: boolean;
@@ -31,9 +34,34 @@ export const ChatButton = ({ onClick }: ChatButtonProps) => {
 
 export const Player = ({ player, onChatClick, self }: PlayerProps) => {
   const currentUserId = localStorage.getItem('playerId');
-
-  const ws = useWebSocket(() => {});
+  const [currentPicture, setCurrentPicture] = useState(player.pp || Playerpicture);
+  const [currentSkinColor, setCurrentSkinColor] = useState(player.pp_color || '#FFAD80');
   const gameCode = Storage.getGameCode();
+  
+  const ws = useWebSocket((event) => {
+    if (event.type === 'profile_picture_change' && event.data.playerId === player.id) {
+      setCurrentPicture(event.data.pictureUrl);
+      setCurrentSkinColor(event.data.pp_color || '#FFAD80');
+    }
+    // When a new player joins, broadcast your skin color if you're an existing player
+    else if (event.type === 'player_join' && self && gameCode) {
+      // Send your current profile picture and skin color to ensure new players see it
+      ws.sendEvent({
+        type: 'profile_picture_change',
+        data: {
+          gameCode,
+          playerId: player.id,
+          pictureUrl: currentPicture,
+          pp_color: currentSkinColor
+        }
+      });
+    }
+  });
+
+  useEffect(() => {
+    setCurrentPicture(player.pp || Playerpicture);
+    setCurrentSkinColor(player.pp_color || '#FFAD80');
+  }, [player.pp, player.pp_color]);
 
   const handleRename = (newName: string) => {
     if (gameCode) {
@@ -48,20 +76,42 @@ export const Player = ({ player, onChatClick, self }: PlayerProps) => {
     }
   };
 
+  const handlePictureChange = (newPictureUrl: string, skinColor?: string) => {
+    if (gameCode && newPictureUrl) {
+      ws.sendEvent({
+        type: 'profile_picture_change',
+        data: {
+          gameCode,
+          playerId: player.id,
+          pictureUrl: newPictureUrl,
+          pp_color: skinColor || '#FFAD80'
+        }
+      });
+      setCurrentPicture(newPictureUrl);
+      setCurrentSkinColor(skinColor || '#FFAD80');
+    }
+  };
+
   return (
     <div className="Player fade-in">
-      <img
-        className="playerPicture"
-        src={player.pp || Playerpicture}
-        alt={player.pseudo}
-        style={{
-          height: '50px',
-          width: '50px',
-          borderRadius: '50%',
-          objectFit: 'cover',
-          border: player.is_host ? '2px solid #E09D2D' : '2px solid #FFFFFF'
-        }}
-      />
+      <div style={{
+        border: player.is_host ? '2px solid #E09D2D' : '2px solid #FFFFFF',
+        borderRadius: '50%',
+        padding: '1px',
+        marginTop: '1px',
+        width: '52px',
+        height: '52px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <ProfilePicture
+          currentPicture={currentPicture}
+          isCurrentPlayer={self}
+          onPictureChange={handlePictureChange}
+          currentSkinColor={currentSkinColor}
+        />
+      </div>
       <div className="player-info">
         <PlayerName
           name={player.pseudo}
@@ -80,6 +130,7 @@ interface PlayerListProps {
     id: string;
     pseudo: string;
     pp: string;
+    pp_color?: string;
     is_host: boolean;
   }>;
   currentPlayerId?: string;

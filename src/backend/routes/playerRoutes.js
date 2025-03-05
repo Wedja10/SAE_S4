@@ -21,7 +21,8 @@ router.post("/create", async (req, res) => {
     try {
         const newPlayer = new Player({
             pseudo: generateUsername(),
-            pp: `https://api.dicebear.com/7.x/bottts/svg?seed=${nanoid()}`, // Generate random avatar
+            pp: `https://api.dicebear.com/7.x/adventurer-neutral/svg?seed=${nanoid()}&backgroundColor=transparent`,
+            pp_color: '#FFAD80', // Default skin color
             current_game: null,
             history: []
         });
@@ -30,7 +31,8 @@ router.post("/create", async (req, res) => {
         res.status(201).json({
             id: savedPlayer._id,
             pseudo: savedPlayer.pseudo,
-            pp: savedPlayer.pp
+            pp: savedPlayer.pp,
+            pp_color: savedPlayer.pp_color
         });
     } catch (error) {
         console.error("Error creating player:", error);
@@ -45,6 +47,31 @@ router.get("/", async (_req, res) => {
         res.json(players);
     } catch (error) {
         res.status(500).json({ message: "Erreur lors de la récupération des utilisateurs" });
+    }
+});
+
+// Update player picture and skin color
+router.post("/update-picture", async (req, res) => {
+    try {
+        const { playerId, newPicture, pp_color } = req.body;
+        const player = await Player.findById(playerId);
+        
+        if (!player) {
+            return res.status(404).json({ message: "Player not found" });
+        }
+
+        player.pp = newPicture;
+        player.pp_color = pp_color || '#FFAD80'; // Ensure we always have a skin color
+        await player.save();
+
+        res.json({
+            id: player._id,
+            pp: player.pp,
+            pp_color: player.pp_color
+        });
+    } catch (error) {
+        console.error("Error updating player picture:", error);
+        res.status(500).json({ message: "Error updating player picture" });
     }
 });
 

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { getWsUrl } from '../utils/config';
 
 export type LobbyEvent = {
-  type: 'player_join' | 'player_leave' | 'settings_update' | 'game_start' | 'chat_message' | 'host_change' | 'player_rename';
+  type: 'player_join' | 'player_leave' | 'settings_update' | 'game_start' | 'chat_message' | 'host_change' | 'player_rename' | 'profile_picture_change';
   data: any;
 };
 
@@ -11,9 +11,28 @@ class WebSocketService {
   private ws: WebSocket | null = null;
   private listeners: ((event: LobbyEvent) => void)[] = [];
   private pendingEvents: LobbyEvent[] = [];
+  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private isClosingIntentionally = false;
 
   private constructor() {
     this.connect();
+    
+    // Listen for page unload to properly close the connection
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
+  }
+  
+  private handleBeforeUnload = () => {
+    this.isClosingIntentionally = true;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      // We're intentionally closing, don't try to reconnect
+      this.ws.close();
+    }
+    
+    // Clear any reconnect timeouts
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
   }
 
   static getInstance(): WebSocketService {
@@ -61,10 +80,17 @@ class WebSocketService {
 
     this.ws.onclose = () => {
       console.log('🔴 WebSocket connection closed');
-      setTimeout(() => {
-        console.log('Attempting to reconnect...');
-        this.connect();
-      }, 5000); // Retry connection after 5 seconds
+      
+      // Don't reconnect if we're intentionally closing
+      if (!this.isClosingIntentionally) {
+        this.reconnectTimeout = setTimeout(() => {
+          console.log('Attempting to reconnect...');
+          this.connect();
+        }, 5000); // Retry connection after 5 seconds
+      } else {
+        console.log('WebSocket closed intentionally, not reconnecting');
+        this.isClosingIntentionally = false; // Reset for future connections
+      }
     };
 
     this.ws.onerror = (error) => {
@@ -98,6 +124,29 @@ class WebSocketService {
       }
     }
   }
+  
+  // Method to explicitly close the connection
+  close() {
+    this.isClosingIntentionally = true;
+    if (this.ws) {
+      this.ws.close();
+    }
+    
+    // Clean up event listeners
+    window.removeEventListener('beforeunload', this.handleBeforeUnload);
+    
+    // Clear any reconnect timeouts
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+  }
+  
+  // Cleanup method to be called when component unmounts
+  cleanup() {
+    // Remove all listeners
+    this.listeners = [];
+  }
 }
 
 export const useWebSocket = (callback: (event: LobbyEvent) => void) => {
@@ -113,4 +162,4 @@ export const useWebSocket = (callback: (event: LobbyEvent) => void) => {
   return wsService.current;
 };
 
-export default WebSocketService; 
+export default WebSocketService;
