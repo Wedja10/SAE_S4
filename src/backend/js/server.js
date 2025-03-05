@@ -325,7 +325,7 @@ app.use("/challenges", challengeRoutes);
 
 async function callAPI(endpoint, body) {
     try {
-        const response = await fetch(`http://localhost:${PORT}/games${endpoint}`, {
+        const response = await fetch(`http://localhost:${PORT}/articles${endpoint}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
@@ -342,9 +342,10 @@ async function callAPI(endpoint, body) {
 }
 
 async function testAPI() {
-    await callAPI("/players", { id_game: "67b1f4c36fe85f560dd86791" });
-    await callAPI("/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
-    await callAPI("/current-article", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
+    //await callAPI("/players", { id_game: "67b1f4c36fe85f560dd86791" });
+    //await callAPI("/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
+    //await callAPI("/current-article", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
+    await callAPI("/insert", { pathFile: "src/backend/data/visits.txt" });
 }
 
 app.get("/", (req, res) => {

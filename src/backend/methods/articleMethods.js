@@ -1,4 +1,86 @@
 import Article from "../models/Article.js";
+import fs from 'fs';
+import readline from 'readline';
+
+
+async function countLine(pathFile) {
+    const fileStream = fs.createReadStream(pathFile);
+    const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+    let compteur = 0;
+
+    for await (const ligne of rl) {
+        compteur++;
+    }
+    return compteur;
+}
+
+export const insertArticle = async (req, res) => {
+    const { pathFile } = req.body;
+
+    try {
+        console.log("Début de l'insertion...");
+        await Article.deleteMany({});
+        console.log("Base vidée.");
+
+        const count = await countLine(pathFile);
+        console.log(`Nombre total de lignes : ${count}`);
+
+        if (count === 0) {
+            console.warn("Le fichier est vide !");
+            return res.status(400).json({ message: "Le fichier ne contient aucune donnée" });
+        }
+
+        const fileStream = fs.createReadStream(pathFile);
+        const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+
+        const topTenPercent = parseInt(count / 10);
+        let compteur = 0;
+        const articles = [];
+
+        console.log("Début du traitement des lignes...");
+
+        for await (const ligne of rl) {
+            compteur++;
+            console.log(`Ligne ${compteur} : ${ligne}`);
+
+            const match = ligne.match(/^(.+?)\t(\d+)$/);
+            console.log(`Résultat du match :`, match);
+
+            if (match) {
+                const title = match[1];
+                let popular = compteur < topTenPercent;
+
+                console.log({ title, popular });
+                articles.push(new Article({ title, popular }));
+            } else {
+                console.warn(`Ligne mal formée : ${ligne}`);
+            }
+
+            if (articles.length >= 1000) {
+                await Article.insertMany(articles);
+                articles.length = 0; // Vide le tableau
+                console.log(`Lot de 1000 articles insérés. Ligne actuelle : ${compteur}`);
+            }
+        }
+
+        // Insère les articles restants
+        if (articles.length > 0) {
+            await Article.insertMany(articles);
+            console.log("Dernier lot d'articles insérés.");
+        }
+
+        console.log("Insertion terminée avec succès !");
+
+        const articlesInDb = await Article.find();
+        console.log("Articles en base après insertion :", articlesInDb);
+
+        res.status(200).json({ message: "Articles insérés avec succès" });
+    } catch (e) {
+        console.error("Erreur lors de l'insertion :", e);
+        res.status(500).json({ message: "Erreur lors de l'insertion des articles" });
+    }
+};
 
 export const getViews = async (title) => {
     try {
@@ -33,8 +115,6 @@ export const getViews = async (title) => {
         return 0;  // ⚠️ Retourne juste un nombre même en cas d'erreur
     }
 };
-
-
 
 export const createArticle = async (title) => {
     try {
