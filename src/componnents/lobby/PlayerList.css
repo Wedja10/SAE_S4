@@ -1,0 +1,20 @@
+.player-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.player-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: rgba(23, 20, 29, 0.5);
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+} 

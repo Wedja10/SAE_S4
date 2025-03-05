@@ -108,7 +108,7 @@ export const getLobbyInfo = async (req, res) => {
         const { gameCode } = req.params;
 
         const game = await Game.findOne({ game_code: gameCode })
-            .populate('players.player_id', 'pseudo pp');
+            .populate('players.player_id', 'pseudo pp pp_color');
 
         if (!game) {
             return res.status(404).json({ message: "Lobby non trouvé" });
@@ -119,6 +119,7 @@ export const getLobbyInfo = async (req, res) => {
             id: player.player_id._id,
             pseudo: player.player_id.pseudo,
             pp: player.player_id.pp,
+            pp_color: player.player_id.pp_color,
             is_host: player.is_host
         }));
 

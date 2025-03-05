@@ -12,7 +12,8 @@ const PlayerSchema = new mongoose.Schema({
             rank: Number
         }
     ],
-    pp: String
+    pp: String,
+    pp_color: { type: String, default: null }
 });
 
 export default mongoose.model('Player', PlayerSchema, 'players');

@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { useWebSocket, type LobbyEvent } from "../services/WebSocketService";
 import { useParams, useNavigate } from "react-router-dom";
 import { Storage } from "../utils/storage";
+import { ProfilePicture } from '../componnents/lobby/ProfilePicture';
+import { PlayerName } from '../componnents/lobby/PlayerName';
 
 interface LobbySettings {
   max_players: number | null;
@@ -19,7 +21,9 @@ interface Player {
   id: string;
   pseudo: string;
   pp: string;
+  pp_color?: string;
   is_host: boolean;
+  profilePicture?: string;
 }
 
 const Lobby: React.FC = () => {
@@ -62,6 +66,7 @@ const Lobby: React.FC = () => {
       id: normalizePlayerId(player),
       pseudo: player.pseudo || '',
       pp: player.pp || '',
+      pp_color: player.pp_color || '#FFAD80', 
       is_host: !!player.is_host
     };
   };
@@ -119,6 +124,19 @@ const Lobby: React.FC = () => {
           );
         });
         break;
+      case 'profile_picture_change':
+        setPlayers(prevPlayers => {
+          return prevPlayers.map(player => 
+            player.id === event.data.playerId 
+              ? { 
+                  ...player, 
+                  profilePicture: event.data.pictureUrl,
+                  pp_color: event.data.pp_color || player.pp_color || '#FFAD80' 
+                }
+              : player
+          );
+        });
+        break;
       case 'game_start':
         console.log('Received game_start event:', event);
         // Store the game ID before navigating
@@ -141,6 +159,60 @@ const Lobby: React.FC = () => {
         break;
     }
   });
+
+  // Send a leave event when the tab is closed or the user navigates away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Send a player_leave event when the tab is closed
+      if (gameCode && currentPlayerId) {
+        // Using sendBeacon for more reliable delivery during page unload
+        const leaveData = JSON.stringify({
+          type: 'player_leave',
+          data: {
+            gameCode,
+            playerId: currentPlayerId
+          }
+        });
+        
+        // Try to use navigator.sendBeacon if available (more reliable during page unload)
+        const wsUrl = new URL(window.location.href);
+        wsUrl.protocol = wsUrl.protocol === 'https:' ? 'https:' : 'http:';
+        wsUrl.port = '4001'; // WS_PORT + 1 as set in server.js
+        wsUrl.pathname = '/leave';
+        
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(wsUrl.toString(), leaveData);
+        } else {
+          // Fallback to the WebSocket
+          ws.sendEvent({
+            type: 'player_leave',
+            data: {
+              gameCode,
+              playerId: currentPlayerId
+            }
+          });
+        }
+      }
+    };
+
+    // Add event listener for beforeunload
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Also send leave event when component unmounts (e.g., navigation within the app)
+      if (gameCode && currentPlayerId) {
+        ws.sendEvent({
+          type: 'player_leave',
+          data: {
+            gameCode,
+            playerId: currentPlayerId
+          }
+        });
+      }
+    };
+  }, [gameCode, currentPlayerId, ws]);
 
   useEffect(() => {
     // Fetch initial lobby data
@@ -238,6 +310,33 @@ const Lobby: React.FC = () => {
       ws.sendEvent({
         type: 'game_start',
         data: { gameCode }
+      });
+    }
+  };
+
+  const handlePictureChange = (playerId: string, newPictureUrl: string, skinColor?: string) => {
+    if (gameCode) {
+      ws.sendEvent({
+        type: 'profile_picture_change',
+        data: {
+          gameCode,
+          playerId,
+          pictureUrl: newPictureUrl,
+          pp_color: skinColor || '#FFAD80'
+        }
+      });
+    }
+  };
+
+  const handleRename = (playerId: string, newName: string) => {
+    if (gameCode) {
+      ws.sendEvent({
+        type: 'player_rename',
+        data: {
+          gameCode,
+          playerId,
+          newName
+        }
       });
     }
   };

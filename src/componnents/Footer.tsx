@@ -14,7 +14,7 @@ function Footer() {
                                     href="https://abdelrahimriche.com" target="_blank">Portfolio</a>)</li>
                                 <li>Jawed (<a href="https://github.com/Wedja10" target="_blank">Github</a>, <a href="#"
                                     target="_blank">Portfolio</a>)</li>
-                                <li>Victor (<a href="#" target="_blank">Github</a>, <a href="#" target="_blank">Portfolio</a>)</li>
+                                <li>Victor (<a href="#" target="_blank">Github</a>, <a href="https://github.com/EpsiDEV" target="_blank">Portfolio</a>)</li>
                                 <li>Andrei (<a href="#" target="_blank">Github</a>, <a href="#" target="_blank">Portfolio</a>)</li>
                             </ul>
                     </div>
