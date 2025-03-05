@@ -421,6 +421,12 @@
   font-family: cowboy, sans-serif;
 }
 
+@media (max-width: 768px) {
+  .PrivateChatbox {
+    width: 80%;
+  }
+}
+
 .ChatboxHeader {
   font-size: 32px;
   border-bottom: #817D7D 0.25px solid;
@@ -439,6 +445,29 @@
 .ChatboxHeader img {
   position: absolute;
   right: 10%;
+}
+
+.ChatboxContent {
+  height: 70%;
+  width: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding: 10px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-message {
+  background-color: #17141d;
+  border-radius: 15px;
+  padding: 10px;
+  width: 75%;
+  word-wrap: break-word;
+  align-self: flex-end;
+
+  text-align: left;
 }
 
 .ChatboxInput {
