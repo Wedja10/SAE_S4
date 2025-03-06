@@ -70,3 +70,16 @@
   border: solid 2px black;
   border-radius: 50px;
 }
+
+@media (max-width: 1225px) {
+  .PublicSaloonTicket {
+    flex: 0 0 calc(45%);
+  }
+}
+
+@media (max-width: 950px) {
+  .PublicSaloonTicket {
+    flex: 0 0 calc(75%);
+    margin-left: 12.5%;
+  }
+}

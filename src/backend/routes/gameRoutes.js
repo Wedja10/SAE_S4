@@ -1,10 +1,11 @@
 import express from "express";
 import {
+    getVisitedArticlesPlayer,
+    eraserArtifact,
     createGame,
     getPlayersInGame,
     changeArticleFront,
     distributeRandomArticles,
-    getVisitedArticlesPlayer,
     getTargetArticles,
     getCurrentArticle,
     getArticfactPlayer,
@@ -13,9 +14,9 @@ import {
     dictatorArtifact,
     teleporterArtifact,
     backArtifact,
-    eraserArtifact,
     distributeArtifacts,
-    getFoundTargetArticles
+    getFoundTargetArticles,
+    getPublicGames
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -65,6 +66,7 @@ router.post('/target-articles', getTargetArticles);
 router.post('/found-target-articles', getFoundTargetArticles);
 router.post('/artifacts', getArticfactPlayer);
 router.post('/change-article', changeArticleFront);
+router.post('/public-games', getPublicGames);
 router.post("/random-articles", distributeRandomArticles);
 router.post("/create-game", createGame);
 router.post("/back-artifact", backArtifact);

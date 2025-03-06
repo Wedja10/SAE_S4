@@ -32,33 +32,33 @@ export const playerHasCurrentArticle = async (gameId, playerId) => {
 export const getPlayersInGame = async (req, res) => {
     try {
         const { id_game } = req.body;
-        
+
         if (!id_game) {
             return res.status(400).json({ error: "Game ID is required" });
         }
-        
+
         // Find game by ID or code
         const game = await findGameByIdOrCode(id_game);
         if (!game) {
             return res.status(404).json({ error: "Game not found" });
         }
-        
+
         // Get players with their scores
         const playersWithScores = await Promise.all(
             game.players.map(async (playerInfo) => {
                 try {
                     const player = await Player.findById(playerInfo.player_id);
                     if (!player) return null;
-                    
+
                     // Calculate score based on found target articles
                     let score = 0;
                     if (playerInfo.articles_visited && Array.isArray(playerInfo.articles_visited)) {
                         const targetArticleIds = game.articles_to_visit.map(id => id.toString());
-                        score = playerInfo.articles_visited.filter(id => 
+                        score = playerInfo.articles_visited.filter(id =>
                             targetArticleIds.includes(id.toString())
                         ).length;
                     }
-                    
+
                     return {
                         id: player._id.toString(),
                         pseudo: player.pseudo || "Player",
@@ -71,10 +71,10 @@ export const getPlayersInGame = async (req, res) => {
                 }
             })
         );
-        
+
         // Filter out null values
         const validPlayers = playersWithScores.filter(player => player !== null);
-        
+
         return res.status(200).json(validPlayers);
     } catch (error) {
         console.error("Error in getPlayersInGame:", error);
@@ -116,7 +116,7 @@ export const getFoundTargetArticles = async (req, res) => {
         // Check if player has found_target_articles field
         if (player.found_target_articles && Array.isArray(player.found_target_articles) && player.found_target_articles.length > 0) {
             console.log(`Player ${id_player} has ${player.found_target_articles.length} found target articles`);
-            
+
             // Get article titles from IDs
             const articles = await Promise.all(
                 player.found_target_articles.map(async (id) => {
@@ -134,10 +134,10 @@ export const getFoundTargetArticles = async (req, res) => {
             // Filter out null values
             const validArticles = articles.filter(article => article !== null);
             console.log(`Returning ${validArticles.length} valid found target articles`);
-            
+
             return res.status(200).json(validArticles);
         }
-        
+
         // If no found_target_articles field or it's empty, fall back to the old method
         // If no visited articles, return empty array
         if (!player.articles_visited || !Array.isArray(player.articles_visited) || player.articles_visited.length === 0) {
@@ -152,23 +152,23 @@ export const getFoundTargetArticles = async (req, res) => {
         }
 
         console.log(`Finding target articles that player ${id_player} has visited`);
-        
+
         // Convert visited article IDs to strings for comparison
         const visitedArticleIds = player.articles_visited.map(id => id.toString());
-        
+
         // Convert target article IDs to strings for comparison
         const targetArticleIds = game.articles_to_visit.map(id => id.toString());
-        
+
         // Find intersection of visited and target article IDs
         const foundTargetIds = visitedArticleIds.filter(id => targetArticleIds.includes(id));
-        
+
         if (foundTargetIds.length === 0) {
             console.log(`Player ${id_player} has not found any target articles yet`);
             return res.status(200).json([]);
         }
-        
+
         console.log(`Player ${id_player} has found ${foundTargetIds.length} target articles (using fallback method)`);
-        
+
         // Get article titles from IDs
         const articles = await Promise.all(
             foundTargetIds.map(async (id) => {
@@ -186,7 +186,7 @@ export const getFoundTargetArticles = async (req, res) => {
         // Filter out null values
         const validArticles = articles.filter(article => article !== null);
         console.log(`Returning ${validArticles.length} valid found target articles`);
-        
+
         return res.status(200).json(validArticles);
     } catch (error) {
         console.error("Error in getFoundTargetArticles:", error);
@@ -205,7 +205,7 @@ export const getCurrentArticle = async (req, res) => {
 
         // Try to find the game by ID or game code
         let game;
-        
+
         // Check if id_game is a valid ObjectId
         if (/^[0-9a-fA-F]{24}$/.test(id_game)) {
             game = await Game.findById(id_game);
@@ -213,7 +213,7 @@ export const getCurrentArticle = async (req, res) => {
             // If not a valid ObjectId, try to find by game code
             game = await Game.findOne({ game_code: id_game });
         }
-        
+
         if (!game) {
             return res.status(404).json({message: "Jeu non trouvé"});
         }
@@ -324,8 +324,8 @@ export const changeArticle = async (req, res) => {
         await game.save();
         console.log(`Successfully updated current article for player ${id_player} to ${article.title}`);
 
-        return res.status(200).json({ 
-            message: "Article changed successfully", 
+        return res.status(200).json({
+            message: "Article changed successfully",
             id_article: id_article,
             title: article.title
         });
@@ -345,7 +345,7 @@ const checkTargetArticleFound = async (game, articleId, playerId) => {
 
         // Convert IDs to strings for comparison
         const articleIdStr = articleId.toString();
-        
+
         // Check if article is in target articles
         if (game.articles_to_visit && Array.isArray(game.articles_to_visit)) {
             const isTargetArticle = game.articles_to_visit.some(
@@ -356,37 +356,37 @@ const checkTargetArticleFound = async (game, articleId, playerId) => {
                 const article = await Article.findById(articleId);
                 const articleTitle = article ? article.title : "Unknown article";
                 console.log(`Player ${playerId} found a target article: ${articleTitle}`);
-                
+
                 // Find the player in the game
-                const playerIndex = game.players.findIndex(p => 
+                const playerIndex = game.players.findIndex(p =>
                     p.player_id && p.player_id.toString() === playerId.toString()
                 );
-                
+
                 if (playerIndex !== -1) {
                     // Initialize found_target_articles if it doesn't exist
                     if (!game.players[playerIndex].found_target_articles) {
                         game.players[playerIndex].found_target_articles = [];
                     }
-                    
+
                     // Check if this target article is already in the found list
                     const alreadyFound = game.players[playerIndex].found_target_articles.some(
                         foundId => foundId && foundId.toString() === articleIdStr
                     );
-                    
+
                     if (!alreadyFound) {
                         // Add to found target articles
                         game.players[playerIndex].found_target_articles.push(articleId);
                         console.log(`Added ${articleTitle} to player's found target articles`);
-                        
+
                         // Save the game to persist the found target article
                         await game.save();
                     }
                 }
-                
+
                 return true;
             }
         }
-        
+
         return false;
     } catch (error) {
         console.error("Error in checkTargetArticleFound:", error);
@@ -467,8 +467,8 @@ export const changeArticleFront = async (req, res) => {
         await game.save();
         console.log(`Successfully updated current article for player ${id_player} to ${article.title}`);
 
-        return res.status(200).json({ 
-            message: "Article changed successfully", 
+        return res.status(200).json({
+            message: "Article changed successfully",
             id_article: articleId,
             title: article.title,
             isNewVisit,
@@ -567,7 +567,7 @@ export const distributeRandomArticles = async (req, res) => {
                 console.error("Erreur lors de la création de l'article :", err);
             }
         }
-        
+
         try {
             await distributeToPlayers(game);
             await game.save();
@@ -575,37 +575,37 @@ export const distributeRandomArticles = async (req, res) => {
             // Handle version conflict errors
             if (saveError.name === 'VersionError') {
                 console.log('Version conflict detected, retrying with fresh game document');
-                
+
                 // Fetch a fresh copy of the game
                 const freshGame = await findGameByIdOrCode(id_game);
                 if (!freshGame) {
                     return res.status(404).json({ message: "Jeu non trouvé lors de la tentative de résolution du conflit de version." });
                 }
-                
+
                 // Copy the articles_to_visit and artifacts_distribution to the fresh game
                 if (!freshGame.articles_to_visit) freshGame.articles_to_visit = [];
                 if (!freshGame.artifacts_distribution) freshGame.artifacts_distribution = [];
-                
+
                 // Add any new articles that aren't already in the fresh game
                 for (const articleId of game.articles_to_visit) {
                     if (!freshGame.articles_to_visit.some(id => id.toString() === articleId.toString())) {
                         freshGame.articles_to_visit.push(articleId);
                     }
                 }
-                
+
                 // Add any new artifact distributions that aren't already in the fresh game
                 for (const distribution of game.artifacts_distribution) {
-                    if (!freshGame.artifacts_distribution.some(d => 
-                        d.article.toString() === distribution.article.toString() && 
+                    if (!freshGame.artifacts_distribution.some(d =>
+                        d.article.toString() === distribution.article.toString() &&
                         d.artifact === distribution.artifact)) {
                         freshGame.artifacts_distribution.push(distribution);
                     }
                 }
-                
+
                 // Try to distribute and save again
                 await distributeToPlayers(freshGame);
                 await freshGame.save();
-                
+
                 // Return the fresh game
                 return res.status(200).json({ message: "Articles distribués avec succès (après résolution de conflit)", game: freshGame });
             } else {
@@ -658,7 +658,7 @@ export const getVisitedArticlesPlayer = async (req, res) => {
         }
 
         console.log(`Found ${player.articles_visited.length} visited articles for player ${id_player}`);
-        
+
         // Get article titles from IDs
         const articleIds = player.articles_visited;
         const articles = await Promise.all(
@@ -677,7 +677,7 @@ export const getVisitedArticlesPlayer = async (req, res) => {
         // Filter out null values
         const validArticles = articles.filter(article => article !== null);
         console.log(`Returning ${validArticles.length} valid visited articles`);
-        
+
         return res.status(200).json(validArticles);
     } catch (error) {
         console.error("Error in getVisitedArticlesPlayer:", error);
@@ -709,7 +709,7 @@ export const getTargetArticles = async (req, res) => {
         }
 
         console.log(`Found ${game.articles_to_visit.length} target articles for game ${id_game}`);
-        
+
         // Get article titles from IDs
         const articleIds = game.articles_to_visit;
         const articles = await Promise.all(
@@ -728,7 +728,7 @@ export const getTargetArticles = async (req, res) => {
         // Filter out null values
         const validArticles = articles.filter(article => article !== null);
         console.log(`Returning ${validArticles.length} valid target articles`);
-        
+
         return res.status(200).json(validArticles);
     } catch (error) {
         console.error("Error in getTargetArticles:", error);
@@ -1201,7 +1201,7 @@ export const distributeArtifacts = async (req, res) => {
 
         // List of available artifacts
         const availableArtifacts = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"];
-        
+
         // Distribute artifacts to each player
         for (const player of game.players) {
             // Each player gets 2 random artifacts to start with
@@ -1210,7 +1210,7 @@ export const distributeArtifacts = async (req, res) => {
                 const randomIndex = Math.floor(Math.random() * availableArtifacts.length);
                 playerArtifacts.push(availableArtifacts[randomIndex]);
             }
-            
+
             // Update player's artifacts
             player.artifacts = playerArtifacts;
         }
@@ -1219,7 +1219,7 @@ export const distributeArtifacts = async (req, res) => {
         await game.save();
 
         console.log(`Artifacts distributed to ${game.players.length} players in game ${id_game}`);
-        return res.status(200).json({ 
+        return res.status(200).json({
             message: "Artifacts distributed successfully",
             players: game.players.map(p => ({
                 player_id: p.player_id,
@@ -1229,6 +1229,24 @@ export const distributeArtifacts = async (req, res) => {
     } catch (error) {
         console.error("Error distributing artifacts:", error);
         return res.status(500).json({ error: "Failed to distribute artifacts" });
+    }
+};
+
+export const getPublicGames = async (req, res) => {
+    try {
+        const publicGames = await Game.find({ "settings.visibility": "public", status: "waiting" });
+
+
+        const infoGames = await Promise.all(publicGames.map(async (game) => {
+            const player = await Player.findById(game.players[0].player_id);
+            const playerName = player ? player.pseudo : "Joueur inconnu";
+            return [game.game_code, playerName, game.players.length, game.settings.max_players];
+        }));
+
+        res.json(infoGames);
+    } catch (e) {
+        console.error("Erreur getPublicGames :", e);
+        res.status(500).json({ message: "Erreur lors de la récupération des parties publiques." });
     }
 };
 
