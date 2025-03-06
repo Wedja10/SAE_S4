@@ -2,6 +2,7 @@ import React, {useEffect, useState} from "react";
 import '../../style/game/Actions.css';
 import {postRequest} from "../../backend/services/apiService.js";
 import {getApiUrl} from "../../utils/config";
+import { Storage } from "../../utils/storage";
 
 // 1. Définir les props attendues
 interface ActionsProps {
@@ -18,11 +19,68 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
     console.log('Props reçues par Actions:', {onTeleport});
     const [artifacts, setArtifacts] = useState<string[]>([]);
 
+    // Validate ObjectId format (24 character hex string)
+    const isValidObjectId = (id: string | null): boolean => {
+        if (!id) return false;
+        return /^[0-9a-fA-F]{24}$/.test(id);
+    };
+
     const fetchArtifacts = async () => {
-        const data = await postRequest(getApiUrl('/games/artifacts'), {
-            id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"
-        });
-        setArtifacts(data);
+        try {
+            // Get the values again after potential updates
+            const updatedGameId = Storage.getGameId();
+            const updatedPlayerId = Storage.getPlayerId();
+            
+            console.log("Fetching artifacts with IDs:", { gameId: updatedGameId, playerId: updatedPlayerId });
+            
+            if (!updatedGameId || !updatedPlayerId || !isValidObjectId(updatedGameId) || !isValidObjectId(updatedPlayerId)) {
+                console.error("Missing or invalid IDs for artifacts fetch");
+                return;
+            }
+            
+            try {
+                console.log("Making artifacts request to:", getApiUrl('/games/artifacts'));
+                const data = await postRequest(getApiUrl('/games/artifacts'), {
+                    id_game: updatedGameId,
+                    id_player: updatedPlayerId
+                });
+                console.log("Fetched artifacts:", data);
+                setArtifacts(data || []);
+            } catch (artifactsError) {
+                console.error("Error in artifacts request:", artifactsError);
+                
+                // Check if the error is "Player not found in this game"
+                if (artifactsError instanceof Error && artifactsError.message.includes("Player not found in this game")) {
+                    console.log("Attempting to join the game...");
+                    try {
+                        // Try to join the game
+                        const gameCode = Storage.getGameCode();
+                        if (gameCode && updatedPlayerId) {
+                            await postRequest(getApiUrl('/games/join'), {
+                                gameCode: gameCode,
+                                playerId: updatedPlayerId
+                            });
+                            console.log("Successfully joined the game, retrying fetch...");
+                            
+                            // Retry fetching artifacts
+                            const retryData = await postRequest(getApiUrl('/games/artifacts'), {
+                                id_game: updatedGameId,
+                                id_player: updatedPlayerId
+                            });
+                            setArtifacts(retryData || []);
+                        }
+                    } catch (joinError) {
+                        console.error("Error joining the game:", joinError);
+                        setArtifacts([]);
+                    }
+                } else {
+                    setArtifacts([]);
+                }
+            }
+        } catch (error) {
+            console.error("Error in fetchArtifacts:", error);
+            setArtifacts([]);
+        }
     };
 
     useEffect(() => {

@@ -4,6 +4,7 @@
     position: relative;
     overflow: visible;
     height: 100%;
+    padding: 10px;
 }
 
 .articles-container div{
@@ -40,6 +41,7 @@
     transition: transform 0.2s ease-in-out;
     text-align: left;
     margin-left: 10px;
+    position: relative;
 }
 
 .article-item:hover {
@@ -53,4 +55,64 @@
 
 .article-visited {
     color: #76ff03;
+}
+
+/* Found target article */
+.article-to-find.found {
+    color: #4caf50;
+    font-weight: bold;
+}
+
+/* Found indicator */
+.found-indicator {
+    position: absolute;
+    right: 10px;
+    color: #4caf50;
+    font-weight: bold;
+}
+
+/* Loading state */
+.articles-container.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    color: #E09D2D;
+}
+
+/* Error state */
+.articles-container.error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    color: #ff5252;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Animation for new articles */
+@keyframes highlight {
+    0% { background-color: rgba(255, 235, 59, 0.5); }
+    100% { background-color: transparent; }
+}
+
+.article-item.new {
+    animation: highlight 2s ease-out;
+}
+
+/* Animation for found target articles */
+@keyframes found-highlight {
+    0% { background-color: rgba(76, 175, 80, 0.5); }
+    100% { background-color: transparent; }
+}
+
+.article-to-find.found.new {
+    animation: found-highlight 2s ease-out;
+}
+
+/* Empty state */
+.article-item.empty {
+    color: #aaa;
+    font-style: italic;
 }

@@ -104,6 +104,16 @@
     background: #fafafa;
     padding: 20px;
     border-radius: 10px;
+    min-height: 300px;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.wiki-content.fade-in {
+    opacity: 1;
+}
+
+.wiki-content.loading {
+    opacity: 0.7;
 }
 
 /* Adapter les images */
@@ -181,48 +191,80 @@
     border-bottom: none;
 }
 
-.wiki-content {
-    min-height: 300px; /* Pour éviter un "saut" pendant le chargement */
-    transition: opacity 0.3s ease-in-out;
-}
-
-.wiki-content.fade-in {
-    opacity: 1;
-}
-
-.wiki-content.loading {
-    opacity: 0.5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 300px; /* Ajuste selon tes besoins */
-}
-
 .loading-spinner {
     font-size: 1.2em;
     color: #555;
 }
 
-.wiki-content {
-    min-height: 300px;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.wiki-content.fade-in {
-    opacity: 1;
-}
-
-.wiki-content.loading {
-    opacity: 0.5;
+/* Modern loading screen styles */
+.loading-container {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    width: 100%;
+    height: 100%;
     min-height: 300px;
 }
 
-.loading-spinner {
+.loading-spinner-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+}
+
+.loading-spinner-circle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 4px solid transparent;
+    border-top-color: #E09D2D;
+    border-radius: 50%;
+    animation: spin 1.2s linear infinite;
+}
+
+.loading-spinner-circle:before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border: 4px solid transparent;
+    border-top-color: #8B672B;
+    border-radius: 50%;
+    animation: spin 1.8s linear infinite;
+}
+
+.loading-spinner-circle:after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    bottom: 15px;
+    border: 4px solid transparent;
+    border-top-color: #0d0d3b;
+    border-radius: 50%;
+    animation: spin 2.4s linear infinite;
+}
+
+.loading-text {
+    font-family: "cowboy", sans-serif;
     font-size: 1.2em;
-    color: #555;
+    color: #E09D2D;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    letter-spacing: 1px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .back-button {

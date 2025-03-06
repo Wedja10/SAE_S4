@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { Storage } from "../../utils/storage";
 import { useState } from "react";
+import { getApiUrl } from '../../utils/config';
 
 const Multi = () => {
   const navigate = useNavigate();
@@ -8,13 +9,10 @@ const Multi = () => {
   const [isCreatingPlayer, setIsCreatingPlayer] = useState(false);
 
   // Create a player if one doesn't exist
-  const ensurePlayer = async () => {
-    const playerId = Storage.getPlayerId();
-    if (playerId) return playerId;
-
+  const createPlayer = async () => {
+    setIsCreatingPlayer(true);
     try {
-      setIsCreatingPlayer(true);
-      const response = await fetch('http://localhost:5000/players/create', {
+      const response = await fetch(getApiUrl('/players/create'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -37,11 +35,11 @@ const Multi = () => {
   const handleCreateLobby = async () => {
     try {
       // First ensure we have a player
-      const playerId = await ensurePlayer();
+      const playerId = await createPlayer();
       
       console.log('Creating game with player ID:', playerId);
       
-      const response = await fetch('http://localhost:5000/games/create-game', {
+      const response = await fetch(getApiUrl('/games/create-game'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

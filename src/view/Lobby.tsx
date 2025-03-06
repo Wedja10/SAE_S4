@@ -2,7 +2,7 @@ import Navbar from "../componnents/Navbar.tsx";
 import '../style/Lobby.css';
 import { PlayerList } from "../componnents/lobby/LobbyComponents.tsx";
 import { ArtefactsList, OptionsPanel, StartButton } from "../componnents/lobby/Artefacts.tsx";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useWebSocket, type LobbyEvent } from "../services/WebSocketService";
 import { useParams, useNavigate } from "react-router-dom";
 import { Storage } from "../utils/storage";
@@ -27,6 +27,8 @@ interface Player {
 }
 
 const Lobby: React.FC = () => {
+  const { gameCode } = useParams();
+  const navigate = useNavigate();
   const [players, setPlayers] = useState<Player[]>([]);
   const [settings, setSettings] = useState<LobbySettings>({
     max_players: null,
@@ -37,39 +39,20 @@ const Lobby: React.FC = () => {
   });
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { gameCode } = useParams();
-  const navigate = useNavigate();
-  const currentPlayerId = Storage.getPlayerId() || '';
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
+  const [hasJoined, setHasJoined] = useState(false);
+  const [leaveSent, setLeaveSent] = useState(false);
 
+  // Get player ID from local storage
   useEffect(() => {
-    if (!currentPlayerId) {
-      navigate('/choice');
-      return;
+    const storedPlayerId = localStorage.getItem('playerId');
+    if (storedPlayerId) {
+      setCurrentPlayerId(storedPlayerId);
+    } else {
+      navigate('/');
     }
-    if (gameCode) {
-      Storage.setGameCode(gameCode);
-    }
-  }, [currentPlayerId, gameCode, navigate]);
-
-  const artefacts: string[] = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"];
-
-  const normalizePlayerId = (player: any): string => {
-    if (typeof player.id === 'string') return player.id;
-    if (typeof player.player_id === 'string') return player.player_id;
-    if (player.player_id?._id) return player.player_id._id;
-    if (player.player_id) return player.player_id.toString();
-    return '';
-  };
-
-  const normalizePlayer = (player: any): Player => {
-    return {
-      id: normalizePlayerId(player),
-      pseudo: player.pseudo || '',
-      pp: player.pp || '',
-      pp_color: player.pp_color || '#FFAD80', 
-      is_host: !!player.is_host
-    };
-  };
+  }, [navigate]);
 
   const ws = useWebSocket((event: LobbyEvent) => {
     console.log('Received WebSocket event:', event);
@@ -143,81 +126,97 @@ const Lobby: React.FC = () => {
         if (event.data.gameId) {
           console.log('Setting game ID:', event.data.gameId);
           Storage.setGameId(event.data.gameId);
-          // Small delay to ensure storage is set
-          setTimeout(() => {
-            const storedGameId = Storage.getGameId();
-            console.log('Stored game ID:', storedGameId);
-            if (storedGameId) {
+          
+          // Verify storage is set before navigating
+          const storedGameId = Storage.getGameId();
+          const storedPlayerId = Storage.getPlayerId();
+          console.log('Stored game ID:', storedGameId);
+          console.log('Stored player ID:', storedPlayerId);
+          
+          if (storedGameId) {
+            // Add a small delay to ensure storage is properly set
+            setTimeout(() => {
               navigate(`/game/${gameCode}`);
-            } else {
-              console.error('Failed to store game ID');
-            }
-          }, 100);
+            }, 300);
+          } else {
+            console.error('Failed to store game ID');
+            // Try one more time with a longer delay
+            setTimeout(() => {
+              Storage.setGameId(event.data.gameId);
+              const retryStoredGameId = Storage.getGameId();
+              console.log('Retry stored game ID:', retryStoredGameId);
+              if (retryStoredGameId) {
+                navigate(`/game/${gameCode}`);
+              } else {
+                console.error('Failed to store game ID after retry');
+                alert('Failed to start the game. Please try again.');
+              }
+            }, 500);
+          }
         } else {
           console.error('No game ID received in game_start event');
+          alert('Failed to start the game. No game ID received.');
         }
         break;
     }
   });
 
-  // Send a leave event when the tab is closed or the user navigates away
+  // Function to safely send a leave event only once
+  const sendLeaveEvent = useCallback(() => {
+    if (gameCode && currentPlayerId && !leaveSent) {
+      // Check if we just joined (within the last 3 seconds)
+      const joinTimestampStr = sessionStorage.getItem(`join_${gameCode}_${currentPlayerId}`);
+      if (joinTimestampStr) {
+        const joinTimestamp = parseInt(joinTimestampStr, 10);
+        const now = Date.now();
+        
+        // If we joined less than 3 seconds ago, don't send a leave event
+        if (now - joinTimestamp < 3000) {
+          console.log(`Preventing leave event shortly after joining (${(now - joinTimestamp)/1000}s). Skipping leave event.`);
+          return;
+        }
+      }
+      
+      console.log(`Sending leave event for player ${currentPlayerId} in lobby ${gameCode}`);
+      ws.sendEvent({
+        type: 'player_leave',
+        data: {
+          gameCode,
+          playerId: currentPlayerId
+        }
+      });
+      
+      // Mark that we've sent a leave event
+      setLeaveSent(true);
+    }
+  }, [gameCode, currentPlayerId, leaveSent, ws]);
+
+  // Handle navigation events, but don't send leave events on page unload
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Send a player_leave event when the tab is closed
+    // We don't need to handle beforeunload anymore
+    // The WebSocket connection will stay alive during page refreshes
+    
+    // Cleanup function for component unmount
+    return () => {
+      // Only send leave event when component unmounts due to navigation to a different page
+      // Don't send if we're just refreshing or if we're navigating to the game page
       if (gameCode && currentPlayerId) {
-        // Using sendBeacon for more reliable delivery during page unload
-        const leaveData = JSON.stringify({
-          type: 'player_leave',
-          data: {
-            gameCode,
-            playerId: currentPlayerId
-          }
-        });
+        const currentPath = window.location.pathname;
+        const isNavigatingToGame = currentPath.includes('/game/');
         
-        // Try to use navigator.sendBeacon if available (more reliable during page unload)
-        const wsUrl = new URL(window.location.href);
-        wsUrl.protocol = wsUrl.protocol === 'https:' ? 'https:' : 'http:';
-        wsUrl.port = '4001'; // WS_PORT + 1 as set in server.js
-        wsUrl.pathname = '/leave';
-        
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon(wsUrl.toString(), leaveData);
-        } else {
-          // Fallback to the WebSocket
-          ws.sendEvent({
-            type: 'player_leave',
-            data: {
-              gameCode,
-              playerId: currentPlayerId
-            }
-          });
+        // Only send leave event if we're not navigating to the game page
+        if (!isNavigatingToGame) {
+          sendLeaveEvent();
         }
       }
     };
-
-    // Add event listener for beforeunload
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    // Cleanup function
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Also send leave event when component unmounts (e.g., navigation within the app)
-      if (gameCode && currentPlayerId) {
-        ws.sendEvent({
-          type: 'player_leave',
-          data: {
-            gameCode,
-            playerId: currentPlayerId
-          }
-        });
-      }
-    };
-  }, [gameCode, currentPlayerId, ws]);
+  }, [gameCode, currentPlayerId, sendLeaveEvent]);
 
   useEffect(() => {
     // Fetch initial lobby data
     const fetchLobbyData = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`http://localhost:5000/games/lobby/${gameCode}`, {
           method: 'GET',
           headers: {
@@ -257,21 +256,44 @@ const Lobby: React.FC = () => {
         const isCurrentPlayerHost = normalizedPlayers.some((p: { id: string; is_host: any; }) => p.id === currentPlayerId && p.is_host);
         setIsHost(isCurrentPlayerHost);
 
+        // Store join timestamp to prevent immediate leave events
+        const joinTimestamp = Date.now();
+        sessionStorage.setItem(`join_${gameCode}_${currentPlayerId}`, joinTimestamp.toString());
+        
+        // Reset leave sent flag when joining
+        setLeaveSent(false);
+        setHasJoined(true);
+
         // Send join event through WebSocket
         const currentPlayer = normalizedPlayers.find((p: { id: string; }) => p.id === currentPlayerId);
         if (currentPlayer) {
+          // Get stored profile picture and skin color
+          const storedProfilePic = Storage.getProfilePicture();
+          const storedProfilePicColor = Storage.getProfilePictureColor();
+          
+          // Update player data with stored values if available
+          const playerData = { ...currentPlayer };
+          if (storedProfilePic) {
+            playerData.pp = storedProfilePic;
+          }
+          if (storedProfilePicColor) {
+            playerData.pp_color = storedProfilePicColor;
+          }
+          
           ws.sendEvent({
             type: 'player_join',
             data: {
               gameCode,
-              player: currentPlayer
+              player: playerData
             }
           });
         }
-
+        
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching lobby data:', error);
         setError('Failed to load lobby data. Please try again.');
+        setIsLoading(false);
       }
     };
 
@@ -281,17 +303,11 @@ const Lobby: React.FC = () => {
 
     // Cleanup: leave the lobby when component unmounts
     return () => {
-      if (gameCode && currentPlayerId) {
-        ws.sendEvent({
-          type: 'player_leave',
-          data: {
-            gameCode,
-            playerId: currentPlayerId
-          }
-        });
+      if (gameCode && currentPlayerId && hasJoined) {
+        sendLeaveEvent();
       }
     };
-  }, [gameCode, currentPlayerId, ws]);
+  }, [gameCode, currentPlayerId, ws, sendLeaveEvent, hasJoined]);
 
   const handleSettingsUpdate = (newSettings: LobbySettings) => {
     if (isHost && gameCode) {
@@ -316,15 +332,24 @@ const Lobby: React.FC = () => {
 
   const handlePictureChange = (playerId: string, newPictureUrl: string, skinColor?: string) => {
     if (gameCode) {
+      const finalSkinColor = skinColor || '#FFAD80';
+      
       ws.sendEvent({
         type: 'profile_picture_change',
         data: {
           gameCode,
           playerId,
           pictureUrl: newPictureUrl,
-          pp_color: skinColor || '#FFAD80'
+          pp_color: finalSkinColor
         }
       });
+      
+      // Store the profile picture and skin color in localStorage if it's the current player
+      if (playerId === currentPlayerId) {
+        Storage.setProfilePicture(newPictureUrl);
+        Storage.setProfilePictureColor(finalSkinColor);
+        console.log(`Profile picture "${newPictureUrl}" and color "${finalSkinColor}" stored in localStorage`);
+      }
     }
   };
 
@@ -338,7 +363,70 @@ const Lobby: React.FC = () => {
           newName
         }
       });
+      
+      // Store the player name in localStorage if it's the current player
+      if (playerId === currentPlayerId) {
+        Storage.setPlayerName(newName);
+        console.log(`Player name "${newName}" stored in localStorage`);
+      }
     }
+  };
+
+  const artefacts: string[] = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"];
+
+  const normalizePlayerId = (player: any): string => {
+    if (typeof player.id === 'string') return player.id;
+    if (typeof player.player_id === 'string') return player.player_id;
+    if (player.player_id?._id) return player.player_id._id;
+    if (player.player_id) return player.player_id.toString();
+    return '';
+  };
+
+  const normalizePlayer = (player: any): Player => {
+    const playerId = normalizePlayerId(player);
+    const isCurrentPlayer = playerId === currentPlayerId;
+    
+    // Use stored player name for current player if available
+    let playerName = player.pseudo || '';
+    let profilePic = player.pp || '';
+    let profilePicColor = player.pp_color || '#FFAD80';
+    
+    if (isCurrentPlayer) {
+      // Handle player name
+      const storedName = Storage.getPlayerName();
+      if (storedName) {
+        playerName = storedName;
+      } else if (playerName) {
+        // If we have a player name but it's not stored, store it
+        Storage.setPlayerName(playerName);
+      }
+      
+      // Handle profile picture
+      const storedProfilePic = Storage.getProfilePicture();
+      if (storedProfilePic) {
+        profilePic = storedProfilePic;
+      } else if (profilePic) {
+        // If we have a profile picture but it's not stored, store it
+        Storage.setProfilePicture(profilePic);
+      }
+      
+      // Handle profile picture color
+      const storedProfilePicColor = Storage.getProfilePictureColor();
+      if (storedProfilePicColor) {
+        profilePicColor = storedProfilePicColor;
+      } else if (profilePicColor) {
+        // If we have a profile picture color but it's not stored, store it
+        Storage.setProfilePictureColor(profilePicColor);
+      }
+    }
+    
+    return {
+      id: playerId,
+      pseudo: playerName,
+      pp: profilePic,
+      pp_color: profilePicColor,
+      is_host: !!player.is_host
+    };
   };
 
   return (

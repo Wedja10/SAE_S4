@@ -42,26 +42,67 @@ export const Player = ({ player, onChatClick, self }: PlayerProps) => {
     if (event.type === 'profile_picture_change' && event.data.playerId === player.id) {
       setCurrentPicture(event.data.pictureUrl);
       setCurrentSkinColor(event.data.pp_color || '#FFAD80');
+      
+      // Store in localStorage if this is the current player
+      if (self) {
+        Storage.setProfilePicture(event.data.pictureUrl);
+        Storage.setProfilePictureColor(event.data.pp_color || '#FFAD80');
+        console.log(`Profile picture "${event.data.pictureUrl}" and color "${event.data.pp_color || '#FFAD80'}" stored in localStorage`);
+      }
     }
-    // When a new player joins, broadcast your skin color if you're an existing player
+    // When a new player joins, broadcast your profile if you're an existing player
     else if (event.type === 'player_join' && self && gameCode) {
-      // Send your current profile picture and skin color to ensure new players see it
-      ws.sendEvent({
-        type: 'profile_picture_change',
-        data: {
-          gameCode,
-          playerId: player.id,
-          pictureUrl: currentPicture,
-          pp_color: currentSkinColor
-        }
-      });
+      // Small delay to ensure the new player has fully joined
+      setTimeout(() => {
+        console.log('Broadcasting profile to new player');
+        // Send your current profile picture and skin color to ensure new players see it
+        ws.sendEvent({
+          type: 'profile_picture_change',
+          data: {
+            gameCode,
+            playerId: player.id,
+            pictureUrl: currentPicture,
+            pp_color: currentSkinColor
+          }
+        });
+        
+        // Also broadcast your name
+        ws.sendEvent({
+          type: 'player_rename',
+          data: {
+            gameCode,
+            playerId: player.id,
+            newName: player.pseudo
+          }
+        });
+      }, 500);
     }
   });
 
   useEffect(() => {
-    setCurrentPicture(player.pp || Playerpicture);
-    setCurrentSkinColor(player.pp_color || '#FFAD80');
-  }, [player.pp, player.pp_color]);
+    // If this is the current player, check for stored values
+    if (self) {
+      const storedProfilePic = Storage.getProfilePicture();
+      const storedProfilePicColor = Storage.getProfilePictureColor();
+      
+      // Use stored values if available, otherwise use player values
+      if (storedProfilePic) {
+        setCurrentPicture(storedProfilePic);
+      } else {
+        setCurrentPicture(player.pp || Playerpicture);
+      }
+      
+      if (storedProfilePicColor) {
+        setCurrentSkinColor(storedProfilePicColor);
+      } else {
+        setCurrentSkinColor(player.pp_color || '#FFAD80');
+      }
+    } else {
+      // For other players, just use the values from the player object
+      setCurrentPicture(player.pp || Playerpicture);
+      setCurrentSkinColor(player.pp_color || '#FFAD80');
+    }
+  }, [player.pp, player.pp_color, self]);
 
   const handleRename = (newName: string) => {
     if (gameCode) {
@@ -78,17 +119,27 @@ export const Player = ({ player, onChatClick, self }: PlayerProps) => {
 
   const handlePictureChange = (newPictureUrl: string, skinColor?: string) => {
     if (gameCode && newPictureUrl) {
+      const finalSkinColor = skinColor || '#FFAD80';
+      
       ws.sendEvent({
         type: 'profile_picture_change',
         data: {
           gameCode,
           playerId: player.id,
           pictureUrl: newPictureUrl,
-          pp_color: skinColor || '#FFAD80'
+          pp_color: finalSkinColor
         }
       });
+      
       setCurrentPicture(newPictureUrl);
-      setCurrentSkinColor(skinColor || '#FFAD80');
+      setCurrentSkinColor(finalSkinColor);
+      
+      // Store in localStorage if this is the current player
+      if (self) {
+        Storage.setProfilePicture(newPictureUrl);
+        Storage.setProfilePictureColor(finalSkinColor);
+        console.log(`Profile picture "${newPictureUrl}" and color "${finalSkinColor}" stored in localStorage`);
+      }
     }
   };
 

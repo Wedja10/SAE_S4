@@ -44,4 +44,7 @@
     height: 25px;
     border-radius: 50%;
     margin-right: 10px;
+    object-fit: contain;
+    border: 2px solid transparent;
+    background-color: #FFAD80;
 }

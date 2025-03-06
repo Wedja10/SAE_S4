@@ -4,17 +4,6 @@ import {useState, useEffect} from "react";
 import descriptionData from "../../../public/assets/Artefacts/description.json";
 import './Artefacts.css';
 
-// Add styles for the tooltip
-const tooltipStyle = {
-  tooltip: {
-    fontSize: '0.8rem',
-    color: '#666',
-    marginTop: '4px',
-    fontStyle: 'italic',
-    textAlign: 'center' as const,
-  }
-};
-
 interface StartButtonProps {
   onStart: () => void;
 }

@@ -16,6 +16,7 @@ const GameSchema = new mongoose.Schema({
         {
             player_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
             articles_visited: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
+            found_target_articles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
             current_article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
             artifacts: [String],
             score: Number,

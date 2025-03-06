@@ -1,20 +1,21 @@
 import express from "express";
 import {
-    getVisitedArticlesPlayer,
-    eraserArtifact,
     createGame,
-    getGamePlayers,
-    backArtifact,
+    getPlayersInGame,
+    changeArticleFront,
     distributeRandomArticles,
-    getFoundTargetArticles,
+    getVisitedArticlesPlayer,
+    getTargetArticles,
+    getCurrentArticle,
     getArticfactPlayer,
     mineArtifact,
     disorienterArtifact,
     dictatorArtifact,
     teleporterArtifact,
-    getTargetArticles,
-    changeArticleFront,
-    getCurrentArticle
+    backArtifact,
+    eraserArtifact,
+    distributeArtifacts,
+    getFoundTargetArticles
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -57,12 +58,13 @@ router.get("/lobby/:gameCode", async (req, res) => {
     }
 });
 
-router.post("/players", getGamePlayers);
+router.post("/players", getPlayersInGame);
 router.post("/current-article", getCurrentArticle);
 router.post('/articles', getVisitedArticlesPlayer);
 router.post('/target-articles', getTargetArticles);
+router.post('/found-target-articles', getFoundTargetArticles);
 router.post('/artifacts', getArticfactPlayer);
-router.post('/change', changeArticleFront);
+router.post('/change-article', changeArticleFront);
 router.post("/random-articles", distributeRandomArticles);
 router.post("/create-game", createGame);
 router.post("/back-artifact", backArtifact);
@@ -72,5 +74,6 @@ router.post("/disorienter-artifact", disorienterArtifact);
 router.post("/dictator-artifact", dictatorArtifact);
 router.post("/teleporter-artifact", teleporterArtifact);
 router.post("/join", joinLobby);
+router.post("/distribute-artifacts", distributeArtifacts);
 
 export default router;

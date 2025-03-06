@@ -29,37 +29,168 @@ export const playerHasCurrentArticle = async (gameId, playerId) => {
     return player ? !!player.current_article : false;
 };
 
-// Récupérer les articles cibles trouvés par un joueur
-export const getFoundTargetArticles = async (id_game, id_player) => {
-    if (!id_game || !id_player) {
-        return { error: "Les IDs du jeu et du joueur sont requis." };
-    }
-
+export const getPlayersInGame = async (req, res) => {
     try {
-        const game = await Game.findById(id_game);
+        const { id_game } = req.body;
+        
+        if (!id_game) {
+            return res.status(400).json({ error: "Game ID is required" });
+        }
+        
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
         if (!game) {
-            console.error("Jeu non trouvé");
-            return { error: "Jeu non trouvé." };
+            return res.status(404).json({ error: "Game not found" });
+        }
+        
+        // Get players with their scores
+        const playersWithScores = await Promise.all(
+            game.players.map(async (playerInfo) => {
+                try {
+                    const player = await Player.findById(playerInfo.player_id);
+                    if (!player) return null;
+                    
+                    // Calculate score based on found target articles
+                    let score = 0;
+                    if (playerInfo.articles_visited && Array.isArray(playerInfo.articles_visited)) {
+                        const targetArticleIds = game.articles_to_visit.map(id => id.toString());
+                        score = playerInfo.articles_visited.filter(id => 
+                            targetArticleIds.includes(id.toString())
+                        ).length;
+                    }
+                    
+                    return {
+                        id: player._id.toString(),
+                        pseudo: player.pseudo || "Player",
+                        pp: player.pp || "",
+                        score: score
+                    };
+                } catch (err) {
+                    console.error("Error processing player:", err);
+                    return null;
+                }
+            })
+        );
+        
+        // Filter out null values
+        const validPlayers = playersWithScores.filter(player => player !== null);
+        
+        return res.status(200).json(validPlayers);
+    } catch (error) {
+        console.error("Error in getPlayersInGame:", error);
+        return res.status(500).json({ error: "Server error" });
+    }
+};
+
+// Get found target articles for a player
+export const getFoundTargetArticles = async (req, res) => {
+    try {
+        const { id_game, id_player } = req.body;
+
+        if (!id_game || !id_player) {
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
+        }
+
+        console.log(`Getting found target articles for player ${id_player} in game ${id_game}`);
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            console.log(`Game not found: ${id_game}`);
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            console.log(`Invalid player ID format: ${id_player}`);
+            return res.status(400).json({ error: "Invalid Player ID format" });
         }
 
         const playerObjectId = new mongoose.Types.ObjectId(id_player);
-        const player = game.players.find(p => p.player_id.equals(playerObjectId));
-
+        const player = game.players.find(p => p.player_id && p.player_id.equals(playerObjectId));
         if (!player) {
-            console.error(`Joueur ${id_player} non trouvé dans ce jeu.`);
-            return { error: "Joueur non trouvé dans ce jeu." };
+            console.log(`Player ${id_player} not found in game ${id_game}`);
+            return res.status(404).json({ error: "Player not found in this game" });
         }
 
-        if (!player.articles_visited || !Array.isArray(player.articles_visited)) {
-            return [];
+        // Check if player has found_target_articles field
+        if (player.found_target_articles && Array.isArray(player.found_target_articles) && player.found_target_articles.length > 0) {
+            console.log(`Player ${id_player} has ${player.found_target_articles.length} found target articles`);
+            
+            // Get article titles from IDs
+            const articles = await Promise.all(
+                player.found_target_articles.map(async (id) => {
+                    try {
+                        if (!id) return null;
+                        const article = await Article.findById(id.toString());
+                        return article ? article.title : null;
+                    } catch (err) {
+                        console.error(`Error finding article with ID ${id}:`, err);
+                        return null;
+                    }
+                })
+            );
+
+            // Filter out null values
+            const validArticles = articles.filter(article => article !== null);
+            console.log(`Returning ${validArticles.length} valid found target articles`);
+            
+            return res.status(200).json(validArticles);
+        }
+        
+        // If no found_target_articles field or it's empty, fall back to the old method
+        // If no visited articles, return empty array
+        if (!player.articles_visited || !Array.isArray(player.articles_visited) || player.articles_visited.length === 0) {
+            console.log(`No visited articles for player ${id_player}`);
+            return res.status(200).json([]);
         }
 
-        return player.articles_visited.filter(article =>
-            game.articles_to_visit.includes(article)
+        // If no target articles, return empty array
+        if (!game.articles_to_visit || !Array.isArray(game.articles_to_visit) || game.articles_to_visit.length === 0) {
+            console.log(`No target articles for game ${id_game}`);
+            return res.status(200).json([]);
+        }
+
+        console.log(`Finding target articles that player ${id_player} has visited`);
+        
+        // Convert visited article IDs to strings for comparison
+        const visitedArticleIds = player.articles_visited.map(id => id.toString());
+        
+        // Convert target article IDs to strings for comparison
+        const targetArticleIds = game.articles_to_visit.map(id => id.toString());
+        
+        // Find intersection of visited and target article IDs
+        const foundTargetIds = visitedArticleIds.filter(id => targetArticleIds.includes(id));
+        
+        if (foundTargetIds.length === 0) {
+            console.log(`Player ${id_player} has not found any target articles yet`);
+            return res.status(200).json([]);
+        }
+        
+        console.log(`Player ${id_player} has found ${foundTargetIds.length} target articles (using fallback method)`);
+        
+        // Get article titles from IDs
+        const articles = await Promise.all(
+            foundTargetIds.map(async (id) => {
+                try {
+                    if (!id) return null;
+                    const article = await Article.findById(id);
+                    return article ? article.title : null;
+                } catch (err) {
+                    console.error(`Error finding article with ID ${id}:`, err);
+                    return null;
+                }
+            })
         );
+
+        // Filter out null values
+        const validArticles = articles.filter(article => article !== null);
+        console.log(`Returning ${validArticles.length} valid found target articles`);
+        
+        return res.status(200).json(validArticles);
     } catch (error) {
-        console.error("Erreur lors de la récupération des articles cibles:", error);
-        return { error: "Erreur serveur." };
+        console.error("Error in getFoundTargetArticles:", error);
+        return res.status(500).json({ error: "Server error", details: error.message });
     }
 };
 
@@ -67,9 +198,29 @@ export const getCurrentArticle = async (req, res) => {
     const {id_game, id_player} = req.body;
 
     try {
-        const game = await Game.findById(id_game);
+        // Validate that IDs are provided
+        if (!id_game || !id_player) {
+            return res.status(400).json({message: "Game ID and Player ID are required"});
+        }
+
+        // Try to find the game by ID or game code
+        let game;
+        
+        // Check if id_game is a valid ObjectId
+        if (/^[0-9a-fA-F]{24}$/.test(id_game)) {
+            game = await Game.findById(id_game);
+        } else {
+            // If not a valid ObjectId, try to find by game code
+            game = await Game.findOne({ game_code: id_game });
+        }
+        
         if (!game) {
             return res.status(404).json({message: "Jeu non trouvé"});
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            return res.status(400).json({message: "Invalid Player ID format"});
         }
 
         const playerObjectId = new mongoose.Types.ObjectId(id_player);
@@ -94,118 +245,238 @@ export const getCurrentArticle = async (req, res) => {
     }
 };
 
-// Récupérer tous les joueurs d'une partie spécifique
-export const getGamePlayers = async (req, res) => {
+export const changeArticle = async (req, res) => {
     try {
-        const { id_game } = req.body;
-        if (!id_game) {
-            return res.status(400).json({ message: "L'ID du jeu est requis." });
+        const { id_game, id_player, id_article } = req.body;
+
+        if (!id_game || !id_player || !id_article) {
+            return res.status(400).json({ error: "Game ID, Player ID, and Article ID are required" });
         }
 
-        const game = await Game.findById(id_game);
+        console.log(`Changing article for player ${id_player} in game ${id_game} to article ${id_article}`);
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
         if (!game) {
-            return res.status(404).json({ message: "Jeu non trouvé." });
+            console.log(`Game not found: ${id_game}`);
+            return res.status(404).json({ error: "Game not found" });
         }
 
-        const playerIds = game.players.map(player => player.player_id);
-        if (playerIds.length === 0) {
-            return res.status(404).json({ message: "Aucun joueur trouvé pour ce jeu." });
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            console.log(`Invalid player ID format: ${id_player}`);
+            return res.status(400).json({ error: "Invalid Player ID format" });
         }
 
-        const players = await Promise.all(
-            playerIds.map(async (playerId) => {
-                const player = await Player.findById(playerId);
-                if (!player) return null;
+        // Validate article ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_article)) {
+            console.log(`Invalid article ID format: ${id_article}`);
+            return res.status(400).json({ error: "Invalid Article ID format" });
+        }
 
-                const foundArticles = await getFoundTargetArticles(id_game, playerId);
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const articleObjectId = new mongoose.Types.ObjectId(id_article);
 
-                // Vérification en cas d'erreur dans la récupération des articles
-                if (foundArticles.error) return null;
+        // Find player in game
+        const playerIndex = game.players.findIndex(p => p.player_id && p.player_id.equals(playerObjectId));
+        if (playerIndex === -1) {
+            console.log(`Player ${id_player} not found in game ${id_game}`);
+            return res.status(404).json({ error: "Player not found in this game" });
+        }
 
-                return {
-                    id: playerId,
-                    pseudo: player.pseudo,
-                    pp: player.pp,
-                    score: foundArticles.length
-                };
-            })
+        // Check if article exists
+        const article = await Article.findById(articleObjectId);
+        if (!article) {
+            console.log(`Article ${id_article} not found`);
+            return res.status(404).json({ error: "Article not found" });
+        }
+
+        // Update player's current article
+        game.players[playerIndex].current_article = articleObjectId;
+
+        // Add article to visited articles if not already there
+        if (!game.players[playerIndex].articles_visited) {
+            game.players[playerIndex].articles_visited = [];
+        }
+
+        // Check if article is already in visited articles
+        const alreadyVisited = game.players[playerIndex].articles_visited.some(
+            visitedId => visitedId && visitedId.toString() === articleObjectId.toString()
         );
 
-        // Filtrer les joueurs valides
-        const filteredPlayers = players.filter(player => player !== null);
+        if (!alreadyVisited) {
+            console.log(`Adding article ${id_article} to visited articles for player ${id_player}`);
+            game.players[playerIndex].articles_visited.push(articleObjectId);
+        }
 
-        return res.status(200).json(filteredPlayers);
+        // Check if article is in target articles and update game state if needed
+        if (game.articles_to_visit && Array.isArray(game.articles_to_visit)) {
+            const isTargetArticle = game.articles_to_visit.some(
+                targetId => targetId && targetId.toString() === articleObjectId.toString()
+            );
+
+            if (isTargetArticle) {
+                console.log(`Player ${id_player} found a target article: ${article.title}`);
+                // You might want to update game state or trigger an event here
+            }
+        }
+
+        await game.save();
+        console.log(`Successfully updated current article for player ${id_player} to ${article.title}`);
+
+        return res.status(200).json({ 
+            message: "Article changed successfully", 
+            id_article: id_article,
+            title: article.title
+        });
     } catch (error) {
-        console.error("Erreur dans getGamePlayers :", error);
-        return res.status(500).json({ message: "Erreur serveur" });
+        console.error("Error in changeArticle:", error);
+        return res.status(500).json({ error: "Server error", details: error.message });
     }
 };
 
-export const changeArticle = async (gameId, playerId, articleId) => {
-    if (!gameId || !playerId || !articleId) {
-        throw new Error("Tous les identifiants sont requis.");
+// Helper function to check if an article is a target article
+const checkTargetArticleFound = async (game, articleId, playerId) => {
+    try {
+        if (!game || !articleId || !playerId) {
+            console.log("Missing parameters in checkTargetArticleFound");
+            return false;
+        }
+
+        // Convert IDs to strings for comparison
+        const articleIdStr = articleId.toString();
+        
+        // Check if article is in target articles
+        if (game.articles_to_visit && Array.isArray(game.articles_to_visit)) {
+            const isTargetArticle = game.articles_to_visit.some(
+                targetId => targetId && targetId.toString() === articleIdStr
+            );
+
+            if (isTargetArticle) {
+                const article = await Article.findById(articleId);
+                const articleTitle = article ? article.title : "Unknown article";
+                console.log(`Player ${playerId} found a target article: ${articleTitle}`);
+                
+                // Find the player in the game
+                const playerIndex = game.players.findIndex(p => 
+                    p.player_id && p.player_id.toString() === playerId.toString()
+                );
+                
+                if (playerIndex !== -1) {
+                    // Initialize found_target_articles if it doesn't exist
+                    if (!game.players[playerIndex].found_target_articles) {
+                        game.players[playerIndex].found_target_articles = [];
+                    }
+                    
+                    // Check if this target article is already in the found list
+                    const alreadyFound = game.players[playerIndex].found_target_articles.some(
+                        foundId => foundId && foundId.toString() === articleIdStr
+                    );
+                    
+                    if (!alreadyFound) {
+                        // Add to found target articles
+                        game.players[playerIndex].found_target_articles.push(articleId);
+                        console.log(`Added ${articleTitle} to player's found target articles`);
+                        
+                        // Save the game to persist the found target article
+                        await game.save();
+                    }
+                }
+                
+                return true;
+            }
+        }
+        
+        return false;
+    } catch (error) {
+        console.error("Error in checkTargetArticleFound:", error);
+        return false;
     }
-
-    if (!await gameExists(gameId)) {
-        throw new Error("Jeu non trouvé.");
-    }
-
-    if (!await playerExistsInGame(gameId, playerId)) {
-        throw new Error("Joueur non trouvé dans ce jeu.");
-    }
-
-    if (!await playerHasCurrentArticle(gameId, playerId)) {
-        throw new Error("Aucun article actuel trouvé.");
-    }
-
-    const game = await Game.findById(gameId);
-    const player = game.players.find(p => p.player_id.equals(playerId));
-
-    player.articles_visited = player.articles_visited || [];
-    player.current_article = articleId;
-    player.articles_visited.push(player.current_article);
-
-    await game.save();
-
-    return { message: "Article changé avec succès.", id_article: articleId };
 };
 
+// Update the changeArticleFront function to use the helper
 export const changeArticleFront = async (req, res) => {
     try {
         const { id_game, id_player, articleId } = req.body;
 
         if (!id_game || !id_player || !articleId) {
-            return res.status(400).json({ error: "Tous les identifiants sont requis." });
+            return res.status(400).json({ error: "Game ID, Player ID, and Article ID are required" });
         }
 
-        const game = await Game.findById(id_game);
+        console.log(`Changing article for player ${id_player} in game ${id_game} to article ${articleId}`);
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
         if (!game) {
-            return res.status(404).json({ error: "Jeu non trouvé." });
+            console.log(`Game not found: ${id_game}`);
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            console.log(`Invalid player ID format: ${id_player}`);
+            return res.status(400).json({ error: "Invalid Player ID format" });
+        }
+
+        // Validate article ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(articleId)) {
+            console.log(`Invalid article ID format: ${articleId}`);
+            return res.status(400).json({ error: "Invalid Article ID format" });
         }
 
         const playerObjectId = new mongoose.Types.ObjectId(id_player);
-        const player = game.players.find(p => p.player_id.equals(playerObjectId));
-        if (!player) {
-            return res.status(404).json({ error: "Joueur non trouvé dans ce jeu." });
+        const articleObjectId = new mongoose.Types.ObjectId(articleId);
+
+        // Find player in game
+        const playerIndex = game.players.findIndex(p => p.player_id && p.player_id.equals(playerObjectId));
+        if (playerIndex === -1) {
+            console.log(`Player ${id_player} not found in game ${id_game}`);
+            return res.status(404).json({ error: "Player not found in this game" });
         }
 
-        // Initialize arrays if they don't exist
-        if (!player.articles_visited) {
-            player.articles_visited = [];
+        // Check if article exists
+        const article = await Article.findById(articleObjectId);
+        if (!article) {
+            console.log(`Article ${articleId} not found`);
+            return res.status(404).json({ error: "Article not found" });
         }
 
-        // Update the current article and add to visited articles
-        player.current_article = new mongoose.Types.ObjectId(articleId);
-        if (!player.articles_visited.some(id => id.equals(articleId))) {
-            player.articles_visited.push(player.current_article);
+        // Update player's current article
+        game.players[playerIndex].current_article = articleObjectId;
+
+        // Add article to visited articles if not already there
+        if (!game.players[playerIndex].articles_visited) {
+            game.players[playerIndex].articles_visited = [];
         }
+
+        // Check if article is already in visited articles
+        const alreadyVisited = game.players[playerIndex].articles_visited.some(
+            visitedId => visitedId && visitedId.toString() === articleObjectId.toString()
+        );
+
+        let isNewVisit = false;
+        if (!alreadyVisited) {
+            console.log(`Adding article ${articleId} to visited articles for player ${id_player}`);
+            game.players[playerIndex].articles_visited.push(articleObjectId);
+            isNewVisit = true;
+        }
+
+        // Check if this is a target article
+        const isTargetArticle = await checkTargetArticleFound(game, articleObjectId, playerObjectId);
 
         await game.save();
-        return res.status(200).json({ message: "Article changé avec succès.", id_article: articleId });
+        console.log(`Successfully updated current article for player ${id_player} to ${article.title}`);
 
+        return res.status(200).json({ 
+            message: "Article changed successfully", 
+            id_article: articleId,
+            title: article.title,
+            isNewVisit,
+            isTargetArticle
+        });
     } catch (error) {
-        console.error("Erreur lors du changement d'article :", error);
-        return res.status(500).json({ error: "Une erreur interne est survenue." });
+        console.error("Error in changeArticleFront:", error);
+        return res.status(500).json({ error: "Server error", details: error.message });
     }
 };
 
@@ -216,6 +487,8 @@ export const distributeToPlayers = async (game) => {
             console.error("No articles to distribute");
             return;
         }
+
+        console.log(`Distributing articles to ${game.players.length} players in game ${game._id}`);
 
         for (const player of game.players) {
             const randNumber = Math.floor(Math.random() * game.articles_to_visit.length);
@@ -233,7 +506,17 @@ export const distributeToPlayers = async (game) => {
             }
         }
 
-        await game.save(); // Save the game once after all players are updated
+        try {
+            await game.save(); // Save the game once after all players are updated
+            console.log(`Successfully distributed articles to players in game ${game._id}`);
+        } catch (saveError) {
+            // If there's a version conflict, log it but don't throw
+            // The calling function will handle the retry logic
+            if (saveError.name === 'VersionError') {
+                console.log(`Version conflict in distributeToPlayers for game ${game._id}`);
+            }
+            throw saveError; // Rethrow to let the caller handle it
+        }
     } catch (error) {
         console.error("Erreur dans distributeToPlayers :", error);
         throw error; // Propagate the error to the caller
@@ -250,11 +533,13 @@ export const distributeRandomArticles = async (req, res) => {
             return res.status(400).json({ message: "Paramètres invalides." });
         }
 
-        // Check if the game exists
-        const game = await Game.findById(id_game);
+        // Use the findGameByIdOrCode helper function instead of Game.findById
+        const game = await findGameByIdOrCode(id_game);
         if (!game) {
             return res.status(404).json({ message: "Jeu non trouvé." });
         }
+
+        console.log(`Found game with ID ${game._id} and code ${game.game_code}`);
 
         if (!game.articles_to_visit) game.articles_to_visit = [];
         if (!game.artifacts_distribution) game.artifacts_distribution = [];
@@ -282,8 +567,52 @@ export const distributeRandomArticles = async (req, res) => {
                 console.error("Erreur lors de la création de l'article :", err);
             }
         }
-        await distributeToPlayers(game);
-        await game.save();
+        
+        try {
+            await distributeToPlayers(game);
+            await game.save();
+        } catch (saveError) {
+            // Handle version conflict errors
+            if (saveError.name === 'VersionError') {
+                console.log('Version conflict detected, retrying with fresh game document');
+                
+                // Fetch a fresh copy of the game
+                const freshGame = await findGameByIdOrCode(id_game);
+                if (!freshGame) {
+                    return res.status(404).json({ message: "Jeu non trouvé lors de la tentative de résolution du conflit de version." });
+                }
+                
+                // Copy the articles_to_visit and artifacts_distribution to the fresh game
+                if (!freshGame.articles_to_visit) freshGame.articles_to_visit = [];
+                if (!freshGame.artifacts_distribution) freshGame.artifacts_distribution = [];
+                
+                // Add any new articles that aren't already in the fresh game
+                for (const articleId of game.articles_to_visit) {
+                    if (!freshGame.articles_to_visit.some(id => id.toString() === articleId.toString())) {
+                        freshGame.articles_to_visit.push(articleId);
+                    }
+                }
+                
+                // Add any new artifact distributions that aren't already in the fresh game
+                for (const distribution of game.artifacts_distribution) {
+                    if (!freshGame.artifacts_distribution.some(d => 
+                        d.article.toString() === distribution.article.toString() && 
+                        d.artifact === distribution.artifact)) {
+                        freshGame.artifacts_distribution.push(distribution);
+                    }
+                }
+                
+                // Try to distribute and save again
+                await distributeToPlayers(freshGame);
+                await freshGame.save();
+                
+                // Return the fresh game
+                return res.status(200).json({ message: "Articles distribués avec succès (après résolution de conflit)", game: freshGame });
+            } else {
+                // For other errors, rethrow
+                throw saveError;
+            }
+        }
 
         res.status(200).json({ message: "Articles distribués avec succès", game });
     } catch (error) {
@@ -298,99 +627,146 @@ export const getVisitedArticlesPlayer = async (req, res) => {
         const { id_game, id_player } = req.body;
 
         if (!id_game || !id_player) {
-            return res.status(400).json({ message: "Les IDs du jeu et du joueur sont requis." });
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
         }
 
-        // Récupération du jeu
-        const game = await Game.findById(id_game);
+        console.log(`Getting visited articles for player ${id_player} in game ${id_game}`);
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
         if (!game) {
-            return res.status(404).json({ message: "Jeu non trouvé." });
+            console.log(`Game not found: ${id_game}`);
+            return res.status(404).json({ error: "Game not found" });
         }
 
-        // Convertir l'ID du joueur en ObjectId pour la comparaison
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            console.log(`Invalid player ID format: ${id_player}`);
+            return res.status(400).json({ error: "Invalid Player ID format" });
+        }
+
         const playerObjectId = new mongoose.Types.ObjectId(id_player);
-
-        // Trouver le joueur correspondant en utilisant player_id
-        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        const player = game.players.find(p => p.player_id && p.player_id.equals(playerObjectId));
         if (!player) {
-            console.log("Joueurs trouvés dans le jeu :", game.players);
-            return res.status(404).json({ message: "Joueur non trouvé dans ce jeu." });
+            console.log(`Player ${id_player} not found in game ${id_game}`);
+            return res.status(404).json({ error: "Player not found in this game" });
         }
 
-        // Récupérer les articles visités par ce joueur
-        const visitedArticles = player.articles_visited || [];
-        const targets = await Promise.all(
-            visitedArticles.map(async (articleId) => {
-                const article = await Article.findById(articleId);
-                return article ? article.title : null; // Retourne le titre de l'article ou null si non trouvé
+        if (!player.articles_visited || !Array.isArray(player.articles_visited) || player.articles_visited.length === 0) {
+            console.log(`No visited articles for player ${id_player}`);
+            return res.status(200).json([]);
+        }
+
+        console.log(`Found ${player.articles_visited.length} visited articles for player ${id_player}`);
+        
+        // Get article titles from IDs
+        const articleIds = player.articles_visited;
+        const articles = await Promise.all(
+            articleIds.map(async (id) => {
+                try {
+                    if (!id) return null;
+                    const article = await Article.findById(id.toString());
+                    return article ? article.title : null;
+                } catch (err) {
+                    console.error(`Error finding article with ID ${id}:`, err);
+                    return null;
+                }
             })
         );
-        res.status(200).json(targets);
+
+        // Filter out null values
+        const validArticles = articles.filter(article => article !== null);
+        console.log(`Returning ${validArticles.length} valid visited articles`);
+        
+        return res.status(200).json(validArticles);
     } catch (error) {
-        console.error("Erreur dans getVisitedArticlesPlayer :", error);
-        res.status(500).json({ message: "Erreur serveur" });
+        console.error("Error in getVisitedArticlesPlayer:", error);
+        return res.status(500).json({ error: "Server error", details: error.message });
     }
 };
 
-// Récupérer les articles cibles
+// Récupérer les articles à trouver pour une partie
 export const getTargetArticles = async (req, res) => {
-    const { id_game } = req.body;
-
-    if (!id_game) {
-        return res.status(400).json({ message: "L'ID du jeu est requis." });
-    }
-
     try {
-        // Trouver le jeu par son ID
-        const game = await Game.findById(id_game);
-        if (!game) {
-            return res.status(404).json({ message: "Jeu non trouvé." });
+        const { id_game } = req.body;
+
+        if (!id_game) {
+            return res.status(400).json({ error: "Game ID is required" });
         }
 
-        // Récupérer les titres des articles à visiter
-        const targets = await Promise.all(
-            game.articles_to_visit.map(async (articleId) => {
-                const article = await Article.findById(articleId);
-                return article ? article.title : null; // Retourne le titre de l'article ou null si non trouvé
+        console.log(`Getting target articles for game ${id_game}`);
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            console.log(`Game not found: ${id_game}`);
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        if (!game.articles_to_visit || !Array.isArray(game.articles_to_visit) || game.articles_to_visit.length === 0) {
+            console.log(`No target articles found for game ${id_game}`);
+            return res.status(200).json([]);
+        }
+
+        console.log(`Found ${game.articles_to_visit.length} target articles for game ${id_game}`);
+        
+        // Get article titles from IDs
+        const articleIds = game.articles_to_visit;
+        const articles = await Promise.all(
+            articleIds.map(async (id) => {
+                try {
+                    if (!id) return null;
+                    const article = await Article.findById(id.toString());
+                    return article ? article.title : null;
+                } catch (err) {
+                    console.error(`Error finding article with ID ${id}:`, err);
+                    return null;
+                }
             })
         );
 
-        // Filtrer les articles valides (supprimer les null)
-        const validTargets = targets.filter(title => title !== null);
-
-        // Renvoyer les titres des articles
-        res.status(200).json(validTargets);
+        // Filter out null values
+        const validArticles = articles.filter(article => article !== null);
+        console.log(`Returning ${validArticles.length} valid target articles`);
+        
+        return res.status(200).json(validArticles);
     } catch (error) {
-        console.error("Erreur lors de la récupération des articles cibles:", error);
-        res.status(500).json({ message: "Erreur interne du serveur." });
+        console.error("Error in getTargetArticles:", error);
+        return res.status(500).json({ error: "Server error", details: error.message });
     }
 };
 
 // Récupérer les artefacts d'un joueur
 export const getArticfactPlayer = async (req, res) => {
-    const { id_game, id_player } = req.body;
-
-    if (!id_game || !id_player) {
-        return res.status(400).json({ message: "Les IDs du jeu et du joueur sont requis." });
-    }
-
     try {
-        const game = await Game.findById(id_game);
+        const { id_game, id_player } = req.body;
+
+        if (!id_game || !id_player) {
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
+        }
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
         if (!game) {
-            return res.status(404).json({ message: "Jeu non trouvé." });
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            return res.status(400).json({ error: "Invalid Player ID format" });
         }
 
         const playerObjectId = new mongoose.Types.ObjectId(id_player);
         const player = game.players.find(p => p.player_id.equals(playerObjectId));
         if (!player) {
-            return res.status(404).json({ message: "Joueur non trouvé dans ce jeu." });
+            return res.status(404).json({ error: "Player not found in this game" });
         }
-        const artifacts = player.artifacts
 
-        res.status(200).json(artifacts);
+        // Return the player's artifacts
+        return res.status(200).json(player.artifacts || []);
     } catch (error) {
-        console.error("Erreur lors de la récupération des artefact du joueur:", error);
-        res.status(500).json({ message: "Erreur interne du serveur." });
+        console.error("Error in getArticfactPlayer:", error);
+        return res.status(500).json({ error: "Server error" });
     }
 };
 
@@ -489,11 +865,42 @@ export const gameAndPlayers = async (id_game, id_player) => {
         throw error;
     }
 };
-export const backArtifact = async (req, res) => {
-    const { id_game, id_player } = req.body;
 
+// Helper function to find a game by ID or code
+const findGameByIdOrCode = async (gameIdentifier) => {
+    // Check if gameIdentifier is a valid ObjectId
+    if (/^[0-9a-fA-F]{24}$/.test(gameIdentifier)) {
+        return await Game.findById(gameIdentifier);
+    } else {
+        // If not a valid ObjectId, try to find by game code
+        return await Game.findOne({ game_code: gameIdentifier });
+    }
+};
+
+export const backArtifact = async (req, res) => {
     try {
-        const [game, player] = await gameAndPlayers(id_game, id_player);
+        const { id_game, id_player } = req.body;
+
+        if (!id_game || !id_player) {
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
+        }
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            return res.status(400).json({ error: "Invalid Player ID format" });
+        }
+
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({ error: "Player not found in this game" });
+        }
 
         if (player.articles_visited.length < 2) {
             return res.status(400).json({ message: "Pas assez d'articles visités pour revenir en arrière." });
@@ -506,8 +913,8 @@ export const backArtifact = async (req, res) => {
 
         res.status(200).json({ message: "Retour à l'article précédent réussi.", previousArticle });
     } catch (error) {
-        console.error("Erreur dans backArtifact :", error);
-        res.status(500).json({ message: "Erreur serveur", details: error.message });
+        console.error("Error in backArtifact:", error);
+        return res.status(500).json({ error: "Server error" });
     }
 };
 
@@ -544,10 +951,29 @@ async function getAllLinks(title) {
 }
 
 export const teleporterArtifact = async (req, res) => {
-    const { id_game, id_player } = req.body;
-
     try {
-        const [game, player] = await gameAndPlayers(id_game, id_player);
+        const { id_game, id_player } = req.body;
+
+        if (!id_game || !id_player) {
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
+        }
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            return res.status(400).json({ error: "Invalid Player ID format" });
+        }
+
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({ error: "Player not found in this game" });
+        }
 
         const rand = Math.floor(Math.random() * game.articles_to_visit.length);
         console.log(`Article aléatoire choisi: index ${rand}`);
@@ -586,16 +1012,35 @@ export const teleporterArtifact = async (req, res) => {
 
         res.status(200).json({ message: "Téléportation réussie.", newArticle });
     } catch (error) {
-        console.error("Erreur dans teleporterArtifact :", error);
-        res.status(500).json({ message: "Erreur serveur", details: error.message });
+        console.error("Error in teleporterArtifact:", error);
+        return res.status(500).json({ error: "Server error" });
     }
 };
 
 export const mineArtifact = async (req, res) => {
-    const { id_game, id_player } = req.body;
+    try {
+        const { id_game, id_player } = req.body;
 
-    try{
-        const [game, player] = await gameAndPlayers(id_game, id_player);
+        if (!id_game || !id_player) {
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
+        }
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            return res.status(400).json({ error: "Invalid Player ID format" });
+        }
+
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({ error: "Player not found in this game" });
+        }
 
         if (player.articles_visited.length < 5) {
             return res.status(400).json({ message: "Ce joueur n'a pas assez d'articles visités pour appliquer la mine dessus." });
@@ -607,21 +1052,39 @@ export const mineArtifact = async (req, res) => {
         await game.save();
 
         res.status(200).json({ message: "Retour à 5 articles précédent réussi.", previousArticle });
-
-    } catch(error){
-        console.error("Erreur dans mineArtifact :", error);
-        res.status(500).json({ message: "Erreur serveur", details: error.message });
+    } catch (error) {
+        console.error("Error in mineArtifact:", error);
+        return res.status(500).json({ error: "Server error" });
     }
-}
+};
 
 //Artefact qui swap les joueurs d'articles
 export const eraserArtifact = async (req, res) => {
-    const { id_game, id_player } = req.body;
-
     try {
-        let latestArticle = undefined;
-        const [game, player] = await gameAndPlayers(id_game, id_player);
+        const { id_game, id_player } = req.body;
 
+        if (!id_game || !id_player) {
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
+        }
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            return res.status(400).json({ error: "Invalid Player ID format" });
+        }
+
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({ error: "Player not found in this game" });
+        }
+
+        let latestArticle = undefined;
         // Find the latest article visited by the player that is still in the game's articles_to_visit
         for (let i = player.articles_visited.length - 1; i >= 0; i--) {
             if (game.articles_to_visit.includes(player.articles_visited[i])) {
@@ -651,16 +1114,35 @@ export const eraserArtifact = async (req, res) => {
         res.status(200).json({ message: "Article trouvé le plus récent supprimé.", articlesToDelete: [latestArticle] });
 
     } catch (error) {
-        console.error("Erreur dans eraserArtifact :", error);
-        res.status(500).json({ message: "Erreur serveur", details: error.message });
+        console.error("Error in eraserArtifact:", error);
+        return res.status(500).json({ error: "Server error" });
     }
 };
 
 export const disorienterArtifact = async (req, res) => {
-    const { id_game, id_player } = req.body;
-
     try {
-        const [game, player] = await gameAndPlayers(id_game, id_player);
+        const { id_game, id_player } = req.body;
+
+        if (!id_game || !id_player) {
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
+        }
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
+            return res.status(400).json({ error: "Invalid Player ID format" });
+        }
+
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({ error: "Player not found in this game" });
+        }
 
         const randPage = await generateRandomArticle();
 
@@ -675,8 +1157,8 @@ export const disorienterArtifact = async (req, res) => {
         res.status(200).json({ message: "Joueur envoyé sur une page random.", randomArticle: [generatedArticle] });
 
     } catch (error) {
-        console.error("Erreur dans disorienterArtifact :", error);
-        res.status(500).json({ message: "Erreur serveur", details: error.message });
+        console.error("Error in disorienterArtifact:", error);
+        return res.status(500).json({ error: "Server error" });
     }
 };
 
@@ -696,6 +1178,57 @@ export const dictatorArtifact = async (req, res) => {
     } catch (error) {
         console.error("Erreur dans dictatorArtifact :", error);
         res.status(500).json({ message: "Erreur serveur", details: error.message });
+    }
+};
+
+/**
+ * Distributes artifacts to players in a game
+ * This function is called when starting a game to give each player their initial artifacts
+ */
+export const distributeArtifacts = async (req, res) => {
+    const { id_game } = req.body;
+
+    if (!id_game) {
+        return res.status(400).json({ error: "Game ID is required" });
+    }
+
+    try {
+        // Find the game
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // List of available artifacts
+        const availableArtifacts = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"];
+        
+        // Distribute artifacts to each player
+        for (const player of game.players) {
+            // Each player gets 2 random artifacts to start with
+            const playerArtifacts = [];
+            for (let i = 0; i < 2; i++) {
+                const randomIndex = Math.floor(Math.random() * availableArtifacts.length);
+                playerArtifacts.push(availableArtifacts[randomIndex]);
+            }
+            
+            // Update player's artifacts
+            player.artifacts = playerArtifacts;
+        }
+
+        // Save the game with updated artifacts
+        await game.save();
+
+        console.log(`Artifacts distributed to ${game.players.length} players in game ${id_game}`);
+        return res.status(200).json({ 
+            message: "Artifacts distributed successfully",
+            players: game.players.map(p => ({
+                player_id: p.player_id,
+                artifacts: p.artifacts
+            }))
+        });
+    } catch (error) {
+        console.error("Error distributing artifacts:", error);
+        return res.status(500).json({ error: "Failed to distribute artifacts" });
     }
 };
 

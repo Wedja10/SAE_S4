@@ -15,8 +15,12 @@ import dotenv from "dotenv";
 import cors from 'cors';
 import Game from "../models/Game.js";
 import Player from "../models/Player.js";
-import {WebSocketServer} from "ws";
-import http from 'http';
+import {WebSocketServer, WebSocket} from "ws";
+import bodyParser from 'body-parser';
+import { v4 as uuidv4 } from 'uuid';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
 
 const PORT = process.env.PORT || 5000;
 
@@ -24,19 +28,27 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
-const MONGODB_URI = process.env.MONGODB_URI;
-const WS_PORT = process.env.WS_PORT || 4000;
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/wikigame';
 
 if (!MONGODB_URI) {
     console.error("MONGODB_URI is not defined in environment variables");
     process.exit(1);
 }
 
-app.use(express.json());
-
-// Keep track of clients in each lobby
-const lobbies = new Map(); // gameCode -> Set of WebSocket clients
-let wss = null;
+// Global variables for WebSocket server
+let wss;
+// Track lobbies and their connected clients
+const lobbies = new Map();
+// Track player sockets
+const playerSockets = new Map();
+// Track join/leave attempts to prevent duplicates
+const joinAttempts = new Map();
+// Track which players have already had leave events processed
+const processedLeaveEvents = new Set();
+// Track active connections and their last activity time
+const clientActivity = new Map();
 
 // Handle game state changes
 async function handleGameStateChange(gameCode, event) {
@@ -70,34 +82,73 @@ async function handleGameStateChange(gameCode, event) {
 
             case 'player_leave':
                 const playerId = event.data.playerId;
-                game.players = game.players.filter(p => !p.player_id.equals(playerId));
+                
+                // Only remove player if game is not in progress
+                if (game.status !== 'in_progress') {
+                    // Find the player in the game
+                    const playerIndex = game.players.findIndex(p => 
+                        p.player_id && p.player_id.toString() === playerId
+                    );
+                    
+                    if (playerIndex === -1) {
+                        console.log(`Player ${playerId} not found in game ${gameCode}, nothing to remove`);
+                        return;
+                    }
+                    
+                    // Check if player was host
+                    const wasHost = game.players[playerIndex].is_host;
+                    
+                    // Remove the player
+                    game.players.splice(playerIndex, 1);
 
-                if (game.players.length === 0) {
+                // Only delete the game if it's in the lobby state and has no players
+                // Don't delete games that are in progress or completed
+                if (game.players.length === 0 && game.status === 'lobby') {
+                    console.log(`Deleting empty lobby game: ${game._id}`);
                     await Game.deleteOne({ _id: game._id });
                     return;
+                } else if (game.players.length === 0) {
+                    console.log(`Game ${game._id} has no players but status is ${game.status}, not deleting`);
                 }
 
                 // If host leaves, assign new host
-                const wasHost = game.players.find(p => p.player_id.equals(playerId))?.is_host;
                 if (wasHost && game.players.length > 0) {
                     game.players[0].is_host = true;
                     // Broadcast host change event
-                    const newHost = await Player.findById(game.players[0].player_id);
-                    if (newHost) {
                         broadcastToLobby(gameCode, {
                             type: 'host_change',
                             data: {
-                                newHostId: game.players[0].player_id.toString(),
-                                player: {
-                                    id: game.players[0].player_id.toString(),
-                                    pseudo: newHost.pseudo,
-                                    pp: newHost.pp,
-                                    pp_color: newHost.pp_color || '#FFAD80',
-                                    is_host: true
-                                }
+                                newHostId: game.players[0].player_id.toString()
                             }
                         });
                     }
+                    
+                    // Save the updated game
+                    try {
+                        await game.save();
+                        console.log(`Game state updated for ${gameCode}`);
+                    } catch (saveError) {
+                        console.error(`Error saving game state for ${gameCode}:`, saveError);
+                        // Try to reload and update the game if there was a version error
+                        if (saveError.name === 'VersionError') {
+                            console.log(`Attempting to reload and update game ${gameCode} due to version error`);
+                            const refreshedGame = await Game.findOne({ game_code: gameCode });
+                            if (refreshedGame) {
+                                // Re-apply the player removal
+                                const refreshedPlayerIndex = refreshedGame.players.findIndex(p => 
+                                    p.player_id && p.player_id.toString() === playerId
+                                );
+                                
+                                if (refreshedPlayerIndex !== -1) {
+                                    refreshedGame.players.splice(refreshedPlayerIndex, 1);
+                                    await refreshedGame.save();
+                                    console.log(`Successfully updated game ${gameCode} after reload`);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    console.log(`Game ${gameCode} is in progress, not removing player ${playerId}`);
                 }
                 break;
 
@@ -119,57 +170,148 @@ async function handleGameStateChange(gameCode, event) {
                 break;
 
             case 'game_start':
-                if (currentLobby) {
+                if (gameCode) {
                     try {
                         // First handle the game state change
-                        const game = await Game.findOne({ game_code: currentLobby });
+                        const game = await Game.findOne({ game_code: gameCode });
                         if (!game) {
-                            console.error(`Game not found: ${currentLobby}`);
+                            console.error(`Game not found: ${gameCode}`);
                             return;
                         }
 
                         game.status = 'in_progress';
                         game.start_time = new Date();
 
+                        // Ensure all players in the lobby are in the game's players array
+                        const lobbyClients = lobbies.get(gameCode) || new Set();
+                        console.log(`Found ${lobbyClients.size} clients in lobby ${gameCode}`);
+                        
+                        // Important: Do NOT remove the lobby when the game starts
+                        // The lobby is still needed for chat and other communications
+                        
+                        // Get all player IDs from the lobby
+                        const lobbyPlayerIds = new Set();
+                        for (const client of lobbyClients) {
+                            if (client.currentPlayerId) {
+                                lobbyPlayerIds.add(client.currentPlayerId);
+                                console.log(`Found player ${client.currentPlayerId} in lobby ${gameCode}`);
+                            }
+                        }
+                        
+                        // Also check the playerSockets map
+                        for (const [playerId, ws] of playerSockets.entries()) {
+                            if (ws.currentLobby === gameCode) {
+                                lobbyPlayerIds.add(playerId);
+                                console.log(`Found player ${playerId} in playerSockets map for lobby ${gameCode}`);
+                            }
+                        }
+                        
+                        // Check if any players need to be added to the game
+                        for (const playerId of lobbyPlayerIds) {
+                            // Check if player is already in the game
+                            const playerObjectId = new mongoose.Types.ObjectId(playerId);
+                            const playerInGame = game.players.some(p => p.player_id.equals(playerObjectId));
+                            
+                            if (!playerInGame) {
+                                console.log(`Adding player ${playerId} to game ${gameCode}`);
+                                
+                                // Add player to game
+                                game.players.push({
+                                    player_id: playerObjectId,
+                                    articles_visited: [],
+                                    current_article: null,
+                                    artifacts: [],
+                                    score: 0,
+                                    is_host: false
+                                });
+                                
+                                // Update player's current game
+                                try {
+                                    const player = await Player.findById(playerId);
+                                    if (player) {
+                                        player.current_game = game._id;
+                                        await player.save();
+                                        console.log(`Updated player ${playerId} with game ID ${game._id}`);
+                                    }
+                                } catch (playerError) {
+                                    console.error(`Error updating player ${playerId}:`, playerError);
+                                }
+                            }
+                        }
+
                         // Save the game first to ensure we have a valid ID
                         await game.save();
 
+                        // Log the valid game ID to confirm it exists
                         console.log('Game saved with ID:', game._id.toString());
+
+                        let articlesDistributed = false;
+                        let artifactsDistributed = false;
 
                         // Distribute random articles
                         const articlesNumber = game.settings?.articles_number || 5;
-                        const response = await fetch(`http://localhost:${PORT}/games/random-articles`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                id_game: game._id,
+                        try {
+                            // Add a small delay to ensure the game is fully saved before making API calls
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            
+                            // Use direct API call instead of fetch to avoid potential network issues
+                            const articlesResult = await callAPI('/games/random-articles', {
+                                id_game: game._id.toString(),
                                 number: articlesNumber
-                            })
-                        });
-
-                        if (!response.ok) {
-                            console.error('Failed to distribute random articles');
+                            });
+                            
+                            console.log('Random articles distributed:', articlesResult);
+                            articlesDistributed = true;
+                            
+                            // Add another small delay before distributing artifacts
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                            
+                            // Distribute artifacts to players
+                            const artifactsResult = await callAPI('/games/distribute-artifacts', {
+                                id_game: game._id.toString()
+                            });
+                            
+                            console.log('Artifacts distributed:', artifactsResult);
+                            artifactsDistributed = true;
+                        } catch (error) {
+                            console.error('Error distributing game resources:', error);
+                            // Continue with game start even if distribution fails
                         }
 
-                        // Create the game start event
+                        // Create the game start event with stringified ID
                         const gameStartEvent = {
                             type: 'game_start',
                             data: {
-                                gameCode: currentLobby,
-                                gameId: game._id.toString()
+                                gameCode: gameCode,
+                                gameId: game._id.toString(),
+                                articlesDistributed,
+                                artifactsDistributed
                             }
                         };
 
-                        // Log the event before broadcasting
-                        console.log('Broadcasting game start event:', gameStartEvent);
+                        // Log the event before returning
+                        console.log('Game start processing complete:', JSON.stringify(gameStartEvent));
 
-                        // Broadcast to all clients
-                        broadcastToLobby(currentLobby, gameStartEvent);
-
+                        // Don't broadcast here - the WebSocket handler already did that
+                        // Just return the event for the WebSocket handler to use
+                        
                         // Save game state again after all operations
                         await game.save();
+                        
+                        return gameStartEvent;
                     } catch (error) {
                         console.error('Error handling game start:', error);
+                        // Try to notify clients about the error
+                        try {
+                            broadcastToLobby(gameCode, {
+                                type: 'game_start_error',
+                                data: {
+                                    message: 'Failed to start game. Please try again.'
+                                }
+                            });
+                        } catch (broadcastError) {
+                            console.error('Error broadcasting game start error:', broadcastError);
+                        }
                     }
                 }
                 break;
@@ -223,226 +365,612 @@ async function handleGameStateChange(gameCode, event) {
 }
 
 function setupWebSocketServer() {
-    wss = new WebSocketServer({ port: WS_PORT });
+    // Create WebSocket server on port 4000
+    wss = new WebSocketServer({
+        port: 4000,
+        clientTracking: true,
+        perMessageDeflate: {
+            zlibDeflateOptions: {
+                chunkSize: 1024,
+                memLevel: 7,
+                level: 3
+            },
+            zlibInflateOptions: {
+                chunkSize: 10 * 1024
+            },
+            // Below options specified as default values
+            concurrencyLimit: 10,
+            threshold: 1024 // Size (in bytes) below which messages should not be compressed
+        }
+    });
     
-    // Map to track which WebSocket belongs to which player
-    const playerSockets = new Map(); // playerId -> ws
-
-    wss.on("connection", (ws) => {
-        console.log("Un utilisateur s'est connecté au WebSocket");
+    // Set up heartbeat interval to detect dead connections
+    const heartbeatInterval = setInterval(() => {
+        const now = Date.now();
+        
+        // Check each client's last activity
+        for (const [client, lastActivity] of clientActivity.entries()) {
+            // If no activity for more than 60 seconds, consider the connection dead
+            // This is a longer timeout to accommodate page refreshes and brief network issues
+            if (now - lastActivity > 60000) {
+                console.log('Client inactive for too long, terminating connection');
+                try {
+                    client.terminate();
+                } catch (e) {
+                    console.error('Error terminating inactive client:', e);
+                }
+                clientActivity.delete(client);
+            }
+        }
+    }, 15000); // Check every 15 seconds
+    
+    // Handle new WebSocket connections
+    wss.on('connection', (ws, req) => {
+        console.log(`New WebSocket connection from ${req.socket.remoteAddress}`);
+        
+        // Track client activity
+        clientActivity.set(ws, Date.now());
+        
+        // Store current lobby and player ID for this connection
         let currentLobby = null;
         let currentPlayerId = null;
-
-        ws.on("message", async (message) => {
+        
+        // Handle incoming messages
+        ws.on('message', async (message) => {
+            // Update activity timestamp
+            clientActivity.set(ws, Date.now());
+            
+            let event;
             try {
-                const event = JSON.parse(message);
-                console.log(`Message reçu : ${JSON.stringify(event)}`);
+                event = JSON.parse(message);
+            } catch (error) {
+                console.error('Invalid JSON message:', message.toString());
+                return;
+            }
+            
+            // Log non-ping messages
+            if (event.type !== 'ping') {
+                console.log('Message reçu :', message.toString());
+            }
 
-                switch (event.type) {
-                    case 'player_join':
-                        const { gameCode, player } = event.data;
+            switch (event.type) {
+                case 'player_join':
+                    if (event.data && event.data.gameCode) {
+                        const gameCode = event.data.gameCode;
+                        const playerId = event.data.player?.id;
+                        
+                        // Check for duplicate join attempts
+                        const joinKey = `${playerId}-${gameCode}`;
+                        const lastJoinTime = joinAttempts.get(joinKey) || 0;
+                        const now = Date.now();
+                        
+                        // If this is a duplicate join within 5 seconds, ignore it
+                        if (now - lastJoinTime < 5000) {
+                            console.log(`Ignoring duplicate join attempt for player ${playerId} in lobby ${gameCode} (${(now - lastJoinTime)/1000}s since last attempt)`);
+                            
+                            // Still send a success response to prevent client from retrying
+                            ws.send(JSON.stringify({
+                                type: 'join_success',
+                                data: { gameCode, playerId }
+                            }));
+                            
+                            return;
+                        }
+                        
+                        // Record this join attempt
+                        joinAttempts.set(joinKey, now);
+                        
+                        // Check if this is a reconnection after a disconnection
+                        const disconnectionKey = `disconnect-${playerId}-${gameCode}`;
+                        const lastDisconnectTime = joinAttempts.get(disconnectionKey) || 0;
+                        
+                        // If the player recently disconnected, treat this as a reconnection
+                        if (now - lastDisconnectTime < 30000) {
+                            console.log(`Player ${playerId} is reconnecting to lobby ${gameCode} after disconnection (${(now - lastDisconnectTime)/1000}s ago)`);
+                            
+                            // Clear any pending leave event processing
+                            processedLeaveEvents.delete(`${playerId}-${gameCode}`);
+                        }
+                        
+                        // Clear any processed leave events for this player-lobby pair
+                        processedLeaveEvents.delete(`${playerId}-${gameCode}`);
+                        
+                        // Update current lobby and player ID for this connection
+                        currentLobby = gameCode;
+                        currentPlayerId = playerId;
+                        
+                        // Store these values on the WebSocket object for reference
+                        ws.currentLobby = gameCode;
+                        ws.currentPlayerId = playerId;
+                        
+                        // Track this player's socket
+                        if (playerId) {
+                            console.log(`Tracking player ${playerId} in lobby ${gameCode}`);
+                            playerSockets.set(playerId, ws);
+                        }
+                        
+                        // Add this connection to the lobby
                         if (!lobbies.has(gameCode)) {
                             lobbies.set(gameCode, new Set());
                         }
                         lobbies.get(gameCode).add(ws);
-                        currentLobby = gameCode;
                         
-                        // Store the player ID associated with this WebSocket
-                        if (player && player.id) {
-                            currentPlayerId = player.id;
-                            playerSockets.set(currentPlayerId, { ws, gameCode });
-                            console.log(`Tracking player ${currentPlayerId} in lobby ${gameCode}`);
-                        }
-
-                        // Broadcast to all clients in the same lobby
-                        broadcastToLobby(gameCode, {
-                            type: 'player_join',
-                            data: { player }
-                        }, ws);
-                        break;
-
-                    case 'player_leave':
-                        if (currentLobby) {
-                            const lobbyClients = lobbies.get(currentLobby);
-                            if (lobbyClients) {
-                                lobbyClients.delete(ws);
-                                if (lobbyClients.size === 0) {
-                                    lobbies.delete(currentLobby);
-                                }
-                            }
-                            
-                            // Remove player from tracking
-                            if (event.data.playerId) {
-                                playerSockets.delete(event.data.playerId);
-                            }
-                            
-                            broadcastToLobby(currentLobby, event, ws);
-                            await handleGameStateChange(currentLobby, event);
-                            
-                            // Reset current lobby and player ID
-                            currentLobby = null;
-                            currentPlayerId = null;
-                        }
-                        break;
-
-                    case 'settings_update':
-                    case 'game_start':
-                        if (currentLobby) {
-                            // For settings and game start, broadcast to ALL clients including sender
-                            broadcastToLobby(currentLobby, event, null);
-                            await handleGameStateChange(currentLobby, event);
-                        }
-                        break;
-
-                    case 'player_rename':
-                        if (currentLobby) {
-                            // For rename, broadcast to ALL clients including sender
-                            broadcastToLobby(currentLobby, event, null);
-                            await handleGameStateChange(currentLobby, event);
-                        }
-                        break;
-
-                    case 'profile_picture_change':
-                        if (currentLobby) {
-                            broadcastToLobby(currentLobby, event, null);
-                            await handleGameStateChange(currentLobby, event);
-                        }
-                        break;
-
-                    case 'chat_message':
-                        if (currentLobby) {
-                            broadcastToLobby(currentLobby, event, ws);
-                        }
-                        break;
-                }
-            } catch (error) {
-                console.error('Error handling WebSocket message:', error);
-            }
-        });
-
-        ws.on("close", async () => {
-            console.log("Un utilisateur s'est déconnecté");
-            
-            // Handle player disconnection
-            if (currentPlayerId) {
-                console.log(`Player ${currentPlayerId} disconnected from lobby ${currentLobby}`);
-                
-                // Remove from player tracking
-                playerSockets.delete(currentPlayerId);
-                
-                // Create and broadcast player_leave event
-                if (currentLobby) {
-                    const leaveEvent = {
-                        type: 'player_leave',
-                        data: {
-                            gameCode: currentLobby,
-                            playerId: currentPlayerId
-                        }
-                    };
-                    
-                    // Remove from lobby clients
-                    const lobbyClients = lobbies.get(currentLobby);
-                    if (lobbyClients) {
-                        lobbyClients.delete(ws);
-                        if (lobbyClients.size === 0) {
-                            lobbies.delete(currentLobby);
-                        }
+                        // Debug information about lobbies after adding
+                        console.log(`After adding client to lobby ${gameCode}:`);
+                        console.log(`Lobby ${gameCode} now has ${lobbies.get(gameCode).size} clients`);
+                        console.log(`Current lobbies: ${Array.from(lobbies.keys()).join(', ')}`);
+                        
+                        // Broadcast the join event to all clients in the lobby
+                        broadcastToLobby(gameCode, event, ws);
+                        
+                        // Update game state
+                        await handleGameStateChange(gameCode, event);
+                        
+                        // Send a success response to confirm the join
+                        ws.send(JSON.stringify({
+                            type: 'join_success',
+                            data: { gameCode, playerId }
+                        }));
                     }
-                    
-                    // Broadcast leave event and update game state
-                    broadcastToLobby(currentLobby, leaveEvent);
-                    await handleGameStateChange(currentLobby, leaveEvent);
-                }
-            } else if (currentLobby) {
-                // If we have a lobby but no player ID, just remove from lobby
-                const lobbyClients = lobbies.get(currentLobby);
-                if (lobbyClients) {
-                    lobbyClients.delete(ws);
-                    if (lobbyClients.size === 0) {
-                        lobbies.delete(currentLobby);
-                    }
-                }
-            }
-        });
-    });
-    
-    // Handle HTTP endpoint for navigator.sendBeacon
-    const server = http.createServer((req, res) => {
-        if (req.url === '/leave' && req.method === 'POST') {
-            let body = '';
-            req.on('data', chunk => {
-                body += chunk.toString();
-            });
-            
-            req.on('end', async () => {
-                try {
-                    const event = JSON.parse(body);
-                    console.log('Received leave event via HTTP:', event);
-                    
-                    if (event.type === 'player_leave' && event.data.gameCode && event.data.playerId) {
-                        const { gameCode, playerId } = event.data;
+                    break;
+
+                case 'player_leave':
+                    if (currentLobby) {
+                        // Check if the game is in progress
+                        const game = await Game.findOne({ game_code: currentLobby });
+                        if (!game) {
+                            console.log(`Game not found for lobby ${currentLobby}, skipping leave event`);
+                            break;
+                        }
+                        
+                        const isGameInProgress = game && game.status === 'in_progress';
+                        const playerId = event.data.playerId;
+                        
+                        // Check if we've already processed a leave event for this player-lobby pair
+                        const leaveEventKey = `${playerId}-${currentLobby}`;
+                        if (processedLeaveEvents.has(leaveEventKey)) {
+                            console.log(`Already processed leave event for player ${playerId} in lobby ${currentLobby}, ignoring duplicate`);
+                            return;
+                        }
+                        
+                        // Track leave events to prevent duplicates
+                        const leaveKey = `leave-${playerId}-${currentLobby}`;
+                        const lastLeaveTime = joinAttempts.get(leaveKey) || 0;
+                        const now = Date.now();
+                        
+                        // If this is a duplicate leave within 5 seconds, ignore it
+                        if (now - lastLeaveTime < 5000) {
+                            console.log(`Ignoring duplicate leave attempt for player ${playerId} in lobby ${currentLobby} (${(now - lastLeaveTime)/1000}s since last attempt)`);
+                            return;
+                        }
+                        
+                        // Check if this player just joined (within the last 3 seconds)
+                        const joinKey = `${playerId}-${currentLobby}`;
+                        const lastJoinTime = joinAttempts.get(joinKey) || 0;
+                        
+                        // If the player just joined within 3 seconds, don't process the leave event
+                        if (now - lastJoinTime < 3000) {
+                            console.log(`Player ${playerId} just joined lobby ${currentLobby} ${(now - lastJoinTime)/1000}s ago, ignoring leave event`);
+                            return;
+                        }
+                        
+                        // Record this leave attempt
+                        joinAttempts.set(leaveKey, now);
+                        
+                        // Mark that we've processed a leave event for this player-lobby pair
+                        processedLeaveEvents.add(leaveEventKey);
+                        
+                        console.log(`Processing leave event for player ${playerId} in lobby ${currentLobby}`);
+                        
+                        // Remove from lobby clients
+                        const lobbyClients = lobbies.get(currentLobby);
+                        if (lobbyClients) {
+                            lobbyClients.delete(ws);
+                            if (lobbyClients.size === 0) {
+                                lobbies.delete(currentLobby);
+                            }
+                        }
                         
                         // Remove player from tracking
-                        const playerData = playerSockets.get(playerId);
-                        if (playerData) {
-                            const { ws } = playerData;
+                        if (playerId) {
                             playerSockets.delete(playerId);
+                        }
+                        
+                        // Only broadcast and update game state if game is not in progress
+                        // and if we have a valid game and player ID
+                        if (!isGameInProgress && game && playerId) {
+                            // Check if player is actually in the game before broadcasting
+                            const playerInGame = game.players.some(p => p.player_id.toString() === playerId);
                             
-                            // Remove from lobby clients
-                            const lobbyClients = lobbies.get(gameCode);
-                            if (lobbyClients && ws) {
-                                lobbyClients.delete(ws);
-                                if (lobbyClients.size === 0) {
-                                    lobbies.delete(gameCode);
+                            if (playerInGame) {
+                                // Only broadcast if there are clients in the lobby
+                                if (lobbies.has(currentLobby) && lobbies.get(currentLobby).size > 0) {
+                                    broadcastToLobby(currentLobby, event, ws);
+                                } else {
+                                    console.log(`No clients in lobby ${currentLobby} to broadcast leave event to`);
                                 }
+                                
+                                try {
+                                    await handleGameStateChange(currentLobby, event);
+                                } catch (error) {
+                                    console.error(`Error handling game state change for leave event:`, error);
+                                }
+                            } else {
+                                console.log(`Player ${playerId} not found in game ${currentLobby}, skipping leave event`);
+                            }
+                        } else {
+                            console.log(`Game ${currentLobby} is in progress or invalid data, not removing player ${playerId}`);
+                        }
+                        
+                        // Reset current lobby and player ID
+                        currentLobby = null;
+                        currentPlayerId = null;
+                    }
+                    break;
+
+                case 'settings_update':
+                    if (currentLobby) {
+                        // For settings updates, broadcast to ALL clients including sender
+                        broadcastToLobby(currentLobby, event, null);
+                        await handleGameStateChange(currentLobby, event);
+                    }
+                    break;
+                    
+                case 'game_start':
+                    if (currentLobby) {
+                        try {
+                            // First, enhance the event with the game ID
+                            const game = await Game.findOne({ game_code: currentLobby });
+                            if (game) {
+                                // Make sure the event includes the game ID
+                                if (!event.data) event.data = {};
+                                event.data.gameId = game._id.toString();
+                                
+                                console.log('Enhanced game_start event with ID:', JSON.stringify(event));
+                            }
+                            
+                            // Ensure the lobby exists
+                            ensureLobbyExists(currentLobby);
+                            
+                            // Broadcast the initial game_start event to all clients
+                            broadcastToLobby(currentLobby, event, null);
+                            
+                            // Process the game start (distribute articles, artifacts, etc.)
+                            const enhancedEvent = await handleGameStateChange(currentLobby, event);
+                            
+                            // Ensure the lobby still exists after game start
+                            ensureLobbyExists(currentLobby);
+                            
+                            // If handleGameStateChange returned an enhanced event, broadcast it
+                            if (enhancedEvent && enhancedEvent.data && 
+                                (enhancedEvent.data.articlesDistributed || enhancedEvent.data.artifactsDistributed)) {
+                                console.log('Broadcasting enhanced game_start event with distribution results');
+                                broadcastToLobby(currentLobby, enhancedEvent, null);
+                            }
+                            
+                            // Important: Do NOT remove the lobby when the game starts
+                            // The lobby is still needed for chat and other communications
+                        } catch (error) {
+                            console.error('Error processing game_start event:', error);
+                            // Notify clients about the error
+                            broadcastToLobby(currentLobby, {
+                                type: 'game_start_error',
+                                data: {
+                                    message: 'Failed to start game. Please try again.'
+                                }
+                            }, null);
+                        }
+                    }
+                    break;
+
+                case 'player_rename':
+                    if (currentLobby) {
+                        // For rename, broadcast to ALL clients including sender
+                        broadcastToLobby(currentLobby, event, null);
+                        await handleGameStateChange(currentLobby, event);
+                    }
+                    break;
+
+                case 'profile_picture_change':
+                    if (currentLobby) {
+                        broadcastToLobby(currentLobby, event, null);
+                        await handleGameStateChange(currentLobby, event);
+                    }
+                    break;
+
+                case 'chat_message':
+                    // For chat messages, we need to be more flexible
+                    // The gameCode should be in the event data
+                    if (event.data && event.data.gameCode) {
+                        const chatGameCode = event.data.gameCode;
+                        
+                        // Store the game code on the connection if not already set
+                        if (!currentLobby) {
+                            currentLobby = chatGameCode;
+                            ws.currentLobby = chatGameCode;
+                            
+                            // Add this connection to the lobby if not already there
+                            if (!lobbies.has(chatGameCode)) {
+                                lobbies.set(chatGameCode, new Set());
+                            }
+                            if (!lobbies.get(chatGameCode).has(ws)) {
+                                lobbies.get(chatGameCode).add(ws);
+                                console.log(`Added client to lobby ${chatGameCode} for chat`);
                             }
                         }
                         
-                        // Broadcast leave event and update game state
-                        broadcastToLobby(gameCode, event);
-                        await handleGameStateChange(gameCode, event);
+                        // Add timestamp if not present
+                        if (!event.data.timestamp) {
+                            event.data.timestamp = Date.now();
+                        }
+                        
+                        // Add message ID if not present
+                        if (!event.data.messageId) {
+                            event.data.messageId = `${event.data.playerId}-${event.data.timestamp}-${Math.random().toString(36).substring(2, 10)}`;
+                        }
+                        
+                        // Create a copy of the event for broadcasting
+                        const broadcastEvent = JSON.parse(JSON.stringify(event));
+                        
+                        // Add echo flag to indicate this is a server echo
+                        broadcastEvent.data.isServerEcho = true;
+                        
+                        // Log the chat message (without content for privacy)
+                        console.log(`Chat message from ${event.data.playerName || 'Unknown'} in lobby ${chatGameCode} (ID: ${event.data.messageId})`);
+                        
+                        // Broadcast to ALL clients including the sender (null means no exclusion)
+                        broadcastToLobby(chatGameCode, broadcastEvent, null);
+                    } else {
+                        console.error('Chat message missing gameCode:', event);
+                    }
+                    break;
+            }
+        });
+
+        ws.on("error", (error) => {
+            console.error(`WebSocket error for ${req.socket.remoteAddress}:`, error);
+        });
+
+        // Handle WebSocket close event
+        ws.on('close', async (code, reason) => {
+            console.log(`WebSocket closed from ${req.socket.remoteAddress}. Code: ${code}, Reason: ${reason}`);
+            
+            // Clean up client activity tracking
+            clientActivity.delete(ws);
+            
+            // If this is a normal closure due to page unload, don't process it as a leave event
+            // and don't remove the client from the lobby
+            if (code === 1000 && reason === "Page unload") {
+                console.log("Client disconnected due to page unload, not processing as leave event");
+                return;
+            }
+            
+            // Use the values stored on the WebSocket object itself
+            // as they're more reliable than the closure variables
+            const lobbyCode = ws.currentLobby || currentLobby;
+            const playerId = ws.currentPlayerId || currentPlayerId;
+            
+            if (lobbyCode) {
+                // Debug information before removing
+                console.log(`Before removing client from lobby ${lobbyCode}:`);
+                if (lobbies.has(lobbyCode)) {
+                    console.log(`Lobby ${lobbyCode} has ${lobbies.get(lobbyCode).size} clients`);
+                } else {
+                    console.log(`Lobby ${lobbyCode} does not exist`);
+                }
+                
+                // Remove this connection from the lobby
+                if (lobbies.has(lobbyCode)) {
+                    lobbies.get(lobbyCode).delete(ws);
+                    console.log(`After removing client, lobby ${lobbyCode} now has ${lobbies.get(lobbyCode).size} clients`);
+                    
+                    if (lobbies.get(lobbyCode).size === 0) {
+                        lobbies.delete(lobbyCode);
+                        console.log(`Removed empty lobby ${lobbyCode}`);
+                    }
+                }
+                
+                if (playerId) {
+                    console.log(`Player ${playerId} disconnected from lobby ${lobbyCode}`);
+                    
+                    // Check if this was the socket associated with the player
+                    if (playerSockets.get(playerId) === ws) {
+                        playerSockets.delete(playerId);
                     }
                     
-                    res.writeHead(200);
-                    res.end('OK');
-                } catch (error) {
-                    console.error('Error handling leave event via HTTP:', error);
-                    res.writeHead(500);
-                    res.end('Error');
+                    // Don't immediately process as a leave event - give time for reconnection
+                    // Store the disconnection time
+                    const disconnectionKey = `disconnect-${playerId}-${lobbyCode}`;
+                    joinAttempts.set(disconnectionKey, Date.now());
+                    
+                    // We'll process the actual leave event after a delay
+                    // This allows for reconnection during page refreshes
+                    setTimeout(async () => {
+                        // Check if the player has reconnected
+                        if (playerSockets.has(playerId)) {
+                            console.log(`Player ${playerId} reconnected to lobby ${lobbyCode}, not processing leave event`);
+                            return;
+                        }
+                        
+                        // Check if we've already processed a leave event for this player-lobby pair
+                        const leaveEventKey = `${playerId}-${lobbyCode}`;
+                        if (processedLeaveEvents.has(leaveEventKey)) {
+                            console.log(`Already processed leave event for player ${playerId} in lobby ${lobbyCode}`);
+                            return;
+                        }
+                        
+                        console.log(`Player ${playerId} did not reconnect to lobby ${lobbyCode} within timeout, processing leave event`);
+                        
+                        // Track leave events to prevent duplicates
+                        const leaveKey = `leave-${playerId}-${lobbyCode}`;
+                        joinAttempts.set(leaveKey, Date.now());
+                        
+                        // Mark that we've processed a leave event for this player-lobby pair
+                        processedLeaveEvents.add(leaveEventKey);
+                        
+                        // Check if the game is in progress before handling player leave
+                        const game = await Game.findOne({ game_code: lobbyCode });
+                        if (game && game.status !== 'in_progress') {
+                            // Only create a leave event if the game is not in progress
+                            const leaveEvent = {
+                                type: 'player_leave',
+                                data: {
+                                    gameCode: lobbyCode,
+                                    playerId: playerId
+                                }
+                            };
+                            
+                            // Only broadcast if there are clients in the lobby
+                            if (lobbies.has(lobbyCode) && lobbies.get(lobbyCode).size > 0) {
+                                broadcastToLobby(lobbyCode, leaveEvent);
+                            }
+                            
+                            // Update game state
+                            try {
+                                await handleGameStateChange(lobbyCode, leaveEvent);
+                            } catch (error) {
+                                console.error(`Error handling game state change for leave event:`, error);
+                            }
+                        }
+                    }, 10000); // Wait 10 seconds before processing the leave event
                 }
-            });
-        } else {
-            res.writeHead(404);
-            res.end('Not Found');
-        }
+            }
+        });
     });
     
-    server.listen(WS_PORT + 1, () => {
-        console.log(`✅ HTTP server for leave events started on port ${WS_PORT + 1}`);
+    // Clean up on server shutdown
+    process.on('SIGINT', () => {
+        clearInterval(heartbeatInterval);
+        wss.close();
+        process.exit();
     });
 
-    console.log(`✅ WebSocket server started on port ${WS_PORT}`);
+    console.log("✅ WebSocket server started on port 4000");
 }
 
 function broadcastToLobby(gameCode, event, excludeWs = null) {
-    console.log(`Broadcasting to lobby ${gameCode}:`, event);
-    const lobbyClients = lobbies.get(gameCode);
-    if (lobbyClients) {
-        console.log(`Found ${lobbyClients.size} clients in lobby`);
-        let sentCount = 0;
-        lobbyClients.forEach(client => {
-            if ((excludeWs === null || client !== excludeWs) && client.readyState === 1) {
+    // Don't log ping messages to reduce noise
+    if (event.type !== 'ping') {
+        console.log(`Broadcasting to lobby ${gameCode}:`, event.type);
+        
+        // Debug information about lobbies
+        console.log(`Current lobbies: ${Array.from(lobbies.keys()).join(', ')}`);
+        if (lobbies.has(gameCode)) {
+            console.log(`Lobby ${gameCode} has ${lobbies.get(gameCode).size} clients`);
+        } else {
+            console.log(`Lobby ${gameCode} does not exist`);
+            
+            // Check if there are any player sockets associated with this game code
+            // This could happen if the lobby was converted to a game but the clients are still connected
+            const playersInGame = Array.from(playerSockets.entries())
+                .filter(([_, ws]) => ws.currentLobby === gameCode)
+                .map(([playerId, _]) => playerId);
+                
+            if (playersInGame.length > 0) {
+                console.log(`Found ${playersInGame.length} players still associated with game ${gameCode}`);
+                
+                // Recreate the lobby with the existing player sockets
+                const newLobby = new Set();
+                for (const [playerId, ws] of playerSockets.entries()) {
+                    if (ws.currentLobby === gameCode) {
+                        newLobby.add(ws);
+                    }
+                }
+                
+                if (newLobby.size > 0) {
+                    console.log(`Recreating lobby ${gameCode} with ${newLobby.size} clients`);
+                    lobbies.set(gameCode, newLobby);
+                }
+            }
+        }
+    }
+    
+    // If no lobby exists, nothing to do
+    if (!lobbies.has(gameCode) || lobbies.get(gameCode).size === 0) {
+        if (event.type !== 'ping') {
+            console.log(`No clients in lobby ${gameCode}, skipping broadcast`);
+        }
+        return;
+    }
+    
+    // Prepare the message once
+    const message = JSON.stringify(event);
+    
+    // For ping messages, use a simpler approach
+    if (event.type === 'ping') {
+        const invalidClients = new Set();
+        
+        lobbies.get(gameCode).forEach(client => {
+            if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
                 try {
-                    client.send(JSON.stringify(event));
-                    sentCount++;
-                } catch (error) {
-                    console.error('Error sending message to client:', error);
+                    client.send(message);
+                } catch (e) {
+                    invalidClients.add(client);
                 }
             }
         });
-        console.log(`Sent message to ${sentCount} clients`);
+        
+        // Remove invalid clients
+        if (invalidClients.size > 0) {
+            invalidClients.forEach(client => {
+                lobbies.get(gameCode).delete(client);
+            });
+            console.log(`Removed ${invalidClients.size} disconnected clients from lobby ${gameCode}`);
+        }
+        
+        return;
+    }
+    
+    // For non-ping messages, track success and failure
+    const validClients = new Set();
+    const invalidClients = new Set();
+    
+    // First identify valid and invalid clients
+    lobbies.get(gameCode).forEach(client => {
+        if (client !== excludeWs) {
+            if (client.readyState === WebSocket.OPEN) {
+                validClients.add(client);
+            } else {
+                invalidClients.add(client);
+            }
+        }
+    });
+    
+    // Log the client count
+    if (event.type === 'chat_message') {
+        console.log(`Broadcasting chat message to ${validClients.size} clients in lobby ${gameCode}`);
     } else {
-        console.log(`No clients found in lobby ${gameCode}`);
+        console.log(`Found ${validClients.size + invalidClients.size} clients in lobby`);
+    }
+    
+    // Remove invalid clients
+    invalidClients.forEach(client => {
+        console.log(`Skipping client with readyState: ${client.readyState}`);
+        lobbies.get(gameCode).delete(client);
+    });
+    
+    if (invalidClients.size > 0) {
+        console.log(`Removed ${invalidClients.size} disconnected clients from lobby ${gameCode}`);
+    }
+    
+    // Send to all valid clients
+    let sentCount = 0;
+    let failedCount = 0;
+    
+    validClients.forEach(client => {
+        try {
+            client.send(message);
+            sentCount++;
+        } catch (e) {
+            console.error(`Error sending message to client:`, e);
+            failedCount++;
+        }
+    });
+    
+    if (event.type === 'chat_message') {
+        console.log(`Chat message sent to ${sentCount} clients, failed to send to ${failedCount} clients`);
+    } else {
+        console.log(`Sent message to ${sentCount} clients, failed to send to ${failedCount} clients`);
     }
 }
 
@@ -458,10 +986,10 @@ mongoose
         
         // Start HTTP server
         app.listen(PORT, () => {
-            console.log(`✅ Server listening on http://localhost:${PORT}`);
+            console.log(`✅ HTTP server listening on http://localhost:${PORT}`);
         });
 
-        // Start WebSocket server
+        // Start WebSocket server on port 4000
         setupWebSocketServer();
     })
     .catch((err) => {
@@ -476,30 +1004,97 @@ app.use("/articles", articleRoutes);
 app.use("/artifacts", artifactRoutes);
 app.use("/challenges", challengeRoutes);
 
-async function callAPI(endpoint, body) {
+// Debug route to check if server is responding
+app.get("/debug", (req, res) => {
+    res.json({ message: "Server is running correctly" });
+});
+
+// Log all registered routes
+console.log("Registered routes:");
+app._router.stack.forEach(middleware => {
+    if (middleware.route) {
+        // Routes registered directly on the app
+        console.log(`${Object.keys(middleware.route.methods)} ${middleware.route.path}`);
+    } else if (middleware.name === 'router') {
+        // Routes registered on a router
+        middleware.handle.stack.forEach(handler => {
+            if (handler.route) {
+                const path = handler.route.path;
+                const methods = Object.keys(handler.route.methods);
+                console.log(`${methods} ${middleware.regexp} ${path}`);
+            }
+        });
+    }
+});
+
+async function callAPI(endpoint, body, retryCount = 0) {
     try {
-        const response = await fetch(`http://localhost:${PORT}/games${endpoint}`, {
+        console.log(`Calling API ${endpoint} with body:`, body);
+        const response = await fetch(`http://localhost:${PORT}${endpoint}`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
             body: JSON.stringify(body),
         });
 
-        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Error ${response.status} from ${endpoint}:`, errorText);
+            
+            // Check if this is a version conflict error and we haven't exceeded retry attempts
+            if (errorText.includes('VersionError') && retryCount < 3) {
+                console.log(`Version conflict detected, retrying (attempt ${retryCount + 1}/3)...`);
+                // Wait a short time before retrying to allow other operations to complete
+                await new Promise(resolve => setTimeout(resolve, 500 * (retryCount + 1)));
+                return callAPI(endpoint, body, retryCount + 1);
+            }
+            
+            throw new Error(`API error: ${response.status} - ${errorText}`);
+        }
 
         const data = await response.json();
-        console.log(`Réponse de ${endpoint} :`, data);
+        console.log(`Response from ${endpoint}:`, data);
         return data;
     } catch (error) {
-        console.error(`Erreur lors de la requête vers ${endpoint} :`, error);
+        console.error(`Error calling ${endpoint}:`, error);
+        throw error; // Re-throw to allow caller to handle
     }
 }
 
 async function testAPI() {
-    await callAPI("/players", { id_game: "67b1f4c36fe85f560dd86791" });
-    await callAPI("/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
-    await callAPI("/current-article", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
+    try {
+        console.log("Testing API endpoints...");
+        await callAPI("/games/players", { id_game: "67b1f4c36fe85f560dd86791" });
+        await callAPI("/games/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
+        await callAPI("/games/current-article", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
+        await callAPI("/games/distribute-artifacts", {id_game: "67b1f4c36fe85f560dd86791"});
+        console.log("API tests completed successfully");
+    } catch (error) {
+        console.error("API test failed:", error);
+    }
 }
 
 app.get("/", (req, res) => {
     res.send("API fonctionne !");
 });
+
+// Helper function to ensure a lobby exists for a game code
+function ensureLobbyExists(gameCode) {
+    if (!lobbies.has(gameCode)) {
+        console.log(`Creating lobby for game ${gameCode}`);
+        lobbies.set(gameCode, new Set());
+    }
+    
+    // Check if there are any player sockets associated with this game code
+    // that aren't already in the lobby
+    for (const [playerId, ws] of playerSockets.entries()) {
+        if (ws.currentLobby === gameCode && !lobbies.get(gameCode).has(ws)) {
+            console.log(`Adding player ${playerId}'s socket to lobby ${gameCode}`);
+            lobbies.get(gameCode).add(ws);
+        }
+    }
+    
+    return lobbies.get(gameCode);
+}
