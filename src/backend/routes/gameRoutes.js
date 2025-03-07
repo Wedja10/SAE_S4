@@ -16,7 +16,7 @@ import {
     backArtifact,
     distributeArtifacts,
     getFoundTargetArticles,
-    getPublicGames
+    getPublicGames,
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";

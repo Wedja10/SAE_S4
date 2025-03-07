@@ -2,9 +2,9 @@ import mongoose from 'mongoose';
 
 const ArtifactSchema = new mongoose.Schema({
     name: String,
-    type: String,
+    storable: Boolean,
     effect: String,
-    usage: String
+    positive: Boolean,
 });
 
 export default mongoose.model('Artifact', ArtifactSchema);

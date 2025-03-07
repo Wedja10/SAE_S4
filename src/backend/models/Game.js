@@ -26,7 +26,7 @@ const GameSchema = new mongoose.Schema({
     articles_to_visit: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
     artifacts_distribution: [
         {
-            article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
+            article: String,
             artifact: String
         }
     ]

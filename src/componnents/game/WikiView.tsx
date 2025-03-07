@@ -195,7 +195,9 @@ const WikiView: React.FC = () => {
           id_player: playerId,
           articleId: createdArticle._id,
         });
-        
+        const artifactAssociated = await postRequest(getApiUrl("/games/artifact-distribution"), {id_game: gameParam, article_title: title})
+
+
         console.log("Article change response:", response);
         
         // Check if this is a target article and provide feedback

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import "./articleMethods.js";
 import Player from "../models/Player.js";
 import Article from "../models/Article.js";
+import Artifact from "../models/Artifact.js";
 import {createArticle, generateRandomArticle} from "./articleMethods.js";
 
 const { ObjectId } = mongoose.Types;
@@ -1181,56 +1182,6 @@ export const dictatorArtifact = async (req, res) => {
     }
 };
 
-/**
- * Distributes artifacts to players in a game
- * This function is called when starting a game to give each player their initial artifacts
- */
-export const distributeArtifacts = async (req, res) => {
-    const { id_game } = req.body;
-
-    if (!id_game) {
-        return res.status(400).json({ error: "Game ID is required" });
-    }
-
-    try {
-        // Find the game
-        const game = await Game.findById(id_game);
-        if (!game) {
-            return res.status(404).json({ error: "Game not found" });
-        }
-
-        // List of available artifacts
-        const availableArtifacts = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"];
-
-        // Distribute artifacts to each player
-        for (const player of game.players) {
-            // Each player gets 2 random artifacts to start with
-            const playerArtifacts = [];
-            for (let i = 0; i < 2; i++) {
-                const randomIndex = Math.floor(Math.random() * availableArtifacts.length);
-                playerArtifacts.push(availableArtifacts[randomIndex]);
-            }
-
-            // Update player's artifacts
-            player.artifacts = playerArtifacts;
-        }
-
-        // Save the game with updated artifacts
-        await game.save();
-
-        console.log(`Artifacts distributed to ${game.players.length} players in game ${id_game}`);
-        return res.status(200).json({
-            message: "Artifacts distributed successfully",
-            players: game.players.map(p => ({
-                player_id: p.player_id,
-                artifacts: p.artifacts
-            }))
-        });
-    } catch (error) {
-        console.error("Error distributing artifacts:", error);
-        return res.status(500).json({ error: "Failed to distribute artifacts" });
-    }
-};
 
 export const getPublicGames = async (req, res) => {
     try {
@@ -1247,6 +1198,99 @@ export const getPublicGames = async (req, res) => {
     } catch (e) {
         console.error("Erreur getPublicGames :", e);
         res.status(500).json({ message: "Erreur lors de la récupération des parties publiques." });
+    }
+};
+
+async function setArtifactDistribution(id_game, article_title) {
+    try {
+        if (!id_game) {
+            throw new Error("ID du jeu requis");
+        }
+
+        if (!article_title) {
+            throw new Error("Titre d'article requis");
+        }
+
+        // Trouver l'article
+        const article = await Article.findOne({ title: article_title });
+        if (!article) {
+            throw new Error("Article non trouvé");
+        }
+
+        // Filtrer les artefacts en fonction de la popularité de l'article
+        const artifactFilter = article.popular ? { positive: true } : { positive: false };
+        const artifacts = await Artifact.find(artifactFilter);
+
+        if (artifacts.length === 0) {
+            throw new Error("Aucun artefact correspondant trouvé");
+        }
+
+        // Sélectionner un artefact au hasard
+        const randomArtifact = artifacts[Math.floor(Math.random() * artifacts.length)];
+
+        // Trouver le jeu
+        const game = await Game.findById(id_game);
+        if (!game) {
+            throw new Error("Jeu non trouvé");
+        }
+
+        // Ajouter l'artefact à la distribution du jeu
+        game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name });
+
+        // Sauvegarder les modifications
+        await game.save();
+
+        return randomArtifact.name; // Retourne le nom de l'artefact au lieu d'envoyer une réponse HTTP
+    } catch (error) {
+        console.error("Erreur lors de la distribution d'un artefact:", error);
+        throw error; // Relance l'erreur pour la gérer dans distributeArtifacts
+    }
+}
+
+export const distributeArtifacts = async (req, res) => {
+    const { id_game } = req.body;
+
+    if (!id_game) {
+        return res.status(400).json({ error: "Game ID is required" });
+    }
+
+    try {
+        // Trouver le jeu
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Distribuer des artefacts aux joueurs
+        for (const player of game.players) {
+            const currentArticle = await Article.findById(player.current_article);
+            if (!currentArticle) {
+                console.warn(`Article not found for player ${player.player_id}`);
+                continue; // Ignore ce joueur si l'article est introuvable
+            }
+
+            try {
+                const artifact = await setArtifactDistribution(id_game, currentArticle.title);
+                player.artifacts.push(artifact);
+            } catch (error) {
+                console.warn(`Error assigning artifact to player ${player.player_id}:`, error.message);
+            }
+        }
+
+        // Sauvegarder le jeu avec les artefacts mis à jour
+        await Game.findByIdAndUpdate(id_game, { $set: { players: game.players } }, { new: true });
+
+        console.log(`Artifacts distributed to ${game.players.length} players in game ${id_game}`);
+        return res.status(200).json({
+            message: "Artifacts distributed successfully",
+            players: game.players.map(p => ({
+                player_id: p.player_id,
+                artifacts: p.artifacts
+            }))
+        });
+    } catch (error) {
+        console.error("Error distributing artifacts:", error);
+        return res.status(500).json({ error: "Failed to distribute artifacts", details: error.message });
     }
 };
 
