@@ -192,9 +192,10 @@ const WikiView: React.FC = () => {
         });
         console.log("Article change response:", response);
 
-        // Check if this is a target article and provide feedback
-        if (response && response.isTargetArticle) {
-          // Show a congratulatory message for finding a target article
+        // Check if the player won
+        if (response && response.isLastArticle) {
+          alert(`Félicitations! Vous avez gagné`);
+        } else if(response && response.isTargetArticle){
           alert(`Félicitations! Vous avez trouvé un article cible: ${title}`);
         }
 
@@ -206,7 +207,8 @@ const WikiView: React.FC = () => {
             playerId: playerId,
             gameId: gameParam,
             isNewVisit: true,
-            isTargetArticle: response?.isTargetArticle || false
+            isTargetArticle: response?.isTargetArticle || false,
+            isLastArticle: response?.isLastArticle || false
           }
         });
         window.dispatchEvent(articleUpdateEvent);

@@ -290,7 +290,6 @@ const checkTargetArticleFound = async (game, articleId, playerId) => {
                         game.players[playerIndex].found_target_articles.push(articleId);
                         console.log(`Added ${articleTitle} to player's found target articles`);
 
-                        // Save the game to persist the found target article
                         await game.save();
                     }
                 }
@@ -404,6 +403,11 @@ export const changeArticleFront = async (req, res) => {
             game.players[playerIndex].artifacts.push(setArtifact);
         }
 
+        let isLastArticle = false;
+        if(game.articles_to_visit.length === game.players[playerIndex].found_target_articles.length) {
+            isLastArticle = true;
+        }
+
         await Game.findOneAndUpdate({ _id: game._id }, game, { new: true, runValidators: false });
 
         console.log(`Successfully updated current article for player ${id_player} to ${article.title}`);
@@ -413,7 +417,8 @@ export const changeArticleFront = async (req, res) => {
             id_article: articleId,
             title: article.title,
             isNewVisit,
-            isTargetArticle
+            isTargetArticle,
+            isLastArticle
         });
     } catch (error) {
         console.error("Error in changeArticleFront:", error);
@@ -1056,6 +1061,7 @@ export const eraserArtifact = async (req, res) => {
         session.startTransaction();
         try {
             player.articles_visited = player.articles_visited.filter(article => article !== latestArticle);
+            player.found_target_articles = player.found_target_articles.filter(article => article !== latestArticle);
             await game.save({ session });
             await session.commitTransaction();
         } catch (error) {
@@ -1187,7 +1193,7 @@ async function setArtifactDistribution(id_game, article_title) {
             throw new Error("Jeu non trouvé");
         }
 
-        game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name });
+        game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name});
 
         // Sauvegarder les modifications
         await game.save();
