@@ -39,8 +39,8 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
             }
             
             try {
-                console.log("Making artifacts request to:", getApiUrl('/games/artifacts'));
-                const data = await postRequest(getApiUrl('/games/artifacts'), {
+                console.log("Making artifacts request to:", getApiUrl('/games/storable-artifacts'));
+                const data = await postRequest(getApiUrl('/games/storable-artifacts'), {
                     id_game: updatedGameId,
                     id_player: updatedPlayerId
                 });
@@ -63,7 +63,7 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
                             console.log("Successfully joined the game, retrying fetch...");
                             
                             // Retry fetching artifacts
-                            const retryData = await postRequest(getApiUrl('/games/artifacts'), {
+                            const retryData = await postRequest(getApiUrl('/games/storable-artifacts'), {
                                 id_game: updatedGameId,
                                 id_player: updatedPlayerId
                             });

@@ -199,6 +199,22 @@ const WikiView: React.FC = () => {
           alert(`Félicitations! Vous avez trouvé un article cible: ${title}`);
         }
 
+        if(response && response.artifact !== null){
+          if(response.artifact === 'Snail'){
+            console.log("SNAIL ARTIFACT")
+            await handleSnailClick();
+          } else if(response.artifact === 'Disorienter'){
+              console.log("DISORIENTER ARTIFACT")
+              await handleDisorienterClick();
+          } else if(response.artifact === 'Teleporter'){
+              console.log("TELEPORTER ARTIFACT")
+              await handleTeleportClick();
+          } else if(response.artifact === 'Eraser'){
+              console.log("ERASER ARTIFACT")
+              await handleEraserClick();
+          }
+        }
+
         // Dispatch a custom event to notify that articles have been updated
         const articleUpdateEvent = new CustomEvent('articleUpdated', {
           detail: {
@@ -208,7 +224,8 @@ const WikiView: React.FC = () => {
             gameId: gameParam,
             isNewVisit: true,
             isTargetArticle: response?.isTargetArticle || false,
-            isLastArticle: response?.isLastArticle || false
+            isLastArticle: response?.isLastArticle || false,
+            artifact: response?.artifact || null
           }
         });
         window.dispatchEvent(articleUpdateEvent);

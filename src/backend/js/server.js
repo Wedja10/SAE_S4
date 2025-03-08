@@ -1070,7 +1070,8 @@ async function testAPI() {
         // await callAPI("/games/artifacts", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
         // await callAPI("/games/current-article", {id_game: "67b1f4c36fe85f560dd86791", id_player: "67a7bc84385c3dc88d87a747"});
         // await callAPI("/games/distribute-artifacts", {id_game: "67b1f4c36fe85f560dd86791"});
-        await callAPI("/games/mine-artifact", {id_game: "67cc3a2ee84c208199f2c767", id_player: '67cc3a2ee84c208199f2c764'});
+        await callAPI("/games/storable-artifacts", {id_game: "67b1f4c36fe85f560dd86791"});
+        //await callAPI("/games/mine-artifact", {id_game: "67cc3a2ee84c208199f2c767", id_player: '67cc3a2ee84c208199f2c764'});
         console.log("API tests completed successfully");
     } catch (error) {
         console.error("API test failed:", error);

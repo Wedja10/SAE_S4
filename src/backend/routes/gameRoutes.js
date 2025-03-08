@@ -17,6 +17,7 @@ import {
     distributeArtifacts,
     getFoundTargetArticles,
     getPublicGames,
+    getStorableArticfactPlayer
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -65,6 +66,7 @@ router.post('/articles', getVisitedArticlesPlayer);
 router.post('/target-articles', getTargetArticles);
 router.post('/found-target-articles', getFoundTargetArticles);
 router.post('/artifacts', getArticfactPlayer);
+router.post('/storable-artifacts', getStorableArticfactPlayer);
 router.post('/change-article', changeArticleFront);
 router.post('/public-games', getPublicGames);
 router.post("/random-articles", distributeRandomArticles);

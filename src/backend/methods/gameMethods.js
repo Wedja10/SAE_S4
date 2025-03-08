@@ -5,6 +5,7 @@ import Player from "../models/Player.js";
 import Article from "../models/Article.js";
 import Artifact from "../models/Artifact.js";
 import {createArticle, generateRandomArticle} from "./articleMethods.js";
+import artifact from "../models/Artifact.js";
 
 const { ObjectId } = mongoose.Types;
 
@@ -398,8 +399,10 @@ export const changeArticleFront = async (req, res) => {
         const isTargetArticle = await checkTargetArticleFound(game, articleObjectId, playerObjectId);
         const resultat = Math.floor(Math.random() * 6) + 1;
 
+        let setArtifact;
+
         if (resultat === 1) {
-            const setArtifact = await setArtifactDistribution(id_game, article.title);
+            setArtifact = await setArtifactDistribution(id_game, article.title);
             game.players[playerIndex].artifacts.push(setArtifact);
         }
 
@@ -418,7 +421,8 @@ export const changeArticleFront = async (req, res) => {
             title: article.title,
             isNewVisit,
             isTargetArticle,
-            isLastArticle
+            isLastArticle,
+            artifact: setArtifact
         });
     } catch (error) {
         console.error("Error in changeArticleFront:", error);
@@ -713,6 +717,48 @@ export const getArticfactPlayer = async (req, res) => {
         return res.status(200).json(player.artifacts || []);
     } catch (error) {
         console.error("Error in getArticfactPlayer:", error);
+        return res.status(500).json({ error: "Server error" });
+    }
+};
+
+// Récupérer les artefacts storable d'un joueur
+export const getStorableArticfactPlayer = async (req, res) => {
+    const { id_game, id_player } = req.body;
+
+    try {
+        if (!id_game || !id_player) {
+            return res.status(400).json({ error: "Game ID and Player ID are required" });
+        }
+
+        // Find game by ID or code
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Validate player ID format
+        if (!mongoose.Types.ObjectId.isValid(id_player)) {
+            return res.status(400).json({ error: "Invalid Player ID format" });
+        }
+
+        const playerObjectId = new mongoose.Types.ObjectId(id_player);
+        const player = game.players.find(p => p.player_id.equals(playerObjectId));
+        if (!player) {
+            return res.status(404).json({ error: "Player not found in this game" });
+        }
+
+        const artifactNames = player.artifacts;
+
+        const storableArtifacts = await Artifact.find({
+            name: { $in: artifactNames },
+            storable: true
+        }).select("name");
+
+        // Return the storable artifact names
+        return res.status(200).json(storableArtifacts.map(artifact => artifact.name));
+
+    } catch (error) {
+        console.error("Error in getStorableArtifactPlayer:", error);
         return res.status(500).json({ error: "Server error" });
     }
 };
