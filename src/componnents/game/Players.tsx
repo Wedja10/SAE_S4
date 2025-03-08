@@ -129,6 +129,33 @@ const Players: React.FC = () => {
         fetchTargetArticles();
     }, [navigate]);
 
+    useEffect(() => {
+        const handleScoreUpdate = (event: CustomEvent) => {
+            const { gameId, playerId } = event.detail;
+
+            postRequest(getApiUrl('/games/found-target-articles'), {
+                id_game: gameId,
+                id_player: playerId
+            }).then((data) => {
+                setPlayers(prevPlayers =>
+                    prevPlayers.map(player =>
+                        player.id.toString() === playerId
+                            ? { ...player, score: data.length }
+                            : player
+                    )
+                );
+            }).catch(error => {
+                console.error("Erreur lors de la mise à jour du score :", error);
+            });
+        };
+
+        window.addEventListener('playerScoreUpdated', handleScoreUpdate as EventListener);
+
+        return () => {
+            window.removeEventListener('playerScoreUpdated', handleScoreUpdate as EventListener);
+        };
+    }, []);
+
     return (
         <div className="players-container fade-in">
             <h2 className="players-title">Joueurs</h2>

@@ -195,8 +195,17 @@ const WikiView: React.FC = () => {
         // Check if the player won
         if (response && response.isLastArticle) {
           alert(`Félicitations! Vous avez gagné`);
+          const scoreUpdateEvent = new CustomEvent('playerScoreUpdated', {
+            detail: { gameId, playerId }
+          });
+          window.dispatchEvent(scoreUpdateEvent);
         } else if(response && response.isTargetArticle){
           alert(`Félicitations! Vous avez trouvé un article cible: ${title}`);
+
+          const scoreUpdateEvent = new CustomEvent('playerScoreUpdated', {
+            detail: { gameId, playerId }
+          });
+          window.dispatchEvent(scoreUpdateEvent);
         }
 
         const artifactHandlers: Record<string, () => Promise<void>> = {
