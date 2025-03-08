@@ -1217,24 +1217,23 @@ async function setArtifactDistribution(id_game, article_title) {
             throw new Error("Article non trouvé");
         }
 
-        // Filtrer les artefacts en fonction de la popularité de l'article
-        const artifactFilter = article.popular ? { positive: true } : { positive: false };
-        const artifacts = await Artifact.find(artifactFilter);
+        const positiveArtifacts = await Artifact.find({positive: true})
+        const negativeArtifacts = await Artifact.find({positive: false})
 
-        if (artifacts.length === 0) {
-            throw new Error("Aucun artefact correspondant trouvé");
+        const randomPositive = Math.floor(Math.random() * positiveArtifacts.length);
+        const randomNegative = Math.floor(Math.random() * negativeArtifacts.length);
+        let randomArtifact;
+        if(article.popular === true) {
+            randomArtifact = negativeArtifacts[randomNegative];
+        } else {
+            randomArtifact = positiveArtifacts[randomPositive];
         }
 
-        // Sélectionner un artefact au hasard
-        const randomArtifact = artifacts[Math.floor(Math.random() * artifacts.length)];
-
-        // Trouver le jeu
         const game = await Game.findById(id_game);
         if (!game) {
             throw new Error("Jeu non trouvé");
         }
 
-        // Ajouter l'artefact à la distribution du jeu
         game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name });
 
         // Sauvegarder les modifications

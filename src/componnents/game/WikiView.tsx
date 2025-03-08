@@ -6,6 +6,7 @@ import Actions from "./Actions.tsx";
 import { Storage } from "../../utils/storage";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import Articles from "./Articles.tsx";
 
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
@@ -128,14 +129,6 @@ const WikiView: React.FC = () => {
         if (currentArticle) {
           setCurrentTitle(currentArticle);
           await fetchWikiContent(currentArticle);
-        } else {
-          console.log('No current article found, getting random article');
-          // If no current article, get a random one
-          const title = await getRandomWikipediaTitle();
-          console.log('Got random title:', title);
-          setCurrentTitle(title);
-          await updateArticleInDB(title, gameIdentifier);
-          await fetchWikiContent(title);
         }
       } catch (error) {
         console.error("Error initializing article:", error);
@@ -169,43 +162,42 @@ const WikiView: React.FC = () => {
       const gameId = gameIdentifier || Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
-      
+
       // Validate IDs
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in updateArticleInDB");
         return;
       }
-      
+
       // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in updateArticleInDB:", { playerId });
         return;
       }
-      
+
       console.log(`Creating article with title: ${title}`);
       const createdArticle = await postRequest(getApiUrl("/articles/create-article"), { title });
+      console.log('Created article response:', createdArticle.article);
 
-      if (createdArticle && createdArticle._id) {
-        console.log(`Article created with ID: ${createdArticle._id}, updating player's current article`);
+
+      if (createdArticle) {
+        console.log(`Article created with ID: ${createdArticle.article._id}, updating player's current article`);
         const response = await postRequest(getApiUrl("/games/change-article"), {
           id_game: gameParam,
           id_player: playerId,
-          articleId: createdArticle._id,
+          articleId: createdArticle.article._id,
         });
-        const artifactAssociated = await postRequest(getApiUrl("/games/artifact-distribution"), {id_game: gameParam, article_title: title})
-
-
         console.log("Article change response:", response);
-        
+
         // Check if this is a target article and provide feedback
         if (response && response.isTargetArticle) {
           // Show a congratulatory message for finding a target article
           alert(`Félicitations! Vous avez trouvé un article cible: ${title}`);
         }
-        
+
         // Dispatch a custom event to notify that articles have been updated
         const articleUpdateEvent = new CustomEvent('articleUpdated', {
           detail: {
@@ -218,7 +210,7 @@ const WikiView: React.FC = () => {
           }
         });
         window.dispatchEvent(articleUpdateEvent);
-        
+
         return response;
       } else {
         console.error("Failed to create article or get article ID");
