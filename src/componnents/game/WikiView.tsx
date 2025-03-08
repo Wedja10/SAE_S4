@@ -199,19 +199,24 @@ const WikiView: React.FC = () => {
           alert(`Félicitations! Vous avez trouvé un article cible: ${title}`);
         }
 
-        if(response && response.artifact !== null){
-          if(response.artifact === 'Snail'){
-            console.log("SNAIL ARTIFACT")
-            await handleSnailClick();
-          } else if(response.artifact === 'Disorienter'){
-              console.log("DISORIENTER ARTIFACT")
-              await handleDisorienterClick();
-          } else if(response.artifact === 'Teleporter'){
-              console.log("TELEPORTER ARTIFACT")
-              await handleTeleportClick();
-          } else if(response.artifact === 'Eraser'){
-              console.log("ERASER ARTIFACT")
-              await handleEraserClick();
+        const artifactHandlers: Record<string, () => Promise<void>> = {
+          Snail: handleSnailClick,
+          Disorienter: handleDisorienterClick,
+          Teleporter: handleTeleportClick,
+          Eraser: handleEraserClick,
+        };
+
+        if (response?.artifact) {
+          if (artifactHandlers[response.artifact]) {
+            alert(`${response.artifact.toUpperCase()} ARTIFACT`);
+            await artifactHandlers[response.artifact]();
+          } else if (response.artifact === "Dictator") {
+            console.log("DICTATOR ARTIFACT");
+          } else {
+            const artifactAdded = new CustomEvent("artifactAdded", {
+              detail: { title: response.artifact },
+            });
+            window.dispatchEvent(artifactAdded);
           }
         }
 
