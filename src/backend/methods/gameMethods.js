@@ -504,6 +504,7 @@ export const distributeToPlayers = async (game) => {
             player.current_article = randomArticle;
             if (!player.articles_visited.includes(randomArticle)) {
                 player.articles_visited.push(randomArticle);
+                player.found_target_articles.push(randomArticle);
             }
         }
 
