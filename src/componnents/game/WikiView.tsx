@@ -11,7 +11,7 @@ import Articles from "./Articles.tsx";
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
   const [wikiContent, setWikiContent] = useState<string>("");
-  const [, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [initializationAttempted, setInitializationAttempted] = useState<boolean>(false);
@@ -205,7 +205,7 @@ const WikiView: React.FC = () => {
             articleId: createdArticle._id,
             playerId: playerId,
             gameId: gameParam,
-            isNewVisit: response?.isNewVisit || false,
+            isNewVisit: true,
             isTargetArticle: response?.isTargetArticle || false
           }
         });
@@ -393,7 +393,9 @@ const WikiView: React.FC = () => {
       const gameId = Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
+      console.log("mineArtifact params:", { gameId, gameCode, playerId });
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
       
@@ -535,7 +537,6 @@ const WikiView: React.FC = () => {
 
       setWikiContent(html);
 
-      // Update history if this is a new page
       setHistory((prevHistory) => {
         if (prevHistory.length === 0 || prevHistory[prevHistory.length - 1] !== pageTitle) {
           console.log(`Adding ${pageTitle} to navigation history`);
