@@ -1046,7 +1046,7 @@ export const eraserArtifact = async (req, res) => {
         let latestArticle = undefined;
         // Find the latest article visited by the player that is still in the game's articles_to_visit
         for (let i = player.articles_visited.length - 1; i >= 0; i--) {
-            if (game.articles_to_visit.includes(player.articles_visited[i])) {
+            if (game.articles_to_visit.map(a => a.toString()).includes(player.articles_visited[i].toString())) {
                 latestArticle = player.articles_visited[i];
                 break;
             }
@@ -1060,8 +1060,8 @@ export const eraserArtifact = async (req, res) => {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-            player.articles_visited = player.articles_visited.filter(article => article !== latestArticle);
-            player.found_target_articles = player.found_target_articles.filter(article => article !== latestArticle);
+            player.articles_visited = player.articles_visited.filter(article => article.toString() !== latestArticle.toString());
+            player.found_target_articles = player.found_target_articles.filter(article => article.toString() !== latestArticle.toString());
             await game.save({ session });
             await session.commitTransaction();
         } catch (error) {
