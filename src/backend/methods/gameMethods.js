@@ -1089,6 +1089,10 @@ export const eraserArtifact = async (req, res) => {
             return res.status(404).json({ error: "Player not found in this game" });
         }
 
+        if(player.articles_visited.length < 2) {
+            return res.status(404).json({ error: "Need atleast 2 articles visited" });
+        }
+
         let latestArticle = undefined;
         // Find the latest article visited by the player that is still in the game's articles_to_visit
         for (let i = player.articles_visited.length - 1; i >= 0; i--) {
