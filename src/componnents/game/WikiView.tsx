@@ -6,11 +6,12 @@ import Actions from "./Actions.tsx";
 import { Storage } from "../../utils/storage";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import Articles from "./Articles.tsx";
 
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
   const [wikiContent, setWikiContent] = useState<string>("");
-  const [, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [initializationAttempted, setInitializationAttempted] = useState<boolean>(false);
@@ -128,14 +129,6 @@ const WikiView: React.FC = () => {
         if (currentArticle) {
           setCurrentTitle(currentArticle);
           await fetchWikiContent(currentArticle);
-        } else {
-          console.log('No current article found, getting random article');
-          // If no current article, get a random one
-          const title = await getRandomWikipediaTitle();
-          console.log('Got random title:', title);
-          setCurrentTitle(title);
-          await updateArticleInDB(title, gameIdentifier);
-          await fetchWikiContent(title);
         }
       } catch (error) {
         console.error("Error initializing article:", error);
@@ -169,41 +162,73 @@ const WikiView: React.FC = () => {
       const gameId = gameIdentifier || Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
-      
+
       // Validate IDs
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in updateArticleInDB");
         return;
       }
-      
+
       // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in updateArticleInDB:", { playerId });
         return;
       }
-      
+
       console.log(`Creating article with title: ${title}`);
       const createdArticle = await postRequest(getApiUrl("/articles/create-article"), { title });
+      console.log('Created article response:', createdArticle.article);
 
-      if (createdArticle && createdArticle._id) {
-        console.log(`Article created with ID: ${createdArticle._id}, updating player's current article`);
+
+      if (createdArticle) {
+        console.log(`Article created with ID: ${createdArticle.article._id}, updating player's current article`);
         const response = await postRequest(getApiUrl("/games/change-article"), {
           id_game: gameParam,
           id_player: playerId,
-          articleId: createdArticle._id,
+          articleId: createdArticle.article._id,
         });
-        
         console.log("Article change response:", response);
-        
-        // Check if this is a target article and provide feedback
-        if (response && response.isTargetArticle) {
-          // Show a congratulatory message for finding a target article
+
+        // Check if the player won
+        if (response && response.isLastArticle) {
+          alert(`Félicitations! Vous avez gagné`);
+          const scoreUpdateEvent = new CustomEvent('playerScoreUpdated', {
+            detail: { gameId, playerId }
+          });
+          window.dispatchEvent(scoreUpdateEvent);
+        } else if(response && response.isTargetArticle){
           alert(`Félicitations! Vous avez trouvé un article cible: ${title}`);
+
+          const scoreUpdateEvent = new CustomEvent('playerScoreUpdated', {
+            detail: { gameId, playerId }
+          });
+          window.dispatchEvent(scoreUpdateEvent);
         }
-        
+
+        const artifactHandlers: Record<string, () => Promise<void>> = {
+          Snail: handleSnailClick,
+          Disorienter: handleDisorienterClick,
+          Teleporter: handleTeleportClick,
+          Eraser: handleEraserClick,
+        };
+
+        if (response?.artifact) {
+          if (artifactHandlers[response.artifact]) {
+            alert(`${response.artifact.toUpperCase()} ARTIFACT`);
+            await artifactHandlers[response.artifact]();
+          } else if (response.artifact === "Dictator") {
+            console.log("DICTATOR ARTIFACT");
+          } else {
+            const artifactAdded = new CustomEvent("artifactAdded", {
+              detail: { title: response.artifact },
+            });
+            window.dispatchEvent(artifactAdded);
+          }
+        }
+
         // Dispatch a custom event to notify that articles have been updated
         const articleUpdateEvent = new CustomEvent('articleUpdated', {
           detail: {
@@ -211,12 +236,14 @@ const WikiView: React.FC = () => {
             articleId: createdArticle._id,
             playerId: playerId,
             gameId: gameParam,
-            isNewVisit: response?.isNewVisit || false,
-            isTargetArticle: response?.isTargetArticle || false
+            isNewVisit: true,
+            isTargetArticle: response?.isTargetArticle || false,
+            isLastArticle: response?.isLastArticle || false,
+            artifact: response?.artifact || null
           }
         });
         window.dispatchEvent(articleUpdateEvent);
-        
+
         return response;
       } else {
         console.error("Failed to create article or get article ID");
@@ -399,7 +426,9 @@ const WikiView: React.FC = () => {
       const gameId = Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
+      console.log("mineArtifact params:", { gameId, gameCode, playerId });
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
       
@@ -541,7 +570,6 @@ const WikiView: React.FC = () => {
 
       setWikiContent(html);
 
-      // Update history if this is a new page
       setHistory((prevHistory) => {
         if (prevHistory.length === 0 || prevHistory[prevHistory.length - 1] !== pageTitle) {
           console.log(`Adding ${pageTitle} to navigation history`);

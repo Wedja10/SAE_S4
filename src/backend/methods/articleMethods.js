@@ -107,51 +107,58 @@ export const getViews = async (title) => {
             return 0;  // ⚠️ Retourne juste un nombre
         }
 
-        const totalViews = pageviewsData.items.reduce((sum, item) => sum + item.views, 0);
-
-        return totalViews;  // ✅ Retourne juste le nombre total
+        return pageviewsData.items.reduce((sum, item) => sum + item.views, 0);
     } catch (error) {
         console.error(`Erreur lors de la récupération des vues pour "${title}" :`, error);
         return 0;  // ⚠️ Retourne juste un nombre même en cas d'erreur
     }
 };
 
+
 export const createArticle = async (title) => {
     try {
-        const existingArticle = await Article.findOne({ title });
+        if (!title || typeof title !== "string") {
+            throw new Error("Titre invalide");
+        }
+
+        const formattedTitle = title.replace(/ /g, "_");
+        let existingArticle = await Article.findOne({ title: formattedTitle });
+
         if (existingArticle) {
             return existingArticle;
         }
 
-        const popularity = await getViews(title);
-        const newArticle = new Article({ title, popularity });
-
+        const newArticle = new Article({ title: formattedTitle, popular: false });
         return await newArticle.save();
     } catch (error) {
         console.error("Erreur dans createArticle :", error);
-        return null;
+        throw error; // Propager l'erreur pour gestion externe
     }
 };
 
 export const createArticleFront = async (req, res) => {
     const { title } = req.body;
     try {
-        const existingArticle = await Article.findOne({ title });
-        if (existingArticle) {
-            return res.status(200).json(existingArticle);  // ✅ On répond via res.json()
+        if (!title || typeof title !== "string") {
+            return res.status(400).json({ message: "Titre invalide" });
         }
 
-        const popularity = await getViews(title);
-        const newArticle = new Article({ title, popularity });
+        const formattedTitle = title.replace(/ /g, "_");
+        let existingArticle = await Article.findOne({ title: formattedTitle });
 
+        if (existingArticle) {
+            return res.status(200).json({ message: "Article déjà existant", article: existingArticle });
+        }
+
+        const newArticle = new Article({ title: formattedTitle, popular: false });
         const savedArticle = await newArticle.save();
-
-        res.status(201).json(savedArticle);  // ✅ On répond via res.json()
+        return res.status(201).json({ article: savedArticle });
     } catch (error) {
-        console.error("Erreur dans createArticle :", error);
-        res.status(500).json({ message: "Erreur serveur" });  // ✅ On renvoie une vraie erreur HTTP
+        console.error(error);
+        res.status(500).json({ message: "Erreur lors de l'insertion des articles" });
     }
 };
+
 
 
 export const generateRandomArticle = async () => {

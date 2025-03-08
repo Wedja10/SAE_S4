@@ -16,8 +16,9 @@ interface ActionsProps {
 
 // 2. Récupérer les props en argument
 const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, onDisorienter, onSnail}) => {
+    const [artifacts, setArtifacts] = useState<{ [key: string]: number }>({});
     console.log('Props reçues par Actions:', {onTeleport});
-    const [artifacts, setArtifacts] = useState<string[]>([]);
+
 
     // Validate ObjectId format (24 character hex string)
     const isValidObjectId = (id: string | null): boolean => {
@@ -39,13 +40,24 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
             }
             
             try {
-                console.log("Making artifacts request to:", getApiUrl('/games/artifacts'));
-                const data = await postRequest(getApiUrl('/games/artifacts'), {
+                console.log("Making artifacts request to:", getApiUrl('/games/storable-artifacts'));
+                const data = await postRequest(getApiUrl('/games/storable-artifacts'), {
                     id_game: updatedGameId,
                     id_player: updatedPlayerId
                 });
                 console.log("Fetched artifacts:", data);
-                setArtifacts(data || []);
+                if (Array.isArray(data)) {
+                    const formattedArtifacts = data.reduce((acc, artifact) => {
+                        acc[artifact] = (acc[artifact] || 0) + 1;
+                        return acc;
+                    }, {} as { [key: string]: number });
+
+                    setArtifacts(formattedArtifacts);
+                    console.log("Formatted artifacts:", formattedArtifacts);
+                } else {
+                    setArtifacts({});
+                }
+
             } catch (artifactsError) {
                 console.error("Error in artifacts request:", artifactsError);
                 
@@ -63,7 +75,7 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
                             console.log("Successfully joined the game, retrying fetch...");
                             
                             // Retry fetching artifacts
-                            const retryData = await postRequest(getApiUrl('/games/artifacts'), {
+                            const retryData = await postRequest(getApiUrl('/games/storable-artifacts'), {
                                 id_game: updatedGameId,
                                 id_player: updatedPlayerId
                             });
@@ -77,9 +89,45 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
                     setArtifacts([]);
                 }
             }
+
         } catch (error) {
             console.error("Error in fetchArtifacts:", error);
             setArtifacts([]);
+        }
+    };
+
+
+    const handleArtifactAdded = (event: CustomEvent) => {
+        const newArtifact = event.detail.title;
+        console.log(`Nouvel artefact reçu: ${newArtifact}`);
+
+        // Ajouter ou incrémenter le compteur de l'artefact
+        setArtifacts(prevArtifacts => ({
+            ...prevArtifacts,
+            [newArtifact]: (prevArtifacts[newArtifact] || 0) + 1
+        }));
+    };
+
+    useEffect(() => {
+        window.addEventListener("artifactAdded", handleArtifactAdded as EventListener);
+        return () => {
+            window.removeEventListener("artifactAdded", handleArtifactAdded as EventListener);
+        };
+    }, []);
+
+    const handleArtifactUse = (artifact: string, callback: () => void) => {
+        console.log(`Tentative d'utilisation de ${artifact}`);
+        if (artifacts[artifact] > 0) {
+            console.log(`${artifact} utilisé !`);
+            callback();
+            setArtifacts(prev => {
+                const updated = { ...prev };
+                updated[artifact]--;
+                if (updated[artifact] === 0) delete updated[artifact];
+                return updated;
+            });
+        } else {
+            console.log(`Impossible d'utiliser ${artifact}, quantité insuffisante.`);
         }
     };
 
@@ -89,32 +137,26 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
 
     return (
         <div className="actions-container fade-in">
-            {artifacts.map((artifact, index) => (
-                <React.Fragment key={index}>
-                    {/* 3. Appeler onTeleport quand on clique sur le bouton correspondant */}
+            {Object.entries(artifacts).map(([artifact, count]) => {
+                console.log("Artifact in list:", artifact, "Count:", count);
+                return (
                     <button
-                        className="action-button mine-button"
+                        key={artifact}
+                        className="action-button"
                         id={artifact}
-                        onClick={() => {
-                            if (artifact === "Teleporter") {
-                                onTeleport();
-                            } else if (artifact === "Backtrack") {
-                                onBack();
-                            } else if (artifact === "Eraser") {
-                                onEraser();
-                            } else if (artifact === "Mine") {
-                                onMine();
-                            } else if (artifact === "Disorienter") {
-                                onDisorienter();
-                            } else if(artifact === "Snail") {
-                                onSnail();
-                            }
-                        }}
+                        onClick={() => handleArtifactUse(artifact, {
+                            "Teleporter": onTeleport,
+                            "Backtrack": onBack,
+                            "Eraser": onEraser,
+                            "Mine": onMine,
+                            "Disorienter": onDisorienter,
+                            "Snail": onSnail
+                        }[artifact] || (() => {}))}
                     >
-                        {artifact}
+                        {artifact} ({count})
                     </button>
-                </React.Fragment>
-            ))}
+                );
+            })}
         </div>
     );
 };
