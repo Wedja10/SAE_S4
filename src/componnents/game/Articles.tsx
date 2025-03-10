@@ -10,10 +10,13 @@ const Articles: React.FC = () => {
     const [visitedArticles, setVisitedArticles] = useState<string[]>([]);
     const [articlesToFind, setArticlesToFind] = useState<string[]>([]);
     const [foundTargetArticles, setFoundTargetArticles] = useState<string[]>([]);
+    const [hoveredArticle, setHoveredArticle] = useState<string | null>(null);
+    const [articleDescription, setArticleDescription] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [newArticle, setNewArticle] = useState<string | null>(null);
     const [newTargetFound, setNewTargetFound] = useState<string | null>(null);
+    const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
     const previousVisitedRef = useRef<string[]>([]);
     const previousTargetsRef = useRef<string[]>([]);
     const navigate = useNavigate();
@@ -24,21 +27,51 @@ const Articles: React.FC = () => {
         return /^[0-9a-fA-F]{24}$/.test(id);
     };
 
+    // Fetch article description from Wikipedia
+    const fetchArticleDescription = async (article: string) => {
+        try {
+            const response = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(article)}`);
+            const data = await response.json();
+            console.log("Description data:", data); // Debug
+            setArticleDescription(data.extract || "Description non disponible");
+        } catch (error) {
+            console.error("Error fetching article description:", error);
+            setArticleDescription("Description non disponible");
+        }
+    };
+
+    // Handle mouse movement to update popup position
+    const handleMouseMove = (event: React.MouseEvent) => {
+        console.log("Mouse position:", { x: event.clientX, y: event.clientY }); // Debug
+        setMousePosition({ x: event.clientX, y: event.clientY });
+    };
+
+    // Handle article hover
+    const handleArticleHover = (article: string) => {
+        setHoveredArticle(article);
+        fetchArticleDescription(article);
+    };
+
+    // Handle article click
+    const handleArticleClick = (article: string) => {
+        window.open(`https://fr.wikipedia.org/wiki/${encodeURIComponent(article)}`, '_blank');
+    };
+
     // Create a fetchData function that can be called multiple times
     const fetchData = useCallback(async () => {
         try {
             // Get the values from storage
             const gameId = Storage.getGameId();
             const playerId = Storage.getPlayerId();
-            
+
             if (!gameId || !playerId || !isValidObjectId(gameId) || !isValidObjectId(playerId)) {
                 console.error("Missing or invalid IDs:", { gameId, playerId });
                 setError("Missing game or player information");
                 return false;
             }
-            
+
             let success = true;
-            
+
             try {
                 // Fetch target articles
                 console.log("Fetching target articles...");
@@ -47,7 +80,7 @@ const Articles: React.FC = () => {
                 });
                 console.log("Target articles data:", targetData);
                 setArticlesToFind(targetData || []);
-                
+
                 // Fetch found target articles
                 console.log("Fetching found target articles...");
                 const foundTargetData = await postRequest(getApiUrl('/games/found-target-articles'), {
@@ -55,24 +88,24 @@ const Articles: React.FC = () => {
                     id_player: playerId
                 });
                 console.log("Found target articles data:", foundTargetData);
-                
+
                 // Check for newly found target articles
                 const prevFoundTargets = previousTargetsRef.current;
                 const newFoundTargets = foundTargetData || [];
-                
+
                 if (prevFoundTargets.length < newFoundTargets.length) {
                     const newTargets = newFoundTargets.filter((article: string) => !prevFoundTargets.includes(article));
                     if (newTargets.length > 0) {
                         console.log("New target article found:", newTargets[0]);
                         setNewTargetFound(newTargets[0]);
-                        
+
                         // Clear the highlight after 3 seconds
                         setTimeout(() => {
                             setNewTargetFound(null);
                         }, 3000);
                     }
                 }
-                
+
                 // Update the previous targets ref
                 previousTargetsRef.current = newFoundTargets;
                 setFoundTargetArticles(newFoundTargets);
@@ -91,31 +124,31 @@ const Articles: React.FC = () => {
                     id_player: playerId
                 });
                 console.log("Visited articles data:", visitedData);
-                
+
                 // Check for new articles
                 const prevVisited = previousVisitedRef.current;
                 const newVisited = visitedData || [];
-                
+
                 // Find newly added articles
                 if (prevVisited.length < newVisited.length) {
                     const newArticles = newVisited.filter((article: string) => !prevVisited.includes(article));
                     if (newArticles.length > 0) {
                         console.log("New article detected:", newArticles[0]);
                         setNewArticle(newArticles[0]);
-                        
+
                         // Clear the new article highlight after 3 seconds
                         setTimeout(() => {
                             setNewArticle(null);
                         }, 3000);
                     }
                 }
-                
+
                 // Update the previous visited ref
                 previousVisitedRef.current = newVisited;
                 setVisitedArticles(newVisited);
             } catch (visitedError) {
                 console.error("Error fetching visited articles:", visitedError);
-                
+
                 // Check if the error is "Player not found in this game"
                 if (visitedError instanceof Error && visitedError.message.includes("Player not found in this game")) {
                     console.log("Attempting to join the game...");
@@ -128,7 +161,7 @@ const Articles: React.FC = () => {
                                 playerId: playerId
                             });
                             console.log("Successfully joined the game, retrying fetch...");
-                            
+
                             // Retry fetching visited articles
                             const retryVisitedData = await postRequest(getApiUrl('/games/articles'), {
                                 id_game: gameId,
@@ -147,7 +180,7 @@ const Articles: React.FC = () => {
                     success = false;
                 }
             }
-            
+
             setLoading(false);
             return success;
         } catch (error) {
@@ -164,7 +197,7 @@ const Articles: React.FC = () => {
     // Handle article update event
     const handleArticleUpdate = useCallback((event: CustomEvent) => {
         console.log("Article update event received:", event.detail);
-        
+
         // If this is a target article, update immediately
         if (event.detail && event.detail.isTargetArticle) {
             console.log("Target article found, refreshing immediately");
@@ -173,21 +206,21 @@ const Articles: React.FC = () => {
             // For regular articles, just update the visited list
             fetchData();
         }
-        
+
         // Set the new article for highlighting
         if (event.detail && event.detail.title) {
             setNewArticle(event.detail.title);
-            
+
             // If this is a target article, highlight it in the target list
             if (event.detail.isTargetArticle) {
                 setNewTargetFound(event.detail.title);
-                
+
                 // Clear the target highlight after 3 seconds
                 setTimeout(() => {
                     setNewTargetFound(null);
                 }, 3000);
             }
-            
+
             // Clear the article highlight after 3 seconds
             setTimeout(() => {
                 setNewArticle(null);
@@ -202,7 +235,7 @@ const Articles: React.FC = () => {
                 console.log("Initial fetch failed, will retry...");
             }
         });
-        
+
         // Set up polling for real-time updates
         const intervalId = setInterval(() => {
             console.log("Polling for article updates...");
@@ -212,10 +245,10 @@ const Articles: React.FC = () => {
                 }
             });
         }, 3000); // Poll every 3 seconds for more responsive updates
-        
+
         // Add event listener for immediate updates when an article is visited
         window.addEventListener('articleUpdated', handleArticleUpdate as EventListener);
-        
+
         // Clean up interval and event listener on component unmount
         return () => {
             clearInterval(intervalId);
@@ -237,14 +270,19 @@ const Articles: React.FC = () => {
     };
 
     return (
-        <div className="articles-container fade-in">
+        <div className="articles-container fade-in" onMouseMove={handleMouseMove}>
             <div>
                 <h2 className="articles-title">Articles à Trouver</h2>
                 <ul className="articles-list">
                     {articlesToFind.length > 0 ? (
                         articlesToFind.map((article, index) => (
                             <React.Fragment key={index}>
-                                <li className={`article-item article-to-find ${isArticleFound(article) ? 'found' : ''} ${article === newTargetFound ? 'new' : ''}`}>
+                                <li
+                                    className={`article-item article-to-find ${isArticleFound(article) ? 'found' : ''} ${article === newTargetFound ? 'new' : ''}`}
+                                    onMouseEnter={() => handleArticleHover(article)}
+                                    onMouseLeave={() => setHoveredArticle(null)}
+                                    onClick={() => handleArticleClick(article)}
+                                >
                                     {article}
                                     {isArticleFound(article) && <span className="found-indicator">✓</span>}
                                 </li>
@@ -263,7 +301,12 @@ const Articles: React.FC = () => {
                     {visitedArticles.length > 0 ? (
                         visitedArticles.map((article, index) => (
                             <React.Fragment key={index}>
-                                <li className={`article-item article-visited ${article === newArticle ? 'new' : ''}`}>
+                                <li
+                                    className={`article-item article-visited ${article === newArticle ? 'new' : ''}`}
+                                    onMouseEnter={() => handleArticleHover(article)}
+                                    onMouseLeave={() => setHoveredArticle(null)}
+                                    onClick={() => handleArticleClick(article)}
+                                >
                                     {article}
                                 </li>
                                 <hr />
@@ -274,6 +317,20 @@ const Articles: React.FC = () => {
                     )}
                 </ul>
             </div>
+
+            {/* Popup for article description */}
+            {hoveredArticle && articleDescription && (
+                <div
+                    className="article-description-popup"
+                    style={{
+                        position: 'fixed',
+                        left: `${mousePosition.x + 10}px`,
+                        top: `${mousePosition.y + 10}px`,
+                    }}
+                >
+                    {articleDescription}
+                </div>
+            )}
         </div>
     );
 };

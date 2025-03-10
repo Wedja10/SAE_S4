@@ -14,4 +14,11 @@
     z-index: 1;
     margin-left: -8px;
     bottom: -14px;
-} 
+}
+
+.selected {
+    border: 2px solid gold;
+    box-shadow: 0 0 10px gold;
+    transform: scale(1.1);
+    transition: all 0.3s ease-in-out;
+}
