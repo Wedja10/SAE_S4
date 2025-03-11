@@ -165,6 +165,44 @@ async function handleGameStateChange(gameCode, event) {
                 game.settings.articles_number = newSettings.articles_number;
                 game.settings.visibility = newSettings.visibility;
                 game.settings.allow_join = newSettings.allow_join;
+                
+                // Update enabled_artifacts if provided
+                if (newSettings.enabled_artifacts) {
+                    // Convert the enabled_artifacts object to an array of enabled artifact names
+                    // Only include artifacts that are explicitly set to true
+                    const enabledArtifactsArray = Object.entries(newSettings.enabled_artifacts)
+                        .filter(([_, enabled]) => enabled === true)
+                        .map(([artifact]) => artifact);
+                    
+                    // If no artifacts are enabled, use all artifacts
+                    if (enabledArtifactsArray.length === 0) {
+                        game.settings.enabled_artifacts = [
+                            "GPS", "BACK", "TELEPORT", "MINE", "SNAIL", 
+                            "ERASER", "DISORIENTATOR", "DICTATOR"
+                        ];
+                        console.log('No artifacts enabled, using all artifacts');
+                    } else {
+                        game.settings.enabled_artifacts = enabledArtifactsArray;
+                    }
+                    
+                    console.log('Updated enabled_artifacts:', game.settings.enabled_artifacts);
+                } else {
+                    // If no enabled_artifacts provided, use all artifacts
+                    game.settings.enabled_artifacts = [
+                        "GPS", "BACK", "TELEPORT", "MINE", "SNAIL", 
+                        "ERASER", "DISORIENTATOR", "DICTATOR"
+                    ];
+                    console.log('No enabled_artifacts provided, using all artifacts');
+                }
+
+                // Save the game with updated settings
+                await game.save();
+                
+                // Verify the save
+                const verifyGame = await Game.findOne({ game_code: gameCode });
+                if (verifyGame && verifyGame.settings) {
+                    console.log('Verified game settings after update:', verifyGame.settings);
+                }
 
                 console.log('New game settings:', game.settings);
                 break;
@@ -181,6 +219,58 @@ async function handleGameStateChange(gameCode, event) {
 
                         game.status = 'in_progress';
                         game.start_time = new Date();
+                        
+                        // Save enabled artifacts if provided
+                        if (event.data.enabledArtifacts && Array.isArray(event.data.enabledArtifacts)) {
+                            console.log('Received enabledArtifacts:', event.data.enabledArtifacts);
+                            
+                            // Ensure settings object exists
+                            if (!game.settings) {
+                                game.settings = {};
+                            }
+                            
+                            // If no artifacts are provided or the array is empty, use all artifacts
+                            if (event.data.enabledArtifacts.length === 0) {
+                                // Default list of all artifacts
+                                game.settings.enabled_artifacts = [
+                                    "GPS", "BACK", "TELEPORT", "MINE", "SNAIL", 
+                                    "ERASER", "DISORIENTATOR", "DICTATOR"
+                                ];
+                                console.log('No artifacts provided, using all artifacts');
+                            } else {
+                                // Save enabled artifacts in settings and ensure it's an array
+                                game.settings.enabled_artifacts = [...event.data.enabledArtifacts];
+                            }
+                            
+                            console.log(`Saving ${game.settings.enabled_artifacts.length} enabled artifacts in settings for game ${gameCode}`);
+                            console.log('Game settings before save:', JSON.stringify(game.settings, null, 2));
+                            
+                            // Save the game with the updated settings
+                            await game.save();
+                            
+                            // Verify the save worked by reloading the game
+                            const verifyGame = await Game.findOne({ game_code: gameCode });
+                            if (verifyGame && verifyGame.settings) {
+                                console.log('Verified saved enabled_artifacts:', verifyGame.settings.enabled_artifacts);
+                                if (!verifyGame.settings.enabled_artifacts || verifyGame.settings.enabled_artifacts.length === 0) {
+                                    console.error('Failed to save enabled artifacts!');
+                                }
+                            }
+                        } else {
+                            // If no enabledArtifacts provided, use all artifacts
+                            if (!game.settings) {
+                                game.settings = {};
+                            }
+                            
+                            // Default list of all artifacts
+                            game.settings.enabled_artifacts = [
+                                "GPS", "BACK", "TELEPORT", "MINE", "SNAIL", 
+                                "ERASER", "DISORIENTATOR", "DICTATOR"
+                            ];
+                            
+                            console.log('No enabledArtifacts provided, using all artifacts');
+                            await game.save();
+                        }
 
                         // Ensure all players in the lobby are in the game's players array
                         const lobbyClients = lobbies.get(gameCode) || new Set();
@@ -268,7 +358,8 @@ async function handleGameStateChange(gameCode, event) {
                             
                             // Distribute artifacts to players
                             const artifactsResult = await callAPI('/games/distribute-artifacts', {
-                                id_game: game._id.toString()
+                                id_game: game._id.toString(),
+                                enabledArtifacts: event.data.enabledArtifacts || []
                             });
                             
                             console.log('Artifacts distributed:', artifactsResult);

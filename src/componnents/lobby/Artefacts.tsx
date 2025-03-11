@@ -10,7 +10,7 @@ interface StartButtonProps {
 
 export const StartButton = ({ onStart }: StartButtonProps) => {
   return (
-    <button onClick={onStart} className="startButton fade-in">
+    <button onClick={onStart} className="startButton">
       <img src="/assets/StartArrow.png" alt="Start"/> LAUNCH
     </button>
   );
@@ -23,6 +23,7 @@ interface OptionsPanelProps {
     articles_number: number;
     visibility: string;
     allow_join: boolean;
+    enabled_artifacts: Record<string, boolean>;
   };
   onSettingsUpdate: (settings: OptionsPanelProps['settings']) => void;
   isHost: boolean;
@@ -74,7 +75,8 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
       time_limit: unlimitedTime ? null : Number(formData.get('timeLimit')),
       articles_number: Number(formData.get('articlesNumber')),
       visibility: formData.get('visibility') as string,
-      allow_join: settings.allow_join
+      allow_join: settings.allow_join,
+      enabled_artifacts: settings.enabled_artifacts
     };
 
     onSettingsUpdate(newSettings);
@@ -220,6 +222,16 @@ export const OptionsPanelSolo = () => {
   const navigate = useNavigate();
 
   const [unlimitedTime, setUnlimitedTime] = useState(true);
+  const [enabledArtifacts, setEnabledArtifacts] = useState<Record<string, boolean>>({
+    "GPS": true,
+    "BACK": true,
+    "TELEPORT": true,
+    "MINE": true,
+    "SNAIL": true,
+    "ERASER": true,
+    "DISORIENTATOR": true,
+    "DICTATOR": true
+  });
 
   const handleUnlimitedTime = () => {
     setUnlimitedTime(!unlimitedTime);
@@ -229,7 +241,10 @@ export const OptionsPanelSolo = () => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
+    const data = {
+      ...Object.fromEntries(formData.entries()),
+      enabled_artifacts: enabledArtifacts
+    };
 
     alert(JSON.stringify(data, null, 2)); // -------------- Ici pour le back à ajouter
 
@@ -248,7 +263,7 @@ export const OptionsPanelSolo = () => {
               <input type={"text"} name={"timeLimit"} id={"timeLimit"} value={"UNLIMITED"} readOnly/> :
               <input type={"number"} name={"timeLimit"} id={"timeLimit"} min={1} required/>}
 
-            <img src={unlimitedTime ? "public/assets/UnlimitedButton.png" : "public/assets/LimitedButton.png"} onClick={handleUnlimitedTime} alt={"unlimited"}/>
+            <img src={unlimitedTime ? "/assets/UnlimitedButton.png" : "/assets/LimitedButton.png"} onClick={handleUnlimitedTime} alt={"unlimited"}/>
           </div>
 
           <div className={"Option"}>
@@ -258,22 +273,34 @@ export const OptionsPanelSolo = () => {
 
         </div>
 
-        <input className={"SubmitOptions"} type={"submit"} value={"LAUCH"} style={{
+        <input className={"SubmitOptions"} type={"submit"} value={"LAUNCH"} style={{
           backgroundColor: "#17141d",
           borderColor: "#f1b24a"
         }}/>
       </form>
-
     </div>
   )
 }
 
-export const ArtefactsList = (props: { artefacts: string[] }) => {
+export const ArtefactsList = (props: { 
+  artefacts: string[],
+  enabledArtifacts?: Record<string, boolean>,
+  onToggleArtifact?: (artifact: string, enabled: boolean) => void,
+  isHost?: boolean
+}) => {
+  const { artefacts, enabledArtifacts = {}, onToggleArtifact, isHost = false } = props;
+  
   return (
     <div className='ArtefactsListContainer'>
       <div className="ArtefactsList">
-        {props.artefacts.map((artefact, index) => (
-          <Artefact key={index} artefact={artefact}/>
+        {artefacts.map((artefact, index) => (
+          <Artefact 
+            key={index} 
+            artefact={artefact} 
+            enabled={artefact in enabledArtifacts ? enabledArtifacts[artefact] : true}
+            onToggle={onToggleArtifact}
+            isHost={isHost}
+          />
         ))}
       </div>
     </div>
@@ -289,35 +316,80 @@ interface Artefact {
   storable: boolean;
 }
 
-export const Artefact = (props: { artefact: string }) => {
+export const Artefact = (props: { 
+  artefact: string,
+  enabled?: boolean,
+  onToggle?: (artifact: string, enabled: boolean) => void,
+  isHost?: boolean
+}) => {
+  const { artefact, enabled = true, onToggle, isHost = false } = props;
   const [info, setInfo] = useState(false);
 
   const handleInfo = () => {
     setInfo(!info);
   }
 
-  const artefact = descriptionData.find((item: Artefact) => item.name === props.artefact);
-  const description = artefact ? artefact.effect : "Description not found";
+  const handleToggle = () => {
+    if (isHost && onToggle) {
+      onToggle(artefact, !enabled);
+    }
+  }
+
+  const artefactData = descriptionData.find((item: Artefact) => item.name === artefact);
+  const description = artefactData ? artefactData.effect : "Description not found";
 
   if (!info) {
     return (
-      <div className="Artefact fade-in">
-        <img onClick={handleInfo} className="ArtefactInfo" src={ArtefactInfo} alt="Artefact Info"/>
+      <div 
+        className={`Artefact ${!enabled ? 'disabled' : ''} ${isHost ? 'toggleable' : ''}`} 
+        onClick={isHost ? handleToggle : undefined}
+      >
+        <img onClick={(e) => { e.stopPropagation(); handleInfo(); }} className="ArtefactInfo" src={ArtefactInfo} alt="Artefact Info"/>
+        {isHost && (
+          <div className="artifact-toggle-status">
+            {enabled ? 'Enabled' : 'Disabled'}
+          </div>
+        )}
         <img
           className="ArtefactImage"
-          src={`/assets/Artefacts/${props.artefact}.png`}
+          src={`/assets/Artefacts/${artefact}.png`}
           alt="Artefact"
-          style={{height: '100px'}}
+          style={{
+            height: '100px',
+            opacity: enabled ? 1 : 0.5
+          }}
         />
-        <p>{props.artefact}</p>
+        <p>{artefact}</p>
       </div>
     );
   } else {
     return (
-      <div className="Artefact-info fade-in">
-        <img onClick={handleInfo} className="ArtefactInfo" src={"public/assets/Artefacts/skipInfo.svg"} alt="Artefact Info"/>
-        <p>{props.artefact}</p>
-        <p className={"ArtefactDescription"}>{description}</p>
+      <div className={`Artefact-info ${!enabled ? 'disabled' : ''}`}>
+        <img onClick={handleInfo} className="ArtefactInfo" src={"/assets/Artefacts/skipInfo.svg"} alt="Close Info"/>
+        
+        <div className="artifact-info-header">
+          <img
+            className="ArtefactImage-small"
+            src={`/assets/Artefacts/${artefact}.png`}
+            alt={artefact}
+            style={{
+              height: '40px',
+              marginRight: '10px',
+              opacity: enabled ? 1 : 0.5
+            }}
+          />
+          <p>{artefact}</p>
+        </div>
+        
+        <div className="artifact-info-content">
+          <p className="ArtefactDescription">{description}</p>
+        </div>
+        
+        {isHost && (
+          <div className="artifact-toggle-button" onClick={(e) => { e.stopPropagation(); handleToggle(); }}>
+            {enabled ? 'Disable' : 'Enable'} Artifact
+          </div>
+        )}
       </div>
     )
   }

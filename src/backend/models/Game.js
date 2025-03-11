@@ -10,7 +10,8 @@ const GameSchema = new mongoose.Schema({
         time_limit: Number,
         articles_number: Number,
         visibility: String,
-        allow_join: Boolean
+        allow_join: Boolean,
+        enabled_artifacts: [String]
     },
     players: [
         {
