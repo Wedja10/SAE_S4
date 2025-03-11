@@ -15,6 +15,7 @@ interface LobbySettings {
   articles_number: number;
   visibility: string;
   allow_join: boolean;
+  enabled_artifacts: Record<string, boolean>;
 }
 
 interface Player {
@@ -35,7 +36,17 @@ const Lobby: React.FC = () => {
     time_limit: null,
     articles_number: 5,
     visibility: "private",
-    allow_join: true
+    allow_join: true,
+    enabled_artifacts: {
+      "GPS": true,
+      "BACK": true,
+      "TELEPORT": true,
+      "MINE": true,
+      "SNAIL": true,
+      "ERASER": true,
+      "DISORIENTATOR": true,
+      "DICTATOR": true
+    }
   });
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,20 +247,79 @@ const Lobby: React.FC = () => {
         const normalizedPlayers = (data.players || []).map(normalizePlayer);
         setPlayers(normalizedPlayers);
         
-        // Ensure visibility is private by default if not set
-        const settings = data.settings || {
+        // Default settings if none are provided
+        const defaultSettings = {
           max_players: null,
           time_limit: null,
           articles_number: 5,
           visibility: "private",
-          allow_join: true
+          allow_join: true,
+          enabled_artifacts: {
+            "GPS": true,
+            "BACK": true,
+            "TELEPORT": true,
+            "MINE": true,
+            "SNAIL": true,
+            "ERASER": true,
+            "DISORIENTATOR": true,
+            "DICTATOR": true
+          }
         };
         
-        // Force visibility to private if not set
-        if (!settings.visibility) {
-          settings.visibility = "private";
+        // Start with default settings
+        const settings = { ...defaultSettings };
+        
+        // If we have settings from the server, update our defaults
+        if (data.settings) {
+          // Copy basic settings
+          settings.max_players = data.settings.max_players;
+          settings.time_limit = data.settings.time_limit;
+          settings.articles_number = data.settings.articles_number;
+          settings.visibility = data.settings.visibility || "private";
+          settings.allow_join = data.settings.allow_join;
+          
+          // Handle enabled artifacts
+          if (data.settings.enabled_artifacts) {
+            // If the server provides an array of enabled artifacts, convert it to an object
+            if (Array.isArray(data.settings.enabled_artifacts)) {
+              // Start with all artifacts enabled by default
+              const enabledArtifactsObj = {
+                "GPS": true,
+                "BACK": true,
+                "TELEPORT": true,
+                "MINE": true,
+                "SNAIL": true,
+                "ERASER": true,
+                "DISORIENTATOR": true,
+                "DICTATOR": true
+              };
+              
+              // If the array is empty, keep all artifacts enabled
+              if (data.settings.enabled_artifacts.length === 0) {
+                // Do nothing, keep all enabled
+              } else {
+                // First disable all artifacts
+                for (const key in enabledArtifactsObj) {
+                  enabledArtifactsObj[key as keyof typeof enabledArtifactsObj] = false;
+                }
+                
+                // Then enable only the ones in the array
+                for (const artifact of data.settings.enabled_artifacts) {
+                  if (artifact in enabledArtifactsObj && typeof artifact === 'string') {
+                    enabledArtifactsObj[artifact as keyof typeof enabledArtifactsObj] = true;
+                  }
+                }
+              }
+              
+              settings.enabled_artifacts = enabledArtifactsObj;
+            } else if (typeof data.settings.enabled_artifacts === 'object') {
+              // If it's already an object, use it directly
+              settings.enabled_artifacts = data.settings.enabled_artifacts;
+            }
+          }
         }
         
+        console.log('Using settings:', settings);
         setSettings(settings);
         
         // Check if current user is host
@@ -321,11 +391,65 @@ const Lobby: React.FC = () => {
     }
   };
 
+  const handleArtifactToggle = (artifact: string, enabled: boolean) => {
+    if (isHost && gameCode) {
+      console.log(`Toggling artifact ${artifact} to ${enabled ? 'enabled' : 'disabled'}`);
+      console.log('Current enabled_artifacts before update:', JSON.stringify(settings.enabled_artifacts));
+      
+      // Create a new object with all artifacts from the current settings
+      const updatedEnabledArtifacts = { ...settings.enabled_artifacts };
+      
+      // Make sure all artifacts exist in the object with default value of true
+      for (const art of artefacts) {
+        if (!(art in updatedEnabledArtifacts)) {
+          updatedEnabledArtifacts[art] = true;
+        }
+      }
+      
+      // Update the specific artifact that was toggled
+      updatedEnabledArtifacts[artifact] = enabled;
+      
+      console.log('Updated enabled_artifacts after update:', JSON.stringify(updatedEnabledArtifacts));
+      
+      const updatedSettings = {
+        ...settings,
+        enabled_artifacts: updatedEnabledArtifacts
+      };
+      
+      console.log('Sending updated settings to server:', JSON.stringify(updatedSettings));
+      
+      // Update local state first for immediate UI feedback
+      setSettings(updatedSettings);
+      
+      // Then send to server
+      handleSettingsUpdate(updatedSettings);
+    }
+  };
+
   const handleStartGame = () => {
     if (isHost && gameCode) {
+      console.log('Starting game with settings:', settings);
+      console.log('Raw enabled_artifacts object:', settings.enabled_artifacts);
+      
+      // Get the list of enabled artifacts - only those explicitly set to true
+      const enabledArtifactsList = Object.entries(settings.enabled_artifacts)
+        .filter(([_, enabled]) => enabled === true)
+        .map(([artifact]) => artifact);
+      
+      console.log('Enabled artifacts list:', enabledArtifactsList);
+      
+      // Only start the game if at least one artifact is enabled
+      if (enabledArtifactsList.length === 0) {
+        alert('Please enable at least one artifact before starting the game.');
+        return;
+      }
+      
       ws.sendEvent({
         type: 'game_start',
-        data: { gameCode }
+        data: { 
+          gameCode,
+          enabledArtifacts: enabledArtifactsList
+        }
       });
     }
   };
@@ -446,7 +570,12 @@ const Lobby: React.FC = () => {
               currentPlayerId={currentPlayerId}
             />
             <div className={"GameInfo"}>
-              <ArtefactsList artefacts={artefacts} />
+              <ArtefactsList 
+                artefacts={artefacts} 
+                enabledArtifacts={settings.enabled_artifacts}
+                onToggleArtifact={handleArtifactToggle}
+                isHost={isHost}
+              />
               <OptionsPanel
                 settings={settings}
                 onSettingsUpdate={handleSettingsUpdate}

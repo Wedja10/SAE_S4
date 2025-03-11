@@ -1210,7 +1210,7 @@ export const getPublicGames = async (req, res) => {
     }
 };
 
-async function setArtifactDistribution(id_game, article_title) {
+async function setArtifactDistribution(id_game, article_title, enabledArtifacts = []) {
     try {
         if (!id_game) {
             throw new Error("ID du jeu requis");
@@ -1220,14 +1220,39 @@ async function setArtifactDistribution(id_game, article_title) {
             throw new Error("Titre d'article requis");
         }
 
+        console.log('setArtifactDistribution called with enabledArtifacts:', enabledArtifacts);
+
         // Trouver l'article
         const article = await Article.findOne({ title: article_title });
         if (!article) {
             throw new Error("Article non trouvé");
         }
 
-        const positiveArtifacts = await Artifact.find({positive: true})
-        const negativeArtifacts = await Artifact.find({positive: false})
+        // Filter artifacts based on enabled list if provided
+        let positiveArtifacts = await Artifact.find({ positive: true });
+        let negativeArtifacts = await Artifact.find({ positive: false });
+
+        console.log('All positive artifacts:', positiveArtifacts.map(a => a.name));
+        console.log('All negative artifacts:', negativeArtifacts.map(a => a.name));
+
+        // If enabledArtifacts is provided and not empty, filter the artifacts
+        if (enabledArtifacts && enabledArtifacts.length > 0) {
+            positiveArtifacts = positiveArtifacts.filter(a => enabledArtifacts.includes(a.name));
+            negativeArtifacts = negativeArtifacts.filter(a => enabledArtifacts.includes(a.name));
+            
+            console.log('Filtered positive artifacts:', positiveArtifacts.map(a => a.name));
+            console.log('Filtered negative artifacts:', negativeArtifacts.map(a => a.name));
+            
+            // If no artifacts are enabled, use default artifacts
+            if (positiveArtifacts.length === 0) {
+                positiveArtifacts = await Artifact.find({ positive: true });
+                console.warn("No positive artifacts enabled, using all positive artifacts");
+            }
+            if (negativeArtifacts.length === 0) {
+                negativeArtifacts = await Artifact.find({ positive: false });
+                console.warn("No negative artifacts enabled, using all negative artifacts");
+            }
+        }
 
         const randomPositive = Math.floor(Math.random() * positiveArtifacts.length);
         const randomNegative = Math.floor(Math.random() * negativeArtifacts.length);
@@ -1243,7 +1268,7 @@ async function setArtifactDistribution(id_game, article_title) {
             throw new Error("Jeu non trouvé");
         }
 
-        game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name});
+        game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name });
 
         // Sauvegarder les modifications
         await game.save();
@@ -1258,7 +1283,7 @@ async function setArtifactDistribution(id_game, article_title) {
 
 
 export const distributeArtifacts = async (req, res) => {
-    const { id_game } = req.body;
+    const { id_game, enabledArtifacts = [] } = req.body;
 
     if (!id_game) {
         return res.status(400).json({ error: "Game ID is required" });
@@ -1271,6 +1296,18 @@ export const distributeArtifacts = async (req, res) => {
             return res.status(404).json({ error: "Game not found" });
         }
 
+        console.log('Game settings in distributeArtifacts:', game.settings);
+        console.log('Enabled artifacts from request:', enabledArtifacts);
+
+        // Get enabled artifacts from settings if not provided in the request
+        let artifactsToUse = enabledArtifacts;
+        if (artifactsToUse.length === 0 && game.settings && game.settings.enabled_artifacts) {
+            artifactsToUse = game.settings.enabled_artifacts;
+            console.log(`Using ${artifactsToUse.length} enabled artifacts from game settings:`, artifactsToUse);
+        } else {
+            console.log('No enabled artifacts found in settings, using default or request artifacts');
+        }
+
         // Distribuer des artefacts aux joueurs
         for (const player of game.players) {
             const currentArticle = await Article.findById(player.current_article);
@@ -1280,7 +1317,7 @@ export const distributeArtifacts = async (req, res) => {
             }
 
             try {
-                const artifact = await setArtifactDistribution(id_game, currentArticle.title);
+                const artifact = await setArtifactDistribution(id_game, currentArticle.title, artifactsToUse);
                 player.artifacts.push(artifact);
             } catch (error) {
                 console.warn(`Error assigning artifact to player ${player.player_id}:`, error.message);
