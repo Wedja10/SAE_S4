@@ -24,6 +24,7 @@ const GameSchema = new mongoose.Schema({
             is_host: Boolean
         }
     ],
+    mined_article: [String],
     articles_to_visit: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
     artifacts_distribution: [
         {

@@ -411,6 +411,12 @@ export const changeArticleFront = async (req, res) => {
             isLastArticle = true;
         }
 
+        let isMinedArticle = false;
+
+        if(game.mined_article && game.mined_article.includes(article.title)){
+            isMinedArticle = true;
+        }
+
         await Game.findOneAndUpdate({ _id: game._id }, game, { new: true, runValidators: false });
 
         console.log(`Successfully updated current article for player ${id_player} to ${article.title}`);
@@ -422,6 +428,7 @@ export const changeArticleFront = async (req, res) => {
             isNewVisit,
             isTargetArticle,
             isLastArticle,
+            isMinedArticle,
             artifact: setArtifact
         });
     } catch (error) {
@@ -1341,4 +1348,29 @@ export const distributeArtifacts = async (req, res) => {
     }
 };
 
+export const setMineArtifacts = async (req, res) => {
+    const { id_game, title } = req.body;
 
+    try {
+        const game = await Game.findById(id_game);
+
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        if (!game.mined_article) {
+            game.mined_article = [];
+        }
+
+        const formattedTitle = title.replace(/ /g, "_");
+
+        game.mined_article.push(formattedTitle);
+
+        await game.save();
+
+        return res.status(200).json({ message: "Artifact added successfully", game });
+    } catch (error) {
+        console.error("Error setMineArtifacts:", error);
+        return res.status(500).json({ error: "Failed to setMineArtifacts", details: error.message });
+    }
+};

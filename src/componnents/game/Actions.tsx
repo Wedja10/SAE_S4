@@ -122,7 +122,7 @@ const Actions: React.FC<ActionsProps> = ({onTeleport, onBack, onEraser, onMine, 
             callback();
             setArtifacts(prev => {
                 const updated = { ...prev };
-                updated[artifact]--;
+                // updated[artifact]--;
                 if (updated[artifact] === 0) delete updated[artifact];
                 return updated;
             });

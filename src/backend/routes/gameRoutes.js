@@ -17,7 +17,8 @@ import {
     distributeArtifacts,
     getFoundTargetArticles,
     getPublicGames,
-    getStorableArticfactPlayer
+    getStorableArticfactPlayer,
+    setMineArtifacts
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -73,6 +74,7 @@ router.post("/random-articles", distributeRandomArticles);
 router.post("/create-game", createGame);
 router.post("/back-artifact", backArtifact);
 router.post("/mine-artifact", mineArtifact);
+router.post("/set-mine", setMineArtifacts);
 router.post("/eraser-artifact", eraserArtifact);
 router.post("/disorienter-artifact", disorienterArtifact);
 router.post("/dictator-artifact", dictatorArtifact);
