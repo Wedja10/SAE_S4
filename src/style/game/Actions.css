@@ -59,3 +59,14 @@
 .teleport-button:hover {
     background-color: #0288d1;
 }
+.mine-search-container {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+

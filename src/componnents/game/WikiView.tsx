@@ -14,6 +14,9 @@ const WikiView: React.FC = () => {
   const [history, setHistory] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
+  const [isMinePopupOpen, setIsMinePopupOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<string[]>([]);
   const [initializationAttempted, setInitializationAttempted] = useState<boolean>(false);
   const navigate = useNavigate();
 
@@ -192,6 +195,11 @@ const WikiView: React.FC = () => {
         });
         console.log("Article change response:", response);
 
+        if(response && response.isMinedArticle){
+          alert("Cet article était miné");
+          await handleMineArtifact();
+        }
+
         // Check if the player won
         if (response && response.isLastArticle) {
           alert(`Félicitations! Vous avez gagné`);
@@ -239,6 +247,7 @@ const WikiView: React.FC = () => {
             isNewVisit: true,
             isTargetArticle: response?.isTargetArticle || false,
             isLastArticle: response?.isLastArticle || false,
+            idMinedArticle: response?.idMinedArticle || false,
             artifact: response?.artifact || null
           }
         });
@@ -451,6 +460,8 @@ const WikiView: React.FC = () => {
       if (response && response.title) {
         setCurrentTitle(response.title);
         await fetchWikiContent(response.title);
+      } else {
+        console.log("No response accorded");
       }
     } catch (error) {
       console.error("Error in mineArtifact:", error);
@@ -518,12 +529,35 @@ const WikiView: React.FC = () => {
     }
   };
 
-  const handleMineClick = async () => {
+  const handleMineArtifact = async () => {
     await mineArtifact();
     const newTitle = await getCurrentArticle();
     if (newTitle) {
       setCurrentTitle(newTitle);
       await fetchWikiContent(newTitle);
+    }
+  };
+
+  const handleMineClick = async () => {
+    setIsMinePopupOpen(true);
+  };
+
+  const closeMinePopup = () => {
+    setIsMinePopupOpen(false);
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    try {
+      const response = await fetch(`https://fr.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srsearch=${encodeURIComponent(searchQuery)}`);
+      const data = await response.json();
+      setSearchResults(data.query.search.map((entry: any) => entry.title));
+    } catch (error) {
+      console.error("Erreur lors de la recherche Wikipedia :", error);
     }
   };
 
@@ -535,6 +569,7 @@ const WikiView: React.FC = () => {
       await fetchWikiContent(newTitle);
     }
   };
+
 
   const handleSnailClick = async() => {
     setIsBlocked(true);
@@ -628,6 +663,14 @@ const WikiView: React.FC = () => {
     }
   };
 
+  const handleArticleSelect = async (title: string) => {
+    alert(`Vous avez sélectionné l'article : ${title}`);
+    await postRequest(getApiUrl("/games/set-mine"), {
+      id_game: gameId, title: title
+    })
+    setIsMinePopupOpen(false);
+  };
+
   return (
       <div className="wiki-container">
         <h2 className="wiki-title">{currentTitle}</h2>
@@ -654,6 +697,54 @@ const WikiView: React.FC = () => {
             onDisorienter={handleDisorienterClick}
             onSnail={handleSnailClick}
         />
+
+        {isMinePopupOpen && (
+            <div className="mine-popup-overlay" style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100vh",
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 9999
+            }}>
+              <div className="mine-popup" style={{
+                backgroundColor: "white",
+                padding: "20px",
+                borderRadius: "10px",
+                width: "50%",
+                maxHeight: "80%",
+                overflowY: "auto",
+                textAlign: "center",
+                color: "#000000"
+              }}>
+                <h2>Posez votre mine</h2>
+                <input
+                    type="text"
+                    placeholder="Rechercher un article..."
+                    value={searchQuery}
+                    onChange={handleSearchInputChange}
+                    style={{ width: "80%", padding: "10px", margin: "10px 0" }}
+                />
+                <button onClick={handleSearch} style={{ margin: "5px", padding: "10px" }}>Rechercher</button>
+                <button onClick={closeMinePopup} style={{ margin: "5px", padding: "10px" }}>Fermer</button>
+                <ul style={{ display: "flex", alignItems: "center", flexDirection: "column", listStyle: "none", padding: 0 }}>
+                  {searchResults.map((title, index) => (
+                      <li
+                          key={index}
+                          style={{ padding: "10px", width: "50%", textAlign: "start", backgroundColor: "red", cursor: "pointer" }}
+                          onClick={() => handleArticleSelect(title)}
+                      >
+                        {title}
+                      </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+        )}
       </div>
   );
 };
