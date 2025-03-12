@@ -168,6 +168,17 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                     time_limit: seconds
                   });
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const increment = e.key === 'ArrowUp' ? 30 : -30;
+                    const newTime = (settings.time_limit !== null ? Math.max(0, settings.time_limit + increment) : 0);
+                    onSettingsUpdate({
+                      ...settings,
+                      time_limit: newTime,
+                    });
+                  }
+                }}
                 required
                 disabled={!isHost}
                 className={!isHost ? "disabled-input" : ""}
