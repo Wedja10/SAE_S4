@@ -85,6 +85,23 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
   // Helper function to determine if max players should be disabled
   const isMaxPlayersDisabled = !isHost || settings.allow_join;
 
+  // Convert seconds to format "minutes:seconds"
+  function formatSecondsToMinutesSeconds(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  }
+
+// Convert "minutes:seconds" to seconds
+  function convertMinutesSecondsToSeconds(timeString) {
+    const [minutes, seconds] = timeString.split(':').map(Number);
+    if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
+      return 0; // ou une valeur par défaut
+    }
+    return minutes * 60 + seconds;
+  }
+
   return (
     <div className={"OptionsPanel"} >
       <form method={"put"} onSubmit={handleSubmit}>
@@ -121,7 +138,7 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
               src={unlimitedPlayers ? "/assets/UnlimitedButton.png" : "/assets/LimitedButton.png"}
               onClick={settings.allow_join ? undefined : handleUnlimitedPlayers}
               alt={"unlimited"}
-              style={{ cursor: (!isHost || settings.allow_join) ? 'default' : 'pointer' }}
+              style={{cursor: (!isHost || settings.allow_join) ? 'default' : 'pointer'}}
             />
             {settings.allow_join && <div className="tooltip">Lock room to edit</div>}
           </div>
@@ -140,15 +157,17 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
               />
             ) : (
               <input
-                type={"number"}
+                type={"text"}
                 name={"timeLimit"}
                 id={"timeLimit"}
-                min={1}
-                value={settings.time_limit || ''}
-                onChange={(e) => onSettingsUpdate({
-                  ...settings,
-                  time_limit: Number(e.target.value)
-                })}
+                value={formatSecondsToMinutesSeconds(settings.time_limit) || ''}
+                onChange={(e) => {
+                  const seconds = convertMinutesSecondsToSeconds(e.target.value);
+                  onSettingsUpdate({
+                    ...settings,
+                    time_limit: seconds
+                  });
+                }}
                 required
                 disabled={!isHost}
                 className={!isHost ? "disabled-input" : ""}
@@ -158,7 +177,7 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
               src={unlimitedTime ? "/assets/UnlimitedButton.png" : "/assets/LimitedButton.png"}
               onClick={isHost ? handleUnlimitedTime : undefined}
               alt={"unlimited"}
-              style={{ cursor: isHost ? 'pointer' : 'default' }}
+              style={{cursor: isHost ? 'pointer' : 'default'}}
             />
           </div>
 
