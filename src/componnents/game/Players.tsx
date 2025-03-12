@@ -4,6 +4,9 @@ import { postRequest } from "../../backend/services/apiService.js";
 import { getApiUrl } from "../../utils/config";
 import { Storage } from "../../utils/storage";
 import { useNavigate } from "react-router-dom";
+import articles from "./Articles.tsx";
+import nextArticle from "../../../public/assets/nextArticle.svg";
+import closeChatbox from "../../../public/assets/closeChatbox.svg";
 
 // Définir un type pour les joueurs
 interface Player {
@@ -156,26 +159,73 @@ const Players: React.FC = () => {
         };
     }, []);
 
-    return (
-        <div className="players-container fade-in">
-            <h2 className="players-title">Joueurs</h2>
-            <ul className="players-list">
-                {players.map((player, index) => (
+    const [showPlayer, setShowPlayer] = useState(0);
+
+    function handlePlayerClick(player: Player) {
+        setShowPlayer(player.id);
+
+        /*
+        const retryVisitedData = await postRequest(getApiUrl('/games/articles'), {
+            id_game: localStorage.getItem('gameId'),
+            id_player: player.id
+        });
+        */
+    }
+
+    if (showPlayer == 0) {
+        return (
+          <div className="players-container fade-in">
+              <h2 className="players-title">Joueurs</h2>
+              <ul className="players-list">
+                  {players.map((player, index) => (
                     <div key={index}>
-                        <li className="player-item">
-                            <img 
-                                src={player.pp} 
-                                alt="" 
-                                className="ppGame"
-                                style={player.pp_color ? { backgroundColor: player.pp_color } : undefined}
+                        <li onClick={() => handlePlayerClick(player)} className="player-item">
+                            <img
+                              src={player.pp}
+                              alt=""
+                              className="ppGame"
+                              style={player.pp_color ? {backgroundColor: player.pp_color} : undefined}
                             /> - {player.pseudo} - {player.score}/{articlesToFind.length}
                         </li>
-                        <hr />
+                        <hr/>
                     </div>
-                ))}
-            </ul>
-        </div>
-    );
+                  ))}
+              </ul>
+          </div>
+        );
+    } else {
+        const playerToShow = players.find(player => player.id === showPlayer) || { pp: '', pp_color: '' };
+
+        return (
+          <div className="players-container fade-in">
+              <h2 className="players-title">Joueurs</h2>
+              <div className="showPlayerInfo">
+                  <img
+                    src={playerToShow.pp}
+                    alt=""
+                    className="ppGame"
+                    style={playerToShow.pp_color ? {backgroundColor: playerToShow.pp_color, width: "50px", height: "50px", marginTop: "10px"} : undefined}
+                  />
+                  <p className="playerPseudo">{playerToShow.pseudo}</p>
+                  <p className="playerScore">{playerToShow.score}/{articlesToFind.length}</p>
+                  <p>Visited articles</p>
+
+                  <div className="VisitedArticles">
+                      {articlesToFind.map((article, index) => (
+                        <div key={index}>
+                            <img src={nextArticle} alt=''/>
+                            <p>{article}</p>
+                        </div>
+                      ))}
+                  </div>
+
+                  <img className={'closeShowPlayer'} src={closeChatbox} onClick={() => setShowPlayer(0)} alt='X' style={{
+                      cursor: 'pointer'
+                  }}/>
+              </div>
+          </div>
+        )
+    }
 };
 
 export default Players;
