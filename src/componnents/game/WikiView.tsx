@@ -367,29 +367,36 @@ const WikiView: React.FC = () => {
       const gameId = Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
-      
+
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in backArtifact");
         return;
       }
-      
+
       // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in backArtifact:", { playerId });
         return;
       }
-      
+
+      // Call the backend to get the previous article
       const response = await postRequest(getApiUrl("/games/back-artifact"), {
         id_game: gameParam,
-        id_player: playerId
+        id_player: playerId,
       });
-      
-      if (response && response.title) {
-        setCurrentTitle(response.title);
-        await fetchWikiContent(response.title);
+
+      if (response && response.previousArticle) {
+        // Update the UI with the previous article
+        setCurrentTitle(response.previousArticle);
+        await fetchWikiContent(response.previousArticle);
+
+        // Optionally, you can update the history if needed
+        // setHistory((prevHistory) => [...prevHistory, response.previousArticle]);
+      } else {
+        console.error("Failed to get the previous article from the backend");
       }
     } catch (error) {
       console.error("Error in backArtifact:", error);

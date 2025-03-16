@@ -519,7 +519,6 @@ export const distributeRandomArticles = async (req, res) => {
 
                 if (!game.articles_to_visit.includes(generatedArticle._id)) {
                     game.articles_to_visit.push(generatedArticle._id);
-                    game.artifacts_distribution.push({ article: new ObjectId(generatedArticle._id), artifact: "GPS" });
                 }
             } catch (err) {
                 console.error("Erreur lors de la création de l'article :", err);
@@ -902,15 +901,21 @@ export const backArtifact = async (req, res) => {
             return res.status(404).json({ error: "Player not found in this game" });
         }
 
+        // Check if there are enough articles in the history
         if (player.articles_visited.length < 2) {
             return res.status(400).json({ message: "Pas assez d'articles visités pour revenir en arrière." });
         }
 
+        // Get the previous article
         const previousArticle = player.articles_visited[player.articles_visited.length - 2];
+
+        // Update the current article in the database
         await changeArticle(game._id, player.player_id, previousArticle);
 
+        // Save the game state
         await game.save();
 
+        // Return the previous article to the frontend
         res.status(200).json({ message: "Retour à l'article précédent réussi.", previousArticle });
     } catch (error) {
         console.error("Error in backArtifact:", error);
@@ -1235,6 +1240,11 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
             throw new Error("Article non trouvé");
         }
 
+        const game = await Game.findById(id_game);
+        if (!game) {
+            throw new Error("Jeu non trouvé");
+        }
+
         // Filter artifacts based on enabled list if provided
         let positiveArtifacts = await Artifact.find({ positive: true });
         let negativeArtifacts = await Artifact.find({ positive: false });
@@ -1246,10 +1256,10 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
         if (enabledArtifacts && enabledArtifacts.length > 0) {
             positiveArtifacts = positiveArtifacts.filter(a => enabledArtifacts.includes(a.name));
             negativeArtifacts = negativeArtifacts.filter(a => enabledArtifacts.includes(a.name));
-            
+
             console.log('Filtered positive artifacts:', positiveArtifacts.map(a => a.name));
             console.log('Filtered negative artifacts:', negativeArtifacts.map(a => a.name));
-            
+
             // If no artifacts are enabled, use default artifacts
             if (positiveArtifacts.length === 0) {
                 positiveArtifacts = await Artifact.find({ positive: true });
@@ -1270,10 +1280,7 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
             randomArtifact = positiveArtifacts[randomPositive];
         }
 
-        const game = await Game.findById(id_game);
-        if (!game) {
-            throw new Error("Jeu non trouvé");
-        }
+
 
         game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name });
 
