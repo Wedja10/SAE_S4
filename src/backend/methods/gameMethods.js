@@ -288,9 +288,11 @@ const checkTargetArticleFound = async (game, articleId, playerId) => {
 
                     if (!alreadyFound) {
                         // Add to found target articles
-                        game.players[playerIndex].found_target_articles.push(articleId);
-                        console.log(`Added ${articleTitle} to player's found target articles`);
-
+                        if(game.players[playerIndex].dictateArticle && game.players[playerIndex].dictateArticle === article.title){
+                            game.players[playerIndex].found_target_articles.push(articleId);
+                            game.players[playerIndex].dictateArticle = "";
+                            console.log(`Added ${articleTitle} to player's found target articles`);
+                        }
                         await game.save();
                     }
                 }
@@ -1190,18 +1192,28 @@ export const dictatorArtifact = async (req, res) => {
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
 
-        const notFoundArticle = game.articles_to_visit.filter(article => !player.articles_visited.includes(article));
+        const notFoundArticle = game.articles_to_visit.filter(article => !player.found_target_articles.includes(article));
+
+        if (notFoundArticle.length === 0) {
+            return res.status(404).json({ message: "Tous les articles ont déjà été trouvés." });
+        }
+
         const randNumber = Math.floor(Math.random() * notFoundArticle.length);
+        const dictateArticle = await Article.findById(notFoundArticle[randNumber]); // Ajout de await
 
-        const dictateArticle = notFoundArticle[randNumber];
-
-        res.status(200).json({ message: "Article à trouver.", dictateArticle: [dictateArticle] });
+        if (!dictateArticle) {
+            return res.status(404).json({ message: "Article non trouvé." });
+        }
+        player.dictateArticle = dictateArticle.title;
+        await game.save();
+        res.status(200).json({ message: "Article à trouver.", dictateArticle: dictateArticle.title });
 
     } catch (error) {
         console.error("Erreur dans dictatorArtifact :", error);
         res.status(500).json({ message: "Erreur serveur", details: error.message });
     }
 };
+
 
 
 export const getPublicGames = async (req, res) => {
@@ -1295,7 +1307,6 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
 }
 
 
-
 export const distributeArtifacts = async (req, res) => {
     const { id_game, enabledArtifacts = [] } = req.body;
 
@@ -1381,3 +1392,16 @@ export const setMineArtifacts = async (req, res) => {
         return res.status(500).json({ error: "Failed to setMineArtifacts", details: error.message });
     }
 };
+
+// const isDictate = async (req, res) => {
+//     const {id_game, id_player} = req.body;
+//
+//     try {
+//         const [game, player] = await gameAndPlayers(id_game, id_player);
+//
+//         if()
+//     } catch (error) {
+//         console.error("Error isDictate:", error);
+//         return res.status(500).json({ error: "Failed to say if it's dictate", details: error.message });
+//     }
+// }
