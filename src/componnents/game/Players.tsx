@@ -134,22 +134,34 @@ const Players: React.FC = () => {
 
     useEffect(() => {
         const handleScoreUpdate = (event: CustomEvent) => {
-            const { gameId, playerId } = event.detail;
+            const { gameId, playerId, foundArticlesCount } = event.detail;
 
-            postRequest(getApiUrl('/games/found-target-articles'), {
-                id_game: gameId,
-                id_player: playerId
-            }).then((data) => {
+            // Si foundArticlesCount est fourni, l'utiliser directement
+            if (foundArticlesCount !== undefined) {
                 setPlayers(prevPlayers =>
                     prevPlayers.map(player =>
                         player.id.toString() === playerId
-                            ? { ...player, score: data.length }
+                            ? { ...player, score: foundArticlesCount }
                             : player
                     )
                 );
-            }).catch(error => {
-                console.error("Erreur lors de la mise à jour du score :", error);
-            });
+            } else {
+                // Fallback to original method if no count is provided
+                postRequest(getApiUrl('/games/found-target-articles'), {
+                    id_game: gameId,
+                    id_player: playerId
+                }).then((data) => {
+                    setPlayers(prevPlayers =>
+                        prevPlayers.map(player =>
+                            player.id.toString() === playerId
+                                ? { ...player, score: data.length }
+                                : player
+                        )
+                    );
+                }).catch(error => {
+                    console.error("Erreur lors de la mise à jour du score :", error);
+                });
+            }
         };
 
         window.addEventListener('playerScoreUpdated', handleScoreUpdate as EventListener);

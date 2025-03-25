@@ -187,10 +187,15 @@ const WikiView: React.FC = () => {
       }
 
       console.log(`Article created with ID: ${createdArticle.article._id}, updating player's current article`);
+      let dictateCondition = false
+      if(isDictate !== ""){
+        dictateCondition = true;
+      }
       const response = await postRequest(getApiUrl("/games/change-article"), {
         id_game: gameParam,
         id_player: playerId,
         articleId: createdArticle.article._id,
+        isDictate: dictateCondition
       });
 
       if (!response) return;
@@ -210,14 +215,34 @@ const WikiView: React.FC = () => {
         } else if (response.title === isDictate) {
           message = `Félicitations! Vous avez trouvé l'article dicté: ${title}`;
           setDictate("");
-        } else if (response.isLastArticle && isDictate === "") {
-          message = "Félicitations! Vous avez gagné";
         } else if (response.isTargetArticle && isDictate !== ""){
           alert('La dictature est en marche !');
         }
-        window.dispatchEvent(new CustomEvent('playerScoreUpdated', {
-          detail: { gameId, playerId }
-        }));
+        if (response.isLastArticle && isDictate === "") {
+          message = "Félicitations! Vous avez gagné";
+        }
+
+        // Fetch the actual number of found target articles from the server
+        postRequest(getApiUrl('/games/found-target-articles'), {
+          id_game: gameId,
+          id_player: playerId
+        }).then((foundArticles) => {
+          // Dispatch event with the server-side data
+          window.dispatchEvent(new CustomEvent('playerScoreUpdated', {
+            detail: {
+              gameId,
+              playerId,
+              foundArticlesCount: foundArticles.length
+            }
+          }));
+        }).catch(error => {
+          console.error("Erreur lors de la récupération des articles trouvés :", error);
+          // Fallback to original event dispatch if server request fails
+          window.dispatchEvent(new CustomEvent('playerScoreUpdated', {
+            detail: { gameId, playerId }
+          }));
+        });
+
         if (message) alert(message);
       }
 

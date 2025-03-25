@@ -249,7 +249,7 @@ export const getCurrentArticle = async (req, res) => {
 
 
 // Helper function to check if an article is a target article
-const checkTargetArticleFound = async (game, articleId, playerId) => {
+const checkTargetArticleFound = async (game, articleId, playerId, isDictate) => {
     try {
         if (!game || !articleId || !playerId) {
             console.log("Missing parameters in checkTargetArticleFound");
@@ -288,7 +288,12 @@ const checkTargetArticleFound = async (game, articleId, playerId) => {
 
                     if (!alreadyFound) {
                         // Add to found target articles
-                        if(game.players[playerIndex].dictateArticle && game.players[playerIndex].dictateArticle === article.title){
+                        if(isDictate && game.players[playerIndex].dictateArticle && game.players[playerIndex].dictateArticle === article.title){
+                            game.players[playerIndex].found_target_articles.push(articleId);
+                            game.players[playerIndex].dictateArticle = "";
+                            console.log(`Added ${articleTitle} to player's found target articles`);
+                        }
+                        if(!isDictate){
                             game.players[playerIndex].found_target_articles.push(articleId);
                             game.players[playerIndex].dictateArticle = "";
                             console.log(`Added ${articleTitle} to player's found target articles`);
@@ -342,7 +347,7 @@ export const changeArticle = async (gameId, playerId, articleId) => {
 // Update the changeArticleFront function to use the helper
 export const changeArticleFront = async (req, res) => {
     try {
-        const { id_game, id_player, articleId } = req.body;
+        const { id_game, id_player, articleId, isDictate } = req.body;
 
         if (!id_game || !id_player || !articleId) {
             return res.status(400).json({ error: "Game ID, Player ID, and Article ID are required" });
@@ -398,7 +403,7 @@ export const changeArticleFront = async (req, res) => {
         game.players[playerIndex].articles_visited.push(articleObjectId);
 
         // Check if this is a target article
-        const isTargetArticle = await checkTargetArticleFound(game, articleObjectId, playerObjectId);
+        const isTargetArticle = await checkTargetArticleFound(game, articleObjectId, playerObjectId, isDictate);
         const resultat = Math.floor(Math.random() * 6) + 1;
 
         let setArtifact;
@@ -431,7 +436,8 @@ export const changeArticleFront = async (req, res) => {
             isTargetArticle,
             isLastArticle,
             isMinedArticle,
-            artifact: setArtifact
+            artifact: setArtifact,
+            targetArticlesFound: game.players[playerIndex].found_target_articles.length
         });
     } catch (error) {
         console.error("Error in changeArticleFront:", error);
