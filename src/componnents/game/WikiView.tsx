@@ -222,27 +222,6 @@ const WikiView: React.FC = () => {
           message = "Félicitations! Vous avez gagné";
         }
 
-        // Fetch the actual number of found target articles from the server
-        postRequest(getApiUrl('/games/found-target-articles'), {
-          id_game: gameId,
-          id_player: playerId
-        }).then((foundArticles) => {
-          // Dispatch event with the server-side data
-          window.dispatchEvent(new CustomEvent('playerScoreUpdated', {
-            detail: {
-              gameId,
-              playerId,
-              foundArticlesCount: foundArticles.length
-            }
-          }));
-        }).catch(error => {
-          console.error("Erreur lors de la récupération des articles trouvés :", error);
-          // Fallback to original event dispatch if server request fails
-          window.dispatchEvent(new CustomEvent('playerScoreUpdated', {
-            detail: { gameId, playerId }
-          }));
-        });
-
         if (message) alert(message);
       }
 
