@@ -240,6 +240,9 @@ const WikiView: React.FC = () => {
         if (artifactHandlers[response.artifact]) {
           alert(`${response.artifact.toUpperCase()} ARTIFACT`);
           await artifactHandlers[response.artifact]();
+          await postRequest(getApiUrl("/games/delete-artefact"), {
+            id_game: gameId, id_player: playerId, artifact: response.artifact
+          })
         } else {
           window.dispatchEvent(new CustomEvent("artifactAdded", {
             detail: { title: response.artifact }
@@ -525,6 +528,9 @@ const WikiView: React.FC = () => {
       setCurrentTitle(newTitle);
       await fetchWikiContent(newTitle);
     }
+    await postRequest(getApiUrl("/games/delete-artefact"), {
+      id_game: gameId, id_player: playerId, artifact: "Backtrack"
+    })
   };
 
   const handleEraserClick = async () => {
@@ -543,6 +549,9 @@ const WikiView: React.FC = () => {
       setCurrentTitle(newTitle);
       await fetchWikiContent(newTitle);
     }
+    await postRequest(getApiUrl("/games/delete-artefact"), {
+      id_game: gameId, id_player: playerId, artifact: "Mine"
+    })
   };
 
   const handleMineClick = async () => {

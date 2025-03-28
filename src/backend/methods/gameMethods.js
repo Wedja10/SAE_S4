@@ -881,13 +881,13 @@ export const backArtifact = async (req, res) => {
             return res.status(400).json({ error: "Game ID and Player ID are required" });
         }
 
-        // Find game by ID or code
+        // Trouver le jeu par ID ou code
         const game = await findGameByIdOrCode(id_game);
         if (!game) {
             return res.status(404).json({ error: "Game not found" });
         }
 
-        // Validate player ID format
+        // Validation du format de l'ID joueur
         if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
             return res.status(400).json({ error: "Invalid Player ID format" });
         }
@@ -898,21 +898,21 @@ export const backArtifact = async (req, res) => {
             return res.status(404).json({ error: "Player not found in this game" });
         }
 
-        // Check if there are enough articles in the history
+        // Vérifier qu'il y a au moins deux articles visités pour pouvoir revenir en arrière
         if (player.articles_visited.length < 2) {
             return res.status(400).json({ message: "Pas assez d'articles visités pour revenir en arrière." });
         }
 
-        // Get the previous article
+        // Récupérer l'article précédent
         const previousArticle = player.articles_visited[player.articles_visited.length - 2];
 
-        // Update the current article in the database
-        await changeArticle(game._id, player.player_id, previousArticle);
+        player.current_article = previousArticle;
 
-        // Save the game state
+        player.articles_visited.pop();
+
         await game.save();
 
-        // Return the previous article to the frontend
+        // Retourner l'article précédent au frontend
         res.status(200).json({ message: "Retour à l'article précédent réussi.", previousArticle });
     } catch (error) {
         console.error("Error in backArtifact:", error);
@@ -1394,3 +1394,26 @@ export const fetchLeaderBoard = async (req, res) => {
         return res.status(500).json({ error: "Failed to fetchLeaderBoard", details: error.message });
     }
 }
+
+export const deleteUsedArtifact = async (req, res) => {
+    const { id_game, id_player, artifact } = req.body;
+
+    try {
+        const [game, player] = await gameAndPlayers(id_game, id_player);
+
+        // Trouver l'index de l'artefact
+        const index = player.artifacts.indexOf(artifact);
+        if (index !== -1) {
+            player.artifacts.splice(index, 1); // Suppression de l'artefact
+        } else {
+            return res.status(404).json({ error: "Artifact not found" });
+        }
+
+        await game.save();
+
+        return res.status(200).json({ message: "Deleted the artifact successfully", game });
+    } catch (e) {
+        console.error("Error deleteUsedArtifact:", e);
+        return res.status(500).json({ error: "Failed to deleteUsedArtifact", details: e.message });
+    }
+};
