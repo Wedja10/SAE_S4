@@ -1399,15 +1399,19 @@ export const setMineArtifacts = async (req, res) => {
     }
 };
 
-// const isDictate = async (req, res) => {
-//     const {id_game, id_player} = req.body;
-//
-//     try {
-//         const [game, player] = await gameAndPlayers(id_game, id_player);
-//
-//         if()
-//     } catch (error) {
-//         console.error("Error isDictate:", error);
-//         return res.status(500).json({ error: "Failed to say if it's dictate", details: error.message });
-//     }
-// }
+export const fetchLeaderBoard = async (req, res) => {
+    const {id_game} = req.body;
+
+    try {
+        const game = await Game.findById(id_game);
+
+        const sortedPlayers = game.players.sort((a, b) => {
+            return b.found_target_articles.length - a.found_target_articles.length;
+        });
+
+        return res.status(200).json({message: "Sort of players successfully", sortedPlayers});
+    } catch (e) {
+        console.error("Error fetchLeaderBoard:", error);
+        return res.status(500).json({ error: "Failed to fetchLeaderBoard", details: error.message });
+    }
+}

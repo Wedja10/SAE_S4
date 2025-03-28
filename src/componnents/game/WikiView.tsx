@@ -219,7 +219,10 @@ const WikiView: React.FC = () => {
           alert('La dictature est en marche !');
         }
         if (response.isLastArticle && isDictate === "") {
-          message = "Félicitations! Vous avez gagné";
+          const leaderBoard = await postRequest(getApiUrl("/games/leaderBoard"), {
+            id_game: gameParam
+          });
+          message = `Félicitations! Vous avez gagné ${leaderBoard.message}`;
         }
 
         if (message) alert(message);
