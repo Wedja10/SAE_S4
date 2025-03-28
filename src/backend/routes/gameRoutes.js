@@ -19,7 +19,8 @@ import {
     getPublicGames,
     getStorableArticfactPlayer,
     setMineArtifacts,
-    fetchLeaderBoard
+    fetchLeaderBoard,
+    deleteUsedArtifact
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -83,5 +84,6 @@ router.post("/teleporter-artifact", teleporterArtifact);
 router.post("/join", joinLobby);
 router.post("/distribute-artifacts", distributeArtifacts);
 router.post("/leaderBoard", fetchLeaderBoard);
+router.post("/delete-artefact", deleteUsedArtifact);
 
 export default router;
