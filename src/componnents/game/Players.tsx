@@ -4,11 +4,9 @@ import { postRequest } from "../../backend/services/apiService.js";
 import { getApiUrl } from "../../utils/config";
 import { Storage } from "../../utils/storage";
 import { useNavigate } from "react-router-dom";
-import articles from "./Articles.tsx";
 import nextArticle from "../../../public/assets/nextArticle.svg";
 import closeChatbox from "../../../public/assets/closeChatbox.svg";
 
-// Définir un type pour les joueurs
 interface Player {
     id: number;
     pp: string;
@@ -20,211 +18,148 @@ interface Player {
 const Players: React.FC = () => {
     const [players, setPlayers] = useState<Player[]>([]);
     const [articlesToFind, setArticlesToFind] = useState<string[]>([]);
+    const [showPlayer, setShowPlayer] = useState(0);
     const navigate = useNavigate();
 
-    // Validate ObjectId format (24 character hex string)
-    const isValidObjectId = (id: string | null): boolean => {
-        if (!id) return false;
-        return /^[0-9a-fA-F]{24}$/.test(id);
-    };
+    const fetchAllData = async () => {
+        try {
+            const gameId = Storage.getGameId();
+            const playerId = Storage.getPlayerId();
+            const playerName = Storage.getPlayerName();
+            const profilePicture = Storage.getProfilePicture();
+            const profilePictureColor = Storage.getProfilePictureColor();
 
-    useEffect(() => {
-        // Get dynamic IDs from storage
-        const gameId = Storage.getGameId();
-        const playerId = Storage.getPlayerId();
-        const playerName = Storage.getPlayerName();
-        const profilePicture = Storage.getProfilePicture();
-        const profilePictureColor = Storage.getProfilePictureColor();
-        
-        // Redirect to home if no game ID or player ID
-        if (!gameId || !playerId) {
-            console.error("Missing game ID or player ID in Players component");
-            navigate('/');
-            return;
-        }
-        
-        // Validate ObjectIds
-        if (!isValidObjectId(gameId) || !isValidObjectId(playerId)) {
-            console.error("Invalid ObjectId format in Players component:", { gameId, playerId });
-            
-            // Try to get valid IDs from localStorage directly
-            const localGameId = localStorage.getItem('gameId');
-            const localPlayerId = localStorage.getItem('playerId');
-            
-            if (isValidObjectId(localGameId) && isValidObjectId(localPlayerId) && localGameId && localPlayerId) {
-                console.log("Using localStorage values directly:", { localGameId, localPlayerId });
-                Storage.setGameId(localGameId);
-                Storage.setPlayerId(localPlayerId);
-            } else {
-                console.error("No valid IDs found in localStorage either");
+            if (!gameId || !playerId) {
+                console.error("Missing game ID or player ID in Players component");
                 navigate('/');
                 return;
             }
+
+            // Récupérer les articles cibles
+            const articlesData = await postRequest(getApiUrl('/games/target-articles'), {
+                id_game: gameId
+            });
+            setArticlesToFind(articlesData || []);
+
+            // Récupérer les joueurs avec leurs scores
+            const playersData = await postRequest(getApiUrl('/games/players'), {
+                id_game: gameId
+            });
+
+            // Mettre à jour avec les données locales si nécessaire
+            const updatedPlayers = playersData.map((player: Player) => {
+                if (player.id.toString() === playerId) {
+                    return {
+                        ...player,
+                        pseudo: playerName || player.pseudo,
+                        pp: profilePicture || player.pp,
+                        pp_color: profilePictureColor || player.pp_color
+                    };
+                }
+                return player;
+            });
+
+            const playersWithScores = await Promise.all(
+                updatedPlayers.map(async (player: Player) => {
+                    const foundArticles = await postRequest(getApiUrl('/games/found-target-articles'), {
+                        id_game: gameId,
+                        id_player: player.id
+                    });
+                    return {
+                        ...player,
+                        score: foundArticles?.length || 0
+                    };
+                })
+            );
+
+            setPlayers(playersWithScores);
+        } catch (error) {
+            console.error("Error fetching data:", error);
         }
-
-        const fetchPlayers = async () => {
-            try {
-                // Get the values again after potential updates
-                const updatedGameId = Storage.getGameId();
-                
-                if (!updatedGameId || !isValidObjectId(updatedGameId)) {
-                    console.error("Still missing valid game ID after attempted fix");
-                    return;
-                }
-                
-                const data = await postRequest(getApiUrl('/games/players'), {
-                    id_game: updatedGameId
-                });
-                
-                // Update the current player's information with stored values
-                const updatedPlayers = data.map((player: Player) => {
-                    if (player.id.toString() === playerId) {
-                        const updatedPlayer = { ...player };
-                        
-                        // Update name if stored
-                        if (playerName) {
-                            updatedPlayer.pseudo = playerName;
-                        }
-                        
-                        // Update profile picture if stored
-                        if (profilePicture) {
-                            updatedPlayer.pp = profilePicture;
-                        }
-                        
-                        // Update profile picture color if stored
-                        if (profilePictureColor) {
-                            updatedPlayer.pp_color = profilePictureColor;
-                        }
-                        
-                        return updatedPlayer;
-                    }
-                    return player;
-                });
-                
-                setPlayers(updatedPlayers || []);
-            } catch (error) {
-                console.error("Error fetching players:", error);
-                setPlayers([]);
-            }
-        };
-
-        const fetchTargetArticles = async () => {
-            try {
-                // Get the values again after potential updates
-                const updatedGameId = Storage.getGameId();
-                
-                if (!updatedGameId || !isValidObjectId(updatedGameId)) {
-                    console.error("Still missing valid game ID after attempted fix");
-                    return;
-                }
-                
-                const data = await postRequest(getApiUrl('/games/target-articles'), {
-                    id_game: updatedGameId
-                });
-                setArticlesToFind(data || []);
-            } catch (error) {
-                console.error("Error fetching target articles:", error);
-                setArticlesToFind([]);
-            }
-        };
-
-        fetchPlayers();
-        fetchTargetArticles();
-    }, [navigate]);
+    };
 
     useEffect(() => {
-        const handleScoreUpdate = (event: CustomEvent) => {
-            const { gameId, playerId } = event.detail;
+        fetchAllData(); // Chargement initial
 
-            postRequest(getApiUrl('/games/found-target-articles'), {
-                id_game: gameId,
-                id_player: playerId
-            }).then((data) => {
-                setPlayers(prevPlayers =>
-                    prevPlayers.map(player =>
-                        player.id.toString() === playerId
-                            ? { ...player, score: data.length }
-                            : player
-                    )
-                );
-            }).catch(error => {
-                console.error("Erreur lors de la mise à jour du score :", error);
-            });
-        };
-
-        window.addEventListener('playerScoreUpdated', handleScoreUpdate as EventListener);
+        // Mise à jour automatique toutes les 3 secondes
+        const interval = setInterval(fetchAllData, 3000);
 
         return () => {
-            window.removeEventListener('playerScoreUpdated', handleScoreUpdate as EventListener);
+            clearInterval(interval);
         };
-    }, []);
-
-    const [showPlayer, setShowPlayer] = useState(0);
+    }, [navigate]);
 
     function handlePlayerClick(player: Player) {
         setShowPlayer(player.id);
-
-        /*
-        const retryVisitedData = await postRequest(getApiUrl('/games/articles'), {
-            id_game: localStorage.getItem('gameId'),
-            id_player: player.id
-        });
-        */
     }
 
-    if (showPlayer == 0) {
+    if (showPlayer === 0) {
         return (
-          <div className="players-container fade-in">
-              <h2 className="players-title">Joueurs</h2>
-              <ul className="players-list">
-                  {players.map((player, index) => (
-                    <div key={index}>
-                        <li onClick={() => handlePlayerClick(player)} className="player-item">
-                            <img
-                              src={player.pp}
-                              alt=""
-                              className="ppGame"
-                              style={player.pp_color ? {backgroundColor: player.pp_color} : undefined}
-                            /> - {player.pseudo} - {player.score}/{articlesToFind.length}
-                        </li>
-                        <hr/>
-                    </div>
-                  ))}
-              </ul>
-          </div>
+            <div className="players-container fade-in">
+                <h2 className="players-title">Joueurs</h2>
+                <ul className="players-list">
+                    {players.map((player, index) => (
+                        <div key={index}>
+                            <li onClick={() => handlePlayerClick(player)} className="player-item">
+                                <img
+                                    src={player.pp}
+                                    alt=""
+                                    className="ppGame"
+                                    style={player.pp_color ? {backgroundColor: player.pp_color} : undefined}
+                                /> - {player.pseudo} - {player.score}/{articlesToFind.length}
+                            </li>
+                            <hr/>
+                        </div>
+                    ))}
+                </ul>
+            </div>
         );
     } else {
-        const playerToShow = players.find(player => player.id === showPlayer) || { pp: '', pp_color: '' };
+        const playerToShow = players.find(player => player.id === showPlayer) || {
+            pp: '',
+            pseudo: '',
+            score: 0,
+            pp_color: ''
+        };
 
         return (
-          <div className="players-container fade-in">
-              <h2 className="players-title">Joueurs</h2>
-              <div className="showPlayerInfo">
-                  <img
-                    src={playerToShow.pp}
-                    alt=""
-                    className="ppGame"
-                    style={playerToShow.pp_color ? {backgroundColor: playerToShow.pp_color, width: "50px", height: "50px", marginTop: "10px"} : undefined}
-                  />
-                  <p className="playerPseudo">{playerToShow.pseudo}</p>
-                  <p className="playerScore">{playerToShow.score}/{articlesToFind.length}</p>
-                  <p>Visited articles</p>
+            <div className="players-container fade-in">
+                <h2 className="players-title">Joueurs</h2>
+                <div className="showPlayerInfo">
+                    <img
+                        src={playerToShow.pp}
+                        alt=""
+                        className="ppGame"
+                        style={playerToShow.pp_color ? {
+                            backgroundColor: playerToShow.pp_color,
+                            width: "50px",
+                            height: "50px",
+                            marginTop: "10px"
+                        } : undefined}
+                    />
+                    <p className="playerPseudo">{playerToShow.pseudo}</p>
+                    <p className="playerScore">{playerToShow.score}/{articlesToFind.length}</p>
+                    <p>Visited articles</p>
 
-                  <div className="VisitedArticles">
-                      {articlesToFind.map((article, index) => (
-                        <div key={index}>
-                            <img src={nextArticle} alt=''/>
-                            <p>{article}</p>
-                        </div>
-                      ))}
-                  </div>
+                    <div className="VisitedArticles">
+                        {articlesToFind.map((article, index) => (
+                            <div key={index}>
+                                <img src={nextArticle} alt=''/>
+                                <p>{article}</p>
+                            </div>
+                        ))}
+                    </div>
 
-                  <img className={'closeShowPlayer'} src={closeChatbox} onClick={() => setShowPlayer(0)} alt='X' style={{
-                      cursor: 'pointer'
-                  }}/>
-              </div>
-          </div>
-        )
+                    <img
+                        className={'closeShowPlayer'}
+                        src={closeChatbox}
+                        onClick={() => setShowPlayer(0)}
+                        alt='X'
+                        style={{ cursor: 'pointer' }}
+                    />
+                </div>
+            </div>
+        );
     }
 };
 

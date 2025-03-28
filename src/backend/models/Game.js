@@ -19,6 +19,7 @@ const GameSchema = new mongoose.Schema({
             articles_visited: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
             found_target_articles: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
             current_article: { type: mongoose.Schema.Types.ObjectId, ref: 'Article' },
+            dictateArticle: String,
             artifacts: [String],
             score: Number,
             is_host: Boolean
@@ -26,12 +27,6 @@ const GameSchema = new mongoose.Schema({
     ],
     mined_article: [String],
     articles_to_visit: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
-    artifacts_distribution: [
-        {
-            article: String,
-            artifact: String
-        }
-    ]
 });
 
 export default mongoose.model('Game', GameSchema);

@@ -249,7 +249,7 @@ export const getCurrentArticle = async (req, res) => {
 
 
 // Helper function to check if an article is a target article
-const checkTargetArticleFound = async (game, articleId, playerId) => {
+const checkTargetArticleFound = async (game, articleId, playerId, isDictate) => {
     try {
         if (!game || !articleId || !playerId) {
             console.log("Missing parameters in checkTargetArticleFound");
@@ -288,9 +288,16 @@ const checkTargetArticleFound = async (game, articleId, playerId) => {
 
                     if (!alreadyFound) {
                         // Add to found target articles
-                        game.players[playerIndex].found_target_articles.push(articleId);
-                        console.log(`Added ${articleTitle} to player's found target articles`);
-
+                        if(isDictate && game.players[playerIndex].dictateArticle && game.players[playerIndex].dictateArticle === article.title){
+                            game.players[playerIndex].found_target_articles.push(articleId);
+                            game.players[playerIndex].dictateArticle = "";
+                            console.log(`Added ${articleTitle} to player's found target articles`);
+                        }
+                        if(!isDictate){
+                            game.players[playerIndex].found_target_articles.push(articleId);
+                            game.players[playerIndex].dictateArticle = "";
+                            console.log(`Added ${articleTitle} to player's found target articles`);
+                        }
                         await game.save();
                     }
                 }
@@ -340,7 +347,7 @@ export const changeArticle = async (gameId, playerId, articleId) => {
 // Update the changeArticleFront function to use the helper
 export const changeArticleFront = async (req, res) => {
     try {
-        const { id_game, id_player, articleId } = req.body;
+        const { id_game, id_player, articleId, isDictate } = req.body;
 
         if (!id_game || !id_player || !articleId) {
             return res.status(400).json({ error: "Game ID, Player ID, and Article ID are required" });
@@ -396,7 +403,7 @@ export const changeArticleFront = async (req, res) => {
         game.players[playerIndex].articles_visited.push(articleObjectId);
 
         // Check if this is a target article
-        const isTargetArticle = await checkTargetArticleFound(game, articleObjectId, playerObjectId);
+        const isTargetArticle = await checkTargetArticleFound(game, articleObjectId, playerObjectId, isDictate);
         const resultat = Math.floor(Math.random() * 6) + 1;
 
         let setArtifact;
@@ -429,7 +436,8 @@ export const changeArticleFront = async (req, res) => {
             isTargetArticle,
             isLastArticle,
             isMinedArticle,
-            artifact: setArtifact
+            artifact: setArtifact,
+            targetArticlesFound: game.players[playerIndex].found_target_articles.length
         });
     } catch (error) {
         console.error("Error in changeArticleFront:", error);
@@ -500,7 +508,6 @@ export const distributeRandomArticles = async (req, res) => {
         console.log(`Found game with ID ${game._id} and code ${game.game_code}`);
 
         if (!game.articles_to_visit) game.articles_to_visit = [];
-        if (!game.artifacts_distribution) game.artifacts_distribution = [];
 
         for (let x = 0; x < number; x++) {
             const newArticle = await generateRandomArticle();
@@ -519,7 +526,6 @@ export const distributeRandomArticles = async (req, res) => {
 
                 if (!game.articles_to_visit.includes(generatedArticle._id)) {
                     game.articles_to_visit.push(generatedArticle._id);
-                    game.artifacts_distribution.push({ article: new ObjectId(generatedArticle._id), artifact: "GPS" });
                 }
             } catch (err) {
                 console.error("Erreur lors de la création de l'article :", err);
@@ -540,23 +546,13 @@ export const distributeRandomArticles = async (req, res) => {
                     return res.status(404).json({ message: "Jeu non trouvé lors de la tentative de résolution du conflit de version." });
                 }
 
-                // Copy the articles_to_visit and artifacts_distribution to the fresh game
+                // Copy the articles_to_visit to the fresh game
                 if (!freshGame.articles_to_visit) freshGame.articles_to_visit = [];
-                if (!freshGame.artifacts_distribution) freshGame.artifacts_distribution = [];
 
                 // Add any new articles that aren't already in the fresh game
                 for (const articleId of game.articles_to_visit) {
                     if (!freshGame.articles_to_visit.some(id => id.toString() === articleId.toString())) {
                         freshGame.articles_to_visit.push(articleId);
-                    }
-                }
-
-                // Add any new artifact distributions that aren't already in the fresh game
-                for (const distribution of game.artifacts_distribution) {
-                    if (!freshGame.artifacts_distribution.some(d =>
-                        d.article.toString() === distribution.article.toString() &&
-                        d.artifact === distribution.artifact)) {
-                        freshGame.artifacts_distribution.push(distribution);
                     }
                 }
 
@@ -902,15 +898,21 @@ export const backArtifact = async (req, res) => {
             return res.status(404).json({ error: "Player not found in this game" });
         }
 
+        // Check if there are enough articles in the history
         if (player.articles_visited.length < 2) {
             return res.status(400).json({ message: "Pas assez d'articles visités pour revenir en arrière." });
         }
 
+        // Get the previous article
         const previousArticle = player.articles_visited[player.articles_visited.length - 2];
+
+        // Update the current article in the database
         await changeArticle(game._id, player.player_id, previousArticle);
 
+        // Save the game state
         await game.save();
 
+        // Return the previous article to the frontend
         res.status(200).json({ message: "Retour à l'article précédent réussi.", previousArticle });
     } catch (error) {
         console.error("Error in backArtifact:", error);
@@ -1185,18 +1187,28 @@ export const dictatorArtifact = async (req, res) => {
     try {
         const [game, player] = await gameAndPlayers(id_game, id_player);
 
-        const notFoundArticle = game.articles_to_visit.filter(article => !player.articles_visited.includes(article));
+        const notFoundArticle = game.articles_to_visit.filter(article => !player.found_target_articles.includes(article));
+
+        if (notFoundArticle.length === 0) {
+            return res.status(404).json({ message: "Tous les articles ont déjà été trouvés." });
+        }
+
         const randNumber = Math.floor(Math.random() * notFoundArticle.length);
+        const dictateArticle = await Article.findById(notFoundArticle[randNumber]); // Ajout de await
 
-        const dictateArticle = notFoundArticle[randNumber];
-
-        res.status(200).json({ message: "Article à trouver.", dictateArticle: [dictateArticle] });
+        if (!dictateArticle) {
+            return res.status(404).json({ message: "Article non trouvé." });
+        }
+        player.dictateArticle = dictateArticle.title;
+        await game.save();
+        res.status(200).json({ message: "Article à trouver.", dictateArticle: dictateArticle.title });
 
     } catch (error) {
         console.error("Erreur dans dictatorArtifact :", error);
         res.status(500).json({ message: "Erreur serveur", details: error.message });
     }
 };
+
 
 
 export const getPublicGames = async (req, res) => {
@@ -1235,6 +1247,11 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
             throw new Error("Article non trouvé");
         }
 
+        const game = await Game.findById(id_game);
+        if (!game) {
+            throw new Error("Jeu non trouvé");
+        }
+
         // Filter artifacts based on enabled list if provided
         let positiveArtifacts = await Artifact.find({ positive: true });
         let negativeArtifacts = await Artifact.find({ positive: false });
@@ -1246,10 +1263,10 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
         if (enabledArtifacts && enabledArtifacts.length > 0) {
             positiveArtifacts = positiveArtifacts.filter(a => enabledArtifacts.includes(a.name));
             negativeArtifacts = negativeArtifacts.filter(a => enabledArtifacts.includes(a.name));
-            
+
             console.log('Filtered positive artifacts:', positiveArtifacts.map(a => a.name));
             console.log('Filtered negative artifacts:', negativeArtifacts.map(a => a.name));
-            
+
             // If no artifacts are enabled, use default artifacts
             if (positiveArtifacts.length === 0) {
                 positiveArtifacts = await Artifact.find({ positive: true });
@@ -1270,13 +1287,6 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
             randomArtifact = positiveArtifacts[randomPositive];
         }
 
-        const game = await Game.findById(id_game);
-        if (!game) {
-            throw new Error("Jeu non trouvé");
-        }
-
-        game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name });
-
         // Sauvegarder les modifications
         await game.save();
 
@@ -1286,7 +1296,6 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
         throw error; // Relance l'erreur pour la gérer dans distributeArtifacts
     }
 }
-
 
 
 export const distributeArtifacts = async (req, res) => {
@@ -1374,3 +1383,20 @@ export const setMineArtifacts = async (req, res) => {
         return res.status(500).json({ error: "Failed to setMineArtifacts", details: error.message });
     }
 };
+
+export const fetchLeaderBoard = async (req, res) => {
+    const {id_game} = req.body;
+
+    try {
+        const game = await Game.findById(id_game);
+
+        const sortedPlayers = game.players.sort((a, b) => {
+            return b.found_target_articles.length - a.found_target_articles.length;
+        });
+
+        return res.status(200).json({message: "Sort of players successfully", sortedPlayers});
+    } catch (e) {
+        console.error("Error fetchLeaderBoard:", error);
+        return res.status(500).json({ error: "Failed to fetchLeaderBoard", details: error.message });
+    }
+}

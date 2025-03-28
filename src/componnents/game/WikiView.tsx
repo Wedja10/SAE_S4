@@ -1,12 +1,11 @@
 import React, {useEffect, useState} from "react";
 import "../../style/game/WikiView.css";
-import { postRequest } from "../../backend/services/apiService.js";
+import {postRequest} from "../../backend/services/apiService.js";
 import {getApiUrl} from "../../utils/config";
 import Actions from "./Actions.tsx";
-import { Storage } from "../../utils/storage";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-hot-toast";
-import Articles from "./Articles.tsx";
+import {Storage} from "../../utils/storage";
+import {useNavigate} from "react-router-dom";
+import {toast} from "react-hot-toast";
 
 const WikiView: React.FC = () => {
   const [currentTitle, setCurrentTitle] = useState<string | null>(null);
@@ -15,6 +14,7 @@ const WikiView: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBlocked, setIsBlocked] = useState<boolean>(false);
   const [isMinePopupOpen, setIsMinePopupOpen] = useState<boolean>(false);
+  const [isDictate, setDictate] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [initializationAttempted, setInitializationAttempted] = useState<boolean>(false);
@@ -55,7 +55,7 @@ const WikiView: React.FC = () => {
         // Try to get valid IDs from localStorage directly
         const localGameId = localStorage.getItem('gameId');
         const localPlayerId = localStorage.getItem('playerId');
-        
+
         if (isValidObjectId(localGameId) && isValidObjectId(localPlayerId) && localGameId && localPlayerId) {
           console.log("Using localStorage values directly:", { localGameId, localPlayerId });
           Storage.setGameId(localGameId);
@@ -64,7 +64,7 @@ const WikiView: React.FC = () => {
           initializeArticle();
           return;
         }
-        
+
         if (retryCount < maxRetries) {
           retryCount++;
           console.log(`Retrying in ${retryInterval}ms...`);
@@ -162,20 +162,17 @@ const WikiView: React.FC = () => {
   // Fonction pour notifier la base de données lors de chaque changement d'article
   const updateArticleInDB = async (title: string, gameIdentifier?: string) => {
     try {
-      const gameId = gameIdentifier || Storage.getGameId() || undefined;
-      const gameCode = Storage.getGameCode() || undefined;
+      const gameId = gameIdentifier || Storage.getGameId();
+      const gameCode = Storage.getGameCode();
       const playerId = Storage.getPlayerId();
 
-      // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
 
-      // Validate IDs
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in updateArticleInDB");
         return;
       }
 
-      // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in updateArticleInDB:", { playerId });
         return;
@@ -183,111 +180,120 @@ const WikiView: React.FC = () => {
 
       console.log(`Creating article with title: ${title}`);
       const createdArticle = await postRequest(getApiUrl("/articles/create-article"), { title });
-      console.log('Created article response:', createdArticle.article);
 
+      if (!createdArticle?.article?._id) {
+        console.error("Failed to create article or get article ID");
+        return;
+      }
 
-      if (createdArticle) {
-        console.log(`Article created with ID: ${createdArticle.article._id}, updating player's current article`);
-        const response = await postRequest(getApiUrl("/games/change-article"), {
-          id_game: gameParam,
-          id_player: playerId,
-          articleId: createdArticle.article._id,
-        });
-        console.log("Article change response:", response);
+      console.log(`Article created with ID: ${createdArticle.article._id}, updating player's current article`);
+      let dictateCondition = false
+      if(isDictate !== ""){
+        dictateCondition = true;
+      }
+      const response = await postRequest(getApiUrl("/games/change-article"), {
+        id_game: gameParam,
+        id_player: playerId,
+        articleId: createdArticle.article._id,
+        isDictate: dictateCondition
+      });
 
-        if(response && response.isMinedArticle){
-          alert("Cet article était miné");
-          await handleMineArtifact();
+      if (!response) return;
+
+      if (response.isMinedArticle) {
+        alert("Cet article était miné");
+        await handleMineArtifact();
+      }
+
+      const shouldUpdateScore = (isDictate !== "" && response.title === isDictate) ||
+          (isDictate === "" && (response.isLastArticle || response.isTargetArticle));
+
+      if (shouldUpdateScore) {
+        let message = "";
+        if (response.isTargetArticle && isDictate === "") {
+          message = `Félicitations! Vous avez trouvé un article cible: ${title} - ${isDictate}`;
+        } else if (response.title === isDictate) {
+          message = `Félicitations! Vous avez trouvé l'article dicté: ${title}`;
+          setDictate("");
+        } else if (response.isTargetArticle && isDictate !== ""){
+          alert('La dictature est en marche !');
+        }
+        if (response.isLastArticle && isDictate === "") {
+          const leaderBoard = await postRequest(getApiUrl("/games/leaderBoard"), {
+            id_game: gameParam
+          });
+          message = `Félicitations! Vous avez gagné ${leaderBoard.message}`;
         }
 
-        // Check if the player won
-        if (response && response.isLastArticle) {
-          alert(`Félicitations! Vous avez gagné`);
-          const scoreUpdateEvent = new CustomEvent('playerScoreUpdated', {
-            detail: { gameId, playerId }
-          });
-          window.dispatchEvent(scoreUpdateEvent);
-        } else if(response && response.isTargetArticle){
-          alert(`Félicitations! Vous avez trouvé un article cible: ${title}`);
+        if (message) alert(message);
+      }
 
-          const scoreUpdateEvent = new CustomEvent('playerScoreUpdated', {
-            detail: { gameId, playerId }
-          });
-          window.dispatchEvent(scoreUpdateEvent);
-        }
-
+      if (response.artifact) {
         const artifactHandlers: Record<string, () => Promise<void>> = {
           Snail: handleSnailClick,
           Disorienter: handleDisorienterClick,
           Teleporter: handleTeleportClick,
           Eraser: handleEraserClick,
+          Dictator: handleDictator
         };
 
-        if (response?.artifact) {
-          if (artifactHandlers[response.artifact]) {
-            alert(`${response.artifact.toUpperCase()} ARTIFACT`);
-            await artifactHandlers[response.artifact]();
-          } else if (response.artifact === "Dictator") {
-            console.log("DICTATOR ARTIFACT");
-          } else {
-            const artifactAdded = new CustomEvent("artifactAdded", {
-              detail: { title: response.artifact },
-            });
-            window.dispatchEvent(artifactAdded);
-          }
+        if (artifactHandlers[response.artifact]) {
+          alert(`${response.artifact.toUpperCase()} ARTIFACT`);
+          await artifactHandlers[response.artifact]();
+        } else {
+          window.dispatchEvent(new CustomEvent("artifactAdded", {
+            detail: { title: response.artifact }
+          }));
         }
-
-        // Dispatch a custom event to notify that articles have been updated
-        const articleUpdateEvent = new CustomEvent('articleUpdated', {
-          detail: {
-            title: title,
-            articleId: createdArticle._id,
-            playerId: playerId,
-            gameId: gameParam,
-            isNewVisit: true,
-            isTargetArticle: response?.isTargetArticle || false,
-            isLastArticle: response?.isLastArticle || false,
-            idMinedArticle: response?.idMinedArticle || false,
-            artifact: response?.artifact || null
-          }
-        });
-        window.dispatchEvent(articleUpdateEvent);
-
-        return response;
-      } else {
-        console.error("Failed to create article or get article ID");
       }
+
+      window.dispatchEvent(new CustomEvent('articleUpdated', {
+        detail: {
+          title,
+          articleId: createdArticle.article._id,
+          playerId,
+          gameId: gameParam,
+          isNewVisit: true,
+          isTargetArticle: response.isTargetArticle || false,
+          isLastArticle: response.isLastArticle || false,
+          idMinedArticle: response.idMinedArticle || false,
+          artifact: response.artifact || null
+        }
+      }));
+
+      return response;
     } catch (error) {
       console.error("Error updating article in database:", error);
-      throw error; // Rethrow to allow handling by caller
+      throw error;
     }
   };
+
 
   const getCurrentArticle = async(gameIdentifier?: string) => {
     try {
       const gameParam = gameIdentifier || Storage.getGameId();
       const playerId = Storage.getPlayerId();
-      
+
       console.log("Getting current article with IDs:", { gameId: gameParam, playerId });
-      
+
       if (!gameParam || !playerId) {
         console.error("Missing game ID or player ID in getCurrentArticle");
         return null;
       }
-      
+
       console.log("Sending current-article request with:", { gameParam, playerId });
-      
+
       try {
         const response = await postRequest(getApiUrl("/games/current-article"), {
           id_game: gameParam,
           id_player: playerId
         });
-        
+
         console.log("Current article response:", response);
         return response;
       } catch (requestError) {
         console.error("Error in current-article request:", requestError);
-        
+
         // Check if the error is "Player not found in this game"
         if (requestError instanceof Error && requestError.message.includes("Player not found in this game")) {
           console.log("Attempting to join the game...");
@@ -300,20 +306,19 @@ const WikiView: React.FC = () => {
                 playerId: playerId
               });
               console.log("Successfully joined the game, retrying fetch...");
-              
+
               // Retry fetching current article
-              const retryResponse = await postRequest(getApiUrl("/games/current-article"), {
+              return await postRequest(getApiUrl("/games/current-article"), {
                 id_game: gameParam,
                 id_player: playerId
               });
-              return retryResponse;
             }
           } catch (joinError) {
             console.error("Error joining the game:", joinError);
             return null;
           }
         }
-        
+
         return null;
       }
     } catch (e){
@@ -322,37 +327,32 @@ const WikiView: React.FC = () => {
     }
   };
 
-  // Helper function for ObjectId validation
-  const isValidObjectId = (id: string | null): boolean => {
-    if (!id) return false;
-    return /^[0-9a-fA-F]{24}$/.test(id);
-  };
 
   const teleportArtifact = async () => {
     try {
       const gameId = Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
-      
+
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in teleportArtifact");
         return;
       }
-      
+
       // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in teleportArtifact:", { playerId });
         return;
       }
-      
+
       const response = await postRequest(getApiUrl("/games/teleporter-artifact"), {
         id_game: gameParam,
         id_player: playerId
       });
-      
+
       if (response && response.title) {
         setCurrentTitle(response.title);
         await fetchWikiContent(response.title);
@@ -367,29 +367,36 @@ const WikiView: React.FC = () => {
       const gameId = Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
-      
+
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in backArtifact");
         return;
       }
-      
+
       // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in backArtifact:", { playerId });
         return;
       }
-      
+
+      // Call the backend to get the previous article
       const response = await postRequest(getApiUrl("/games/back-artifact"), {
         id_game: gameParam,
-        id_player: playerId
+        id_player: playerId,
       });
-      
-      if (response && response.title) {
-        setCurrentTitle(response.title);
-        await fetchWikiContent(response.title);
+
+      if (response && response.previousArticle) {
+        // Update the UI with the previous article
+        setCurrentTitle(response.previousArticle);
+        await fetchWikiContent(response.previousArticle);
+
+        // Optionally, you can update the history if needed
+        // setHistory((prevHistory) => [...prevHistory, response.previousArticle]);
+      } else {
+        console.error("Failed to get the previous article from the backend");
       }
     } catch (error) {
       console.error("Error in backArtifact:", error);
@@ -401,26 +408,26 @@ const WikiView: React.FC = () => {
       const gameId = Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
-      
+
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in eraserArtifact");
         return;
       }
-      
+
       // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in eraserArtifact:", { playerId });
         return;
       }
-      
+
       const response = await postRequest(getApiUrl("/games/eraser-artifact"), {
         id_game: gameParam,
         id_player: playerId
       });
-      
+
       if (response && response.title) {
         setCurrentTitle(response.title);
         await fetchWikiContent(response.title);
@@ -440,23 +447,23 @@ const WikiView: React.FC = () => {
 
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
-      
+
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in mineArtifact");
         return;
       }
-      
+
       // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in mineArtifact:", { playerId });
         return;
       }
-      
+
       const response = await postRequest(getApiUrl("/games/mine-artifact"), {
         id_game: gameParam,
         id_player: playerId
       });
-      
+
       if (response && response.title) {
         setCurrentTitle(response.title);
         await fetchWikiContent(response.title);
@@ -473,26 +480,26 @@ const WikiView: React.FC = () => {
       const gameId = Storage.getGameId() || undefined;
       const gameCode = Storage.getGameCode() || undefined;
       const playerId = Storage.getPlayerId();
-      
+
       // Use either gameId or gameCode
       const gameParam = gameId || gameCode;
-      
+
       if (!gameParam || !playerId) {
         console.error("Missing game ID/code or player ID in disorienterArtifact");
         return;
       }
-      
+
       // Ensure player ID is a valid MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(playerId)) {
         console.error("Invalid player ID format in disorienterArtifact:", { playerId });
         return;
       }
-      
+
       const response = await postRequest(getApiUrl("/games/disorienter-artifact"), {
         id_game: gameParam,
         id_player: playerId
       });
-      
+
       if (response && response.title) {
         setCurrentTitle(response.title);
         await fetchWikiContent(response.title);
@@ -571,20 +578,13 @@ const WikiView: React.FC = () => {
   };
 
 
+
   const handleSnailClick = async() => {
     setIsBlocked(true);
     setTimeout(() => {
       setIsBlocked(false);
     }, 10000);
   };
-
-  async function getRandomWikipediaTitle(): Promise<string> {
-    const url = "https://fr.wikipedia.org/api/rest_v1/page/random/title";
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
-    const data = await response.json();
-    return data.items[0].title;
-  }
 
   async function fetchWikiContent(pageTitle: string): Promise<void> {
     setIsLoading(true);
@@ -593,13 +593,13 @@ const WikiView: React.FC = () => {
     try {
       console.log(`Fetching Wikipedia content for: ${pageTitle}`);
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         const errorMessage = `HTTP Error: ${response.status} - ${response.statusText}`;
         console.error(errorMessage);
         throw new Error(errorMessage);
       }
-      
+
       const html = await response.text();
       console.log(`Successfully fetched content for: ${pageTitle}`);
 
@@ -627,22 +627,22 @@ const WikiView: React.FC = () => {
       alert("Les liens sont temporairement désactivés");
       return;
     }
-    
+
     const link = (event.target as HTMLElement).closest("a");
     if (link && link.href.includes("/wiki/")) {
       event.preventDefault();
-      
+
       try {
         const newTitle = decodeURIComponent(link.href.split("/wiki/")[1]);
         console.log(`Link clicked: ${newTitle}`);
-        
+
         // Update UI immediately
         setCurrentTitle(newTitle);
         setIsLoading(true);
-        
+
         // Start fetching content
         const contentPromise = fetchWikiContent(newTitle);
-        
+
         // Update the database in parallel
         try {
           await updateArticleInDB(newTitle);
@@ -651,7 +651,7 @@ const WikiView: React.FC = () => {
           console.error(`Failed to update article in database: ${newTitle}`, dbError);
           // Continue with content display even if DB update fails
         }
-        
+
         // Wait for content to finish loading
         await contentPromise;
       } catch (error) {
@@ -670,6 +670,19 @@ const WikiView: React.FC = () => {
     })
     setIsMinePopupOpen(false);
   };
+
+  const handleDictator = async () => {
+    const response = await postRequest(getApiUrl("/games/dictator-artifact"), {
+      id_game: gameId, id_player: playerId
+    })
+    if(response){
+      alert('Vous êtes dicté de trouver : ' + response.dictateArticle);
+      setDictate(response.dictateArticle);
+    } else {
+      alert("Problème dans l'implémentation de dictator");
+    }
+
+  }
 
   return (
       <div className="wiki-container">

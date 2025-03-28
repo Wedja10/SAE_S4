@@ -18,7 +18,8 @@ import {
     getFoundTargetArticles,
     getPublicGames,
     getStorableArticfactPlayer,
-    setMineArtifacts
+    setMineArtifacts,
+    fetchLeaderBoard
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -81,5 +82,6 @@ router.post("/dictator-artifact", dictatorArtifact);
 router.post("/teleporter-artifact", teleporterArtifact);
 router.post("/join", joinLobby);
 router.post("/distribute-artifacts", distributeArtifacts);
+router.post("/leaderBoard", fetchLeaderBoard);
 
 export default router;
