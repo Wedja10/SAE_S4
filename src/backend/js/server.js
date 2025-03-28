@@ -177,8 +177,8 @@ async function handleGameStateChange(gameCode, event) {
                     // If no artifacts are enabled, use all artifacts
                     if (enabledArtifactsArray.length === 0) {
                         game.settings.enabled_artifacts = [
-                            "GPS", "BACK", "TELEPORT", "MINE", "SNAIL", 
-                            "ERASER", "DISORIENTATOR", "DICTATOR"
+                            "GPS", "Backtrack", "Teleporter", "Mine", "Snail",
+                            "Eraser", "Disorienter", "Dictator"
                         ];
                         console.log('No artifacts enabled, using all artifacts');
                     } else {
@@ -189,8 +189,8 @@ async function handleGameStateChange(gameCode, event) {
                 } else {
                     // If no enabled_artifacts provided, use all artifacts
                     game.settings.enabled_artifacts = [
-                        "GPS", "BACK", "TELEPORT", "MINE", "SNAIL", 
-                        "ERASER", "DISORIENTATOR", "DICTATOR"
+                        "GPS", "Backtrack", "Teleporter", "Mine", "Snail",
+                        "Eraser", "Disorienter", "Dictator"
                     ];
                     console.log('No enabled_artifacts provided, using all artifacts');
                 }
@@ -233,8 +233,8 @@ async function handleGameStateChange(gameCode, event) {
                             if (event.data.enabledArtifacts.length === 0) {
                                 // Default list of all artifacts
                                 game.settings.enabled_artifacts = [
-                                    "GPS", "BACK", "TELEPORT", "MINE", "SNAIL", 
-                                    "ERASER", "DISORIENTATOR", "DICTATOR"
+                                    "GPS", "Backtrack", "Teleporter", "Mine", "Snail",
+                                    "Eraser", "Disorienter", "Dictator"
                                 ];
                                 console.log('No artifacts provided, using all artifacts');
                             } else {
@@ -264,8 +264,8 @@ async function handleGameStateChange(gameCode, event) {
                             
                             // Default list of all artifacts
                             game.settings.enabled_artifacts = [
-                                "GPS", "BACK", "TELEPORT", "MINE", "SNAIL", 
-                                "ERASER", "DISORIENTATOR", "DICTATOR"
+                                "GPS", "Backtrack", "Teleporter", "Mine", "Snail",
+                                "Eraser", "Disorienter", "Dictator"
                             ];
                             
                             console.log('No enabledArtifacts provided, using all artifacts');

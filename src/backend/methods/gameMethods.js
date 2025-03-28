@@ -1229,7 +1229,7 @@ export const getPublicGames = async (req, res) => {
     }
 };
 
-async function setArtifactDistribution(id_game, article_title, enabledArtifacts = []) {
+async function setArtifactDistribution(id_game, article_title) {
     try {
         if (!id_game) {
             throw new Error("ID du jeu requis");
@@ -1238,8 +1238,6 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
         if (!article_title) {
             throw new Error("Titre d'article requis");
         }
-
-        console.log('setArtifactDistribution called with enabledArtifacts:', enabledArtifacts);
 
         // Trouver l'article
         const article = await Article.findOne({ title: article_title });
@@ -1252,50 +1250,46 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
             throw new Error("Jeu non trouvé");
         }
 
-        // Filter artifacts based on enabled list if provided
-        let positiveArtifacts = await Artifact.find({ positive: true });
-        let negativeArtifacts = await Artifact.find({ positive: false });
+        // Récupérer les artefacts autorisés depuis les paramètres du jeu
+        const enabledArtifacts = game.settings.enabled_artifacts || [];
 
-        console.log('All positive artifacts:', positiveArtifacts.map(a => a.name));
-        console.log('All negative artifacts:', negativeArtifacts.map(a => a.name));
-
-        // If enabledArtifacts is provided and not empty, filter the artifacts
-        if (enabledArtifacts && enabledArtifacts.length > 0) {
-            positiveArtifacts = positiveArtifacts.filter(a => enabledArtifacts.includes(a.name));
-            negativeArtifacts = negativeArtifacts.filter(a => enabledArtifacts.includes(a.name));
-
-            console.log('Filtered positive artifacts:', positiveArtifacts.map(a => a.name));
-            console.log('Filtered negative artifacts:', negativeArtifacts.map(a => a.name));
-
-            // If no artifacts are enabled, use default artifacts
-            if (positiveArtifacts.length === 0) {
-                positiveArtifacts = await Artifact.find({ positive: true });
-                console.warn("No positive artifacts enabled, using all positive artifacts");
-            }
-            if (negativeArtifacts.length === 0) {
-                negativeArtifacts = await Artifact.find({ positive: false });
-                console.warn("No negative artifacts enabled, using all negative artifacts");
-            }
+        if (enabledArtifacts.length === 0) {
+            throw new Error("Aucun artefact autorisé dans les paramètres du jeu");
         }
+
+        // Filtrer uniquement les artefacts autorisés
+        let positiveArtifacts = await Artifact.find({ positive: true, name: { $in: enabledArtifacts } });
+        let negativeArtifacts = await Artifact.find({ positive: false, name: { $in: enabledArtifacts } });
+
+        if (positiveArtifacts.length === 0 && negativeArtifacts.length === 0) {
+            throw new Error("Aucun artefact valide trouvé parmi ceux autorisés");
+        }
+
+        console.log('Filtered positive artifacts:', positiveArtifacts.map(a => a.name));
+        console.log('Filtered negative artifacts:', negativeArtifacts.map(a => a.name));
 
         const randomPositive = Math.floor(Math.random() * positiveArtifacts.length);
         const randomNegative = Math.floor(Math.random() * negativeArtifacts.length);
+
         let randomArtifact;
-        if(article.popular === true) {
+        if (article.popular === true && negativeArtifacts.length > 0) {
             randomArtifact = negativeArtifacts[randomNegative];
-        } else {
+        } else if (positiveArtifacts.length > 0) {
             randomArtifact = positiveArtifacts[randomPositive];
+        } else {
+            throw new Error("Aucun artefact disponible après filtrage");
         }
 
         // Sauvegarder les modifications
         await game.save();
 
-        return randomArtifact.name; // Retourne le nom de l'artefact au lieu d'envoyer une réponse HTTP
+        return randomArtifact.name; // Retourne le nom de l'artefact
     } catch (error) {
         console.error("Erreur lors de la distribution d'un artefact:", error);
-        throw error; // Relance l'erreur pour la gérer dans distributeArtifacts
+        throw error; // Relance l'erreur pour une gestion externe
     }
 }
+
 
 
 export const distributeArtifacts = async (req, res) => {

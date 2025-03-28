@@ -253,14 +253,14 @@ export const OptionsPanelSolo = () => {
 
   const [unlimitedTime, setUnlimitedTime] = useState(true);
   const [enabledArtifacts, setEnabledArtifacts] = useState<Record<string, boolean>>({
-    "GPS": true,
-    "BACK": true,
-    "TELEPORT": true,
-    "MINE": true,
-    "SNAIL": true,
-    "ERASER": true,
-    "DISORIENTATOR": true,
-    "DICTATOR": true
+      "GPS": true,
+      "Backtrack": true,
+      "Teleporter": true,
+      "Mine": true,
+      "Snail": true,
+      "Eraser": true,
+      "Disorienter": true,
+      "Dictator": true
   });
 
   const handleUnlimitedTime = () => {
@@ -319,6 +319,7 @@ export const ArtefactsList = (props: {
   isHost?: boolean
 }) => {
   const { artefacts, enabledArtifacts = {}, onToggleArtifact, isHost = false } = props;
+    const artefactImages: string[] = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"];
   
   return (
     <div className='ArtefactsListContainer'>
@@ -326,7 +327,8 @@ export const ArtefactsList = (props: {
         {artefacts.map((artefact, index) => (
           <Artefact 
             key={index} 
-            artefact={artefact} 
+            artefact={artefact}
+            image={artefactImages[index]}
             enabled={artefact in enabledArtifacts ? enabledArtifacts[artefact] : true}
             onToggle={onToggleArtifact}
             isHost={isHost}
@@ -348,6 +350,7 @@ interface Artefact {
 
 export const Artefact = (props: { 
   artefact: string,
+    image: string,
   enabled?: boolean,
   onToggle?: (artifact: string, enabled: boolean) => void,
   isHost?: boolean
@@ -382,7 +385,7 @@ export const Artefact = (props: {
         )}
         <img
           className="ArtefactImage"
-          src={`/assets/Artefacts/${artefact}.png`}
+          src={`/assets/Artefacts/${props.image}.png`}
           alt="Artefact"
           style={{
             height: '100px',
@@ -400,7 +403,7 @@ export const Artefact = (props: {
         <div className="artifact-info-header">
           <img
             className="ArtefactImage-small"
-            src={`/assets/Artefacts/${artefact}.png`}
+            src={`/assets/Artefacts/${props.image}.png`}
             alt={artefact}
             style={{
               height: '40px',

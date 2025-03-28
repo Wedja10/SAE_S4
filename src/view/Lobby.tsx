@@ -39,13 +39,13 @@ const Lobby: React.FC = () => {
     allow_join: true,
     enabled_artifacts: {
       "GPS": true,
-      "BACK": true,
-      "TELEPORT": true,
-      "MINE": true,
-      "SNAIL": true,
-      "ERASER": true,
-      "DISORIENTATOR": true,
-      "DICTATOR": true
+      "Backtrack": true,
+      "Teleporter": true,
+      "Mine": true,
+      "Snail": true,
+      "Eraser": true,
+      "Disorienter": true,
+      "Dictator": true
     }
   });
   const [isHost, setIsHost] = useState(false);
@@ -256,13 +256,13 @@ const Lobby: React.FC = () => {
           allow_join: true,
           enabled_artifacts: {
             "GPS": true,
-            "BACK": true,
-            "TELEPORT": true,
-            "MINE": true,
-            "SNAIL": true,
-            "ERASER": true,
-            "DISORIENTATOR": true,
-            "DICTATOR": true
+            "Backtrack": true,
+            "Teleporter": true,
+            "Mine": true,
+            "Snail": true,
+            "Eraser": true,
+            "Disorienter": true,
+            "Dictator": true
           }
         };
         
@@ -285,13 +285,13 @@ const Lobby: React.FC = () => {
               // Start with all artifacts enabled by default
               const enabledArtifactsObj = {
                 "GPS": true,
-                "BACK": true,
-                "TELEPORT": true,
-                "MINE": true,
-                "SNAIL": true,
-                "ERASER": true,
-                "DISORIENTATOR": true,
-                "DICTATOR": true
+                "Backtrack": true,
+                "Teleporter": true,
+                "Mine": true,
+                "Snail": true,
+                "Eraser": true,
+                "Disorienter": true,
+                "Dictator": true
               };
               
               // If the array is empty, keep all artifacts enabled
@@ -496,7 +496,8 @@ const Lobby: React.FC = () => {
     }
   };
 
-  const artefacts: string[] = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"];
+  const artefacts: string[] = ["GPS", "Backtrack", "Teleporter", "Mine", "Snail",
+    "Eraser", "Disorienter", "Dictator"];
 
   const normalizePlayerId = (player: any): string => {
     if (typeof player.id === 'string') return player.id;

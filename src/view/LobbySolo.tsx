@@ -4,16 +4,17 @@ import {ArtefactsList, OptionsPanelSolo} from "../componnents/lobby/Artefacts.ts
 import { useState } from "react";
 
 const Lobby: React.FC = () => {
-  const artefacts: string[] = ["GPS", "BACK", "TELEPORT", "MINE", "SNAIL", "ERASER", "DISORIENTATOR", "DICTATOR"]; // Artefacts utilisés
+  const artefacts: string[] = ["GPS", "Backtrack", "Teleporter", "Mine", "Snail",
+    "Eraser", "Disorienter", "Dictator"]; // Artefacts utilisés
   const [enabledArtifacts, setEnabledArtifacts] = useState<Record<string, boolean>>({
     "GPS": true,
-    "BACK": true,
-    "TELEPORT": true,
-    "MINE": true,
-    "SNAIL": true,
-    "ERASER": true,
-    "DISORIENTATOR": true,
-    "DICTATOR": true
+    "Backtrack": true,
+    "Teleporter": true,
+    "Mine": true,
+    "Snail": true,
+    "Eraser": true,
+    "Disorienter": true,
+    "Dictator": true
   });
 
   const handleArtifactToggle = (artifact: string, enabled: boolean) => {
