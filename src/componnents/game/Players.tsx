@@ -21,11 +21,6 @@ const Players: React.FC = () => {
     const [showPlayer, setShowPlayer] = useState(0);
     const navigate = useNavigate();
 
-    const isValidObjectId = (id: string | null): boolean => {
-        if (!id) return false;
-        return /^[0-9a-fA-F]{24}$/.test(id);
-    };
-
     const fetchAllData = async () => {
         try {
             const gameId = Storage.getGameId();

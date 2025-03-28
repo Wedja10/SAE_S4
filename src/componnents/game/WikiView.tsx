@@ -327,11 +327,6 @@ const WikiView: React.FC = () => {
     }
   };
 
-  // Helper function for ObjectId validation
-  const isValidObjectId = (id: string | null): boolean => {
-    if (!id) return false;
-    return /^[0-9a-fA-F]{24}$/.test(id);
-  };
 
   const teleportArtifact = async () => {
     try {
@@ -590,14 +585,6 @@ const WikiView: React.FC = () => {
       setIsBlocked(false);
     }, 10000);
   };
-
-  async function getRandomWikipediaTitle(): Promise<string> {
-    const url = "https://fr.wikipedia.org/api/rest_v1/page/random/title";
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
-    const data = await response.json();
-    return data.items[0].title;
-  }
 
   async function fetchWikiContent(pageTitle: string): Promise<void> {
     setIsLoading(true);

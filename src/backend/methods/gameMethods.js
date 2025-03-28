@@ -508,7 +508,6 @@ export const distributeRandomArticles = async (req, res) => {
         console.log(`Found game with ID ${game._id} and code ${game.game_code}`);
 
         if (!game.articles_to_visit) game.articles_to_visit = [];
-        if (!game.artifacts_distribution) game.artifacts_distribution = [];
 
         for (let x = 0; x < number; x++) {
             const newArticle = await generateRandomArticle();
@@ -547,23 +546,13 @@ export const distributeRandomArticles = async (req, res) => {
                     return res.status(404).json({ message: "Jeu non trouvé lors de la tentative de résolution du conflit de version." });
                 }
 
-                // Copy the articles_to_visit and artifacts_distribution to the fresh game
+                // Copy the articles_to_visit to the fresh game
                 if (!freshGame.articles_to_visit) freshGame.articles_to_visit = [];
-                if (!freshGame.artifacts_distribution) freshGame.artifacts_distribution = [];
 
                 // Add any new articles that aren't already in the fresh game
                 for (const articleId of game.articles_to_visit) {
                     if (!freshGame.articles_to_visit.some(id => id.toString() === articleId.toString())) {
                         freshGame.articles_to_visit.push(articleId);
-                    }
-                }
-
-                // Add any new artifact distributions that aren't already in the fresh game
-                for (const distribution of game.artifacts_distribution) {
-                    if (!freshGame.artifacts_distribution.some(d =>
-                        d.article.toString() === distribution.article.toString() &&
-                        d.artifact === distribution.artifact)) {
-                        freshGame.artifacts_distribution.push(distribution);
                     }
                 }
 
@@ -1297,10 +1286,6 @@ async function setArtifactDistribution(id_game, article_title, enabledArtifacts 
         } else {
             randomArtifact = positiveArtifacts[randomPositive];
         }
-
-
-
-        game.artifacts_distribution.push({ article: article_title, artifact: randomArtifact.name });
 
         // Sauvegarder les modifications
         await game.save();
