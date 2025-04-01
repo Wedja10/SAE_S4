@@ -241,8 +241,10 @@ const WikiView: React.FC = () => {
           alert(`${response.artifact.toUpperCase()} ARTIFACT`);
           await artifactHandlers[response.artifact]();
           await postRequest(getApiUrl("/games/delete-artefact"), {
-            id_game: gameId, id_player: playerId, artifact: response.artifact
-          })
+            id_game: gameId,
+            id_player: playerId, // Doit être défini et valide
+            artifact: "Mine"
+          });
         } else {
           window.dispatchEvent(new CustomEvent("artifactAdded", {
             detail: { title: response.artifact }
@@ -529,8 +531,10 @@ const WikiView: React.FC = () => {
       await fetchWikiContent(newTitle);
     }
     await postRequest(getApiUrl("/games/delete-artefact"), {
-      id_game: gameId, id_player: playerId, artifact: "Backtrack"
-    })
+      id_game: gameId,
+      id_player: playerId, // Doit être défini et valide
+      artifact: "Mine"
+    });
   };
 
   const handleEraserClick = async () => {
@@ -549,9 +553,6 @@ const WikiView: React.FC = () => {
       setCurrentTitle(newTitle);
       await fetchWikiContent(newTitle);
     }
-    await postRequest(getApiUrl("/games/delete-artefact"), {
-      id_game: gameId, id_player: playerId, artifact: "Mine"
-    })
   };
 
   const handleMineClick = async () => {
@@ -673,11 +674,28 @@ const WikiView: React.FC = () => {
   };
 
   const handleArticleSelect = async (title: string) => {
-    alert(`Vous avez sélectionné l'article : ${title}`);
-    await postRequest(getApiUrl("/games/set-mine"), {
-      id_game: gameId, title: title
-    })
-    setIsMinePopupOpen(false);
+    try {
+      const response = await postRequest(getApiUrl("/games/set-mine"), { // Changez le endpoint
+        id_game: gameId,
+        id_player: playerId, // Ajoutez le playerId
+        title: title
+      });
+
+      if(response && !response.isArticleToFind) {
+        alert(`Vous avez sélectionné l'article : ${title}`);
+        await postRequest(getApiUrl("/games/delete-artefact"), {
+          id_game: gameId,
+          id_player: playerId,
+          artifact: "Mine"
+        });
+        setIsMinePopupOpen(false);
+      } else if(response.isArticleToFind){
+        console.log("Cette article ne peut pas être miné")
+      }
+    } catch (error) {
+      console.error("Error setting mine:", error);
+      alert("Erreur lors de la pose de la mine");
+    }
   };
 
   const handleDictator = async () => {

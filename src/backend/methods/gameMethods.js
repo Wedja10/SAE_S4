@@ -852,6 +852,9 @@ export const gameAndPlayers = async (id_game, id_player) => {
         const playerObjectId = new mongoose.Types.ObjectId(id_player);
         const player = game.players.find(p => p.player_id.equals(playerObjectId));
         if (!player) {
+            console.log("gameAndPlayers - gameId:", id_game, "playerId:", id_player);
+            console.log("gameAndPlayers - game data:", game);
+            console.log("gameAndPlayers - players list:", game?.players);
             throw new Error("Joueur non trouvé dans ce jeu.");
         }
 
@@ -1365,13 +1368,25 @@ export const setMineArtifacts = async (req, res) => {
             game.mined_article = [];
         }
 
+
         const formattedTitle = title.replace(/ /g, "_");
+
+        const articles = await Article.find({ title: formattedTitle });
+        if (articles.length === 0) {
+            return res.status(404).json({ error: "Article not found" });
+        }
+
+        const id_article = articles[0]._id;
+
+        if (game.articles_to_visit && game.articles_to_visit.includes(id_article.toString())) {
+            return res.status(200).json({ isArticleToFind: true });
+        }
 
         game.mined_article.push(formattedTitle);
 
         await game.save();
 
-        return res.status(200).json({ message: "Artifact added successfully", game });
+        return res.status(200).json({ message: "Artifact added successfully", game, isArticleToFind: false });
     } catch (error) {
         console.error("Error setMineArtifacts:", error);
         return res.status(500).json({ error: "Failed to setMineArtifacts", details: error.message });
@@ -1398,22 +1413,67 @@ export const fetchLeaderBoard = async (req, res) => {
 export const deleteUsedArtifact = async (req, res) => {
     const { id_game, id_player, artifact } = req.body;
 
-    try {
-        const [game, player] = await gameAndPlayers(id_game, id_player);
+    console.log("deleteUsedArtifact request body:", req.body); // Ajout pour le débogage
 
-        // Trouver l'index de l'artefact
+    try {
+        if (!id_game || !id_player || !artifact) {
+            return res.status(400).json({ error: "Game ID, Player ID and Artifact are required" });
+        }
+
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        // Trouver le joueur directement dans le jeu
+        const player = game.players.find(p => p.player_id.toString() === id_player);
+        if (!player) {
+            return res.status(404).json({ error: "Player not found in this game" });
+        }
+
+        // Supprimer l'artefact
         const index = player.artifacts.indexOf(artifact);
         if (index !== -1) {
-            player.artifacts.splice(index, 1); // Suppression de l'artefact
+            player.artifacts.splice(index, 1);
         } else {
             return res.status(404).json({ error: "Artifact not found" });
         }
 
         await game.save();
 
-        return res.status(200).json({ message: "Deleted the artifact successfully", game });
+        return res.status(200).json({ message: "Artifact deleted successfully" });
     } catch (e) {
         console.error("Error deleteUsedArtifact:", e);
-        return res.status(500).json({ error: "Failed to deleteUsedArtifact", details: e.message });
+        return res.status(500).json({ error: "Failed to delete artifact", details: e.message });
     }
 };
+
+
+export const isArticleToFind = async (req, res) => {
+    const { id_game, article } = req.body;
+
+    try {
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        const articles = await Article.find({ title: article });
+        if (articles.length === 0) {
+            return res.status(404).json({ error: "Article not found" });
+        }
+
+        const id_article = articles[0]._id;
+
+        if (game.articles_to_visit && game.articles_to_visit.includes(id_article.toString())) {
+            return res.status(200).json({ isArticleToFind: true });
+        }
+
+        return res.status(200).json({ isArticleToFind: false });
+
+    } catch (e) {
+        console.error("Error in isArticleToFind:", e);
+        return res.status(500).json({ error: "Failed to check article", details: e.message });
+    }
+};
+
