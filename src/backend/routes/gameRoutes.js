@@ -20,7 +20,8 @@ import {
     getStorableArticfactPlayer,
     setMineArtifacts,
     fetchLeaderBoard,
-    deleteUsedArtifact
+    deleteUsedArtifact,
+    isArticleToFind
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -85,5 +86,6 @@ router.post("/join", joinLobby);
 router.post("/distribute-artifacts", distributeArtifacts);
 router.post("/leaderBoard", fetchLeaderBoard);
 router.post("/delete-artefact", deleteUsedArtifact);
+router.post("/article-to-find", deleteUsedArtifact);
 
 export default router;
