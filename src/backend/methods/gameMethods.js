@@ -1477,3 +1477,22 @@ export const isArticleToFind = async (req, res) => {
     }
 };
 
+
+export const getMaxTime = async (req, res) => {
+    const {id_game} = req.body;
+
+    try{
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        if(game.settings.time_limit === null){
+            return res.status(200).json({ isInfinite: true });
+        }
+        return res.status(200).json({ isInfinite: false, time:  game.settings.time_limit});
+    } catch (e) {
+        console.error("Error in getMaxTime:", e);
+        return res.status(500).json({ error: "Failed to check max time", details: e.message });
+    }
+}
