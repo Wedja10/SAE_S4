@@ -791,22 +791,24 @@ const WikiView: React.FC = () => {
 
   const handleArticleSelect = async (title: string) => {
     try {
-      const response = await postRequest(getApiUrl("/games/set-mine"), { // Changez le endpoint
+      const response = await postRequest(getApiUrl("/games/set-mine"), {
         id_game: gameId,
-        id_player: playerId, // Ajoutez le playerId
-        title: title
+        id_player: playerId,
+        title: title.replace(/_/g, " ") // Convertir les underscores en espaces d'abord
       });
 
-      if(response && !response.isArticleToFind) {
-        alert(`Vous avez sélectionné l'article : ${title}`);
-        await postRequest(getApiUrl("/games/delete-artefact"), {
-          id_game: gameId,
-          id_player: playerId,
-          artifact: "Mine"
-        });
+      if(response) {
+        if(response.isArticleToFind) {
+          alert("Cet article ne peut pas être miné");
+        } else {
+          alert(`Vous avez sélectionné l'article : ${title}`);
+          await postRequest(getApiUrl("/games/delete-artefact"), {
+            id_game: gameId,
+            id_player: playerId,
+            artifact: "Mine"
+          });
+        }
         setIsMinePopupOpen(false);
-      } else if(response.isArticleToFind){
-        console.log("Cette article ne peut pas être miné")
       }
     } catch (error) {
       console.error("Error setting mine:", error);
