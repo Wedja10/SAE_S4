@@ -1375,7 +1375,7 @@ export const setMineArtifacts = async (req, res) => {
         }
 
 
-        const formattedTitle = title.replace(/ /g, "_");
+        const formattedTitle = title.replace(/_/g, " ").replace(/ /g, "_");
 
         const articles = await Article.find({ title: formattedTitle });
         if (articles.length === 0) {
