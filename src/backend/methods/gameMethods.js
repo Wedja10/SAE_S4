@@ -393,13 +393,20 @@ export const changeArticleFront = async (req, res) => {
 
         // 🔥 Vérifier les liens sortants via l'API externe
         let hasOutgoingLinks = false;
+        const wikipediaApiUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=links&titles=${encodeURIComponent(article.title)}&format=json&origin=*`;
+
         try {
-            const response = await fetch(`https://api.wikipedia.org/link-outgoing/${article.title}`);
+            const response = await fetch(wikipediaApiUrl);
             const data = await response.json();
-            hasOutgoingLinks = data.links && data.links.length > 0;
+
+            const pageId = Object.keys(data.query.pages)[0]; // Récupérer l'ID de la page
+            const links = data.query.pages[pageId].links || []; // Récupérer les liens
+
+            hasOutgoingLinks = links.length > 0;
         } catch (error) {
             console.error("Erreur lors de la récupération des liens sortants:", error);
         }
+
 
         // Mise à jour de l'article actuel du joueur
         game.players[playerIndex].current_article = articleObjectId;
