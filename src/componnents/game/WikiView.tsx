@@ -86,10 +86,8 @@ const WikiView: React.FC = () => {
         }, 1000);
 
         timerRef.current = setTimeout(() => {
-          setIsBlocked(true);
-          setTimeLeft(null);
           clearStoredTimer();
-          alert("Le temps est écoulé !");
+          window.location.href = "http://localhost:5174/leaderboard";
         }, storedTimer.endTime - now);
 
         return;
@@ -137,7 +135,7 @@ const WikiView: React.FC = () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [gameId]);
+  }, [gameId, navigate]);
 
   useEffect(() => {
     let retryCount = 0;
@@ -339,7 +337,7 @@ const WikiView: React.FC = () => {
           const leaderBoard = await postRequest(getApiUrl("/games/leaderBoard"), {
             id_game: gameParam
           });
-          message = `Félicitations! Vous avez gagné ${leaderBoard.message}`;
+          window.location.href = "http://localhost:5174/leaderboard";
         }
 
         if (message) alert(message);
