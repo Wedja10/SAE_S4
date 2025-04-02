@@ -52,20 +52,27 @@ export const getPlayersInGame = async (req, res) => {
                     const player = await Player.findById(playerInfo.player_id);
                     if (!player) return null;
 
-                    // Calculate score based on found target articles
-                    let score = 0;
-                    if (playerInfo.articles_visited && Array.isArray(playerInfo.articles_visited)) {
-                        const targetArticleIds = game.articles_to_visit.map(id => id.toString());
-                        score = playerInfo.articles_visited.filter(id =>
-                            targetArticleIds.includes(id.toString())
-                        ).length;
+                    // Fetch visited article titles
+                    let visited = [];
+                    if (Array.isArray(playerInfo.articles_visited)) {
+                        visited = await Promise.all(
+                            playerInfo.articles_visited.map(async (articleId) => {
+                                const article = await Article.findById(articleId);
+                                return article ? article.title : null;
+                            })
+                        );
                     }
+
+                    // Calculate score
+                    const targetArticleIds = new Set(game.articles_to_visit.map(id => id.toString()));
+                    const score = (playerInfo.articles_visited || []).filter(id => targetArticleIds.has(id.toString())).length;
 
                     return {
                         id: player._id.toString(),
                         pseudo: player.pseudo || "Player",
                         pp: player.pp || "",
-                        score: score
+                        score,
+                        articles_visited: visited.filter(title => title !== null) // Remove null values
                     };
                 } catch (err) {
                     console.error("Error processing player:", err);
@@ -75,14 +82,13 @@ export const getPlayersInGame = async (req, res) => {
         );
 
         // Filter out null values
-        const validPlayers = playersWithScores.filter(player => player !== null);
-
-        return res.status(200).json(validPlayers);
+        return res.status(200).json(playersWithScores.filter(player => player !== null));
     } catch (error) {
         console.error("Error in getPlayersInGame:", error);
         return res.status(500).json({ error: "Server error" });
     }
 };
+
 
 // Get found target articles for a player
 export const getFoundTargetArticles = async (req, res) => {
