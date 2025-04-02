@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import "../../style/game/WikiView.css";
 import {postRequest} from "../../backend/services/apiService.js";
 import {getApiUrl} from "../../utils/config";
@@ -18,11 +18,126 @@ const WikiView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [initializationAttempted, setInitializationAttempted] = useState<boolean>(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   // Get dynamic IDs from storage
   const gameId = Storage.getGameId();
   const playerId = Storage.getPlayerId();
+
+  const setMaxTime = async (): Promise<{time: number, isInfinite: boolean}> => {
+    try {
+      const response = await postRequest(getApiUrl("/games/get-max-time"), {
+        id_game: gameId
+      });
+
+      console.log("Max time response:", response);
+
+      if (response.isInfinite) {
+        return {time: 0, isInfinite: true};
+      }
+
+      if (response.time) {
+        return {time: response.time * 1000, isInfinite: false}; // Conversion en ms
+      }
+
+      return {time: 10000, isInfinite: false}; // Fallback: 10 secondes
+    } catch (error) {
+      console.error("Error getting max time:", error);
+      return {time: 10000, isInfinite: false}; // Fallback en cas d'erreur
+    }
+  };
+
+  const getStoredTimer = () => {
+    const storedTimer = localStorage.getItem('wikiTimer');
+    return storedTimer ? JSON.parse(storedTimer) : null;
+  };
+
+  const setStoredTimer = (endTime: number) => {
+    localStorage.setItem('wikiTimer', JSON.stringify({ endTime }));
+  };
+
+  const clearStoredTimer = () => {
+    localStorage.removeItem('wikiTimer');
+  };
+
+// Modifiez votre useEffect pour gérer le timer persistant
+  useEffect(() => {
+    const setupBlockTimer = async () => {
+      const storedTimer = getStoredTimer();
+      const now = Date.now();
+
+      if (storedTimer && storedTimer.endTime > now) {
+        // Timer existant non expiré
+        const remainingTime = Math.floor((storedTimer.endTime - now) / 1000);
+        setIsBlocked(false);
+        setTimeLeft(remainingTime);
+
+        intervalRef.current = setInterval(() => {
+          setTimeLeft((prev) => {
+            if (prev === null || prev <= 1) {
+              clearInterval(intervalRef.current!);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        timerRef.current = setTimeout(() => {
+          setIsBlocked(true);
+          setTimeLeft(null);
+          clearStoredTimer();
+          alert("Le temps est écoulé !");
+        }, storedTimer.endTime - now);
+
+        return;
+      }
+
+      // Nouveau timer
+      const { time, isInfinite } = await setMaxTime();
+
+      if (isInfinite) {
+        setIsBlocked(false);
+        setTimeLeft(null);
+        return;
+      }
+
+      const endTime = now + time;
+      setStoredTimer(endTime);
+
+      setIsBlocked(true);
+      setTimeLeft(Math.floor(time / 1000));
+
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
+
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev === null || prev <= 1) {
+            clearInterval(intervalRef.current!);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      timerRef.current = setTimeout(() => {
+        setIsBlocked(false);
+        setTimeLeft(null);
+        clearStoredTimer();
+        alert("Le temps est écoulé ! Vous pouvez à nouveau naviguer.");
+      }, time);
+    };
+
+    setupBlockTimer();
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [gameId]);
 
   useEffect(() => {
     let retryCount = 0;
@@ -35,6 +150,8 @@ const WikiView: React.FC = () => {
       if (!id) return false;
       return /^[0-9a-fA-F]{24}$/.test(id);
     };
+
+
 
     const checkCredentials = () => {
       const currentGameId = Storage.getGameId();
@@ -588,7 +705,6 @@ const WikiView: React.FC = () => {
   };
 
 
-
   const handleSnailClick = async() => {
     setIsBlocked(true);
     setTimeout(() => {
@@ -713,6 +829,11 @@ const WikiView: React.FC = () => {
 
   return (
       <div className="wiki-container">
+        {timeLeft !== null && (
+            <div className="time-counter">
+              Temps restant: {timeLeft}s
+            </div>
+        )}
         <h2 className="wiki-title">{currentTitle}</h2>
 
         <div className={`wiki-content ${isLoading ? "loading" : "fade-in"}`} onClick={handleLinkClick}>
