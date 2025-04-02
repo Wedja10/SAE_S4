@@ -1405,21 +1405,40 @@ export const setMineArtifacts = async (req, res) => {
 };
 
 export const fetchLeaderBoard = async (req, res) => {
-    const {id_game} = req.body;
+    const { id_game } = req.body;
 
     try {
         const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
 
-        const sortedPlayers = game.players.sort((a, b) => {
-            return b.found_target_articles.length - a.found_target_articles.length;
-        });
+        const articlesToFindLength = game.articles_to_visit.length;
 
-        return res.status(200).json({message: "Sort of players successfully", sortedPlayers});
+        // Sort players based on found_target_articles length
+        const sortedPlayers = game.players.sort((a, b) =>
+            b.found_target_articles.length - a.found_target_articles.length
+        );
+
+        // Fetch player details asynchronously
+        const informationPlayers = await Promise.all(sortedPlayers.map(async playerInformation => {
+            const score = `${playerInformation.found_target_articles.length}/${articlesToFindLength}`;
+            const player = await Player.findById(playerInformation.player_id);
+
+            if (!player) {
+                return { pp: null, pseudo: "Unknown", score };
+            }
+
+            return { pp: player.pp, pseudo: player.pseudo, score };
+        }));
+
+        return res.status(200).json({ message: "Sorted players successfully", players: informationPlayers });
+
     } catch (e) {
-        console.error("Error fetchLeaderBoard:", error);
-        return res.status(500).json({ error: "Failed to fetchLeaderBoard", details: error.message });
+        console.error("Error fetchLeaderBoard:", e);
+        return res.status(500).json({ error: "Failed to fetch leaderboard", details: e.message });
     }
-}
+};
 
 export const deleteUsedArtifact = async (req, res) => {
     const { id_game, id_player, artifact } = req.body;
