@@ -1432,6 +1432,13 @@ export const fetchLeaderBoard = async (req, res) => {
             return { pp: player.pp, pseudo: player.pseudo, score };
         }));
 
+        await Game.findOneAndUpdate(
+            { _id: id_game },
+            { $set: { status: "finish" } },
+            { new: true } // Returns the updated document
+        );
+
+
         return res.status(200).json({ message: "Sorted players successfully", players: informationPlayers });
 
     } catch (e) {
