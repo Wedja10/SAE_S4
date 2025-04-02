@@ -361,75 +361,73 @@ export const changeArticleFront = async (req, res) => {
 
         console.log(`Changing article for player ${id_player} in game ${id_game} to article ${articleId}`);
 
-        // Find game by ID or code
+        // Trouver la partie
         const game = await findGameByIdOrCode(id_game);
         if (!game) {
             console.log(`Game not found: ${id_game}`);
             return res.status(404).json({ error: "Game not found" });
         }
 
-        // Validate player ID format
-        if (!/^[0-9a-fA-F]{24}$/.test(id_player)) {
-            console.log(`Invalid player ID format: ${id_player}`);
-            return res.status(400).json({ error: "Invalid Player ID format" });
-        }
-
-        // Validate article ID format
-        if (!/^[0-9a-fA-F]{24}$/.test(articleId)) {
-            console.log(`Invalid article ID format: ${articleId}`);
-            return res.status(400).json({ error: "Invalid Article ID format" });
+        // Vérifier le format des IDs
+        if (!/^[0-9a-fA-F]{24}$/.test(id_player) || !/^[0-9a-fA-F]{24}$/.test(articleId)) {
+            console.log(`Invalid ID format`);
+            return res.status(400).json({ error: "Invalid ID format" });
         }
 
         const playerObjectId = new mongoose.Types.ObjectId(id_player);
         const articleObjectId = new mongoose.Types.ObjectId(articleId);
 
-        // Find player in game
+        // Trouver le joueur dans la partie
         const playerIndex = game.players.findIndex(p => p.player_id && p.player_id.equals(playerObjectId));
         if (playerIndex === -1) {
             console.log(`Player ${id_player} not found in game ${id_game}`);
             return res.status(404).json({ error: "Player not found in this game" });
         }
 
-        // Check if article exists
+        // Vérifier si l'article existe
         const article = await Article.findById(articleObjectId);
         if (!article) {
             console.log(`Article ${articleId} not found`);
             return res.status(404).json({ error: "Article not found" });
         }
 
-        // Update player's current article
+        // 🔥 Vérifier les liens sortants via l'API externe
+        let hasOutgoingLinks = false;
+        try {
+            const response = await fetch(`https://api.wikipedia.org/link-outgoing/${article.title}`);
+            const data = await response.json();
+            hasOutgoingLinks = data.links && data.links.length > 0;
+        } catch (error) {
+            console.error("Erreur lors de la récupération des liens sortants:", error);
+        }
+
+        // Mise à jour de l'article actuel du joueur
         game.players[playerIndex].current_article = articleObjectId;
 
-        // Add article to visited articles if not already there
+        // Ajouter l'article aux articles visités
         if (!game.players[playerIndex].articles_visited) {
             game.players[playerIndex].articles_visited = [];
         }
-
-        const isNewVisit = true;
         game.players[playerIndex].articles_visited.push(articleObjectId);
 
-        // Check if this is a target article
+        // Vérifier si l'article est une cible
         const isTargetArticle = await checkTargetArticleFound(game, articleObjectId, playerObjectId, isDictate);
-        const resultat = Math.floor(Math.random() * 6) + 1;
+        const diceRoll = Math.floor(Math.random() * 6) + 1;
 
-        let setArtifact;
+        let setArtifact = null;
 
-        if (resultat === 1) {
+        if (!hasOutgoingLinks) {
+            console.log(`Article ${article.title} has no outgoing links, assigning "Backtrack" artifact`);
+            setArtifact = "Backtrack";
+        } else if (diceRoll === 1) {
             setArtifact = await setArtifactDistribution(id_game, article.title);
             game.players[playerIndex].artifacts.push(setArtifact);
         }
 
-        let isLastArticle = false;
-        if(game.articles_to_visit.length === game.players[playerIndex].found_target_articles.length) {
-            isLastArticle = true;
-        }
+        let isLastArticle = game.articles_to_visit.length === game.players[playerIndex].found_target_articles.length;
+        let isMinedArticle = game.mined_article && game.mined_article.includes(article.title);
 
-        let isMinedArticle = false;
-
-        if(game.mined_article && game.mined_article.includes(article.title)){
-            isMinedArticle = true;
-        }
-
+        // Mettre à jour la partie en base de données
         await Game.findOneAndUpdate({ _id: game._id }, game, { new: true, runValidators: false });
 
         console.log(`Successfully updated current article for player ${id_player} to ${article.title}`);
@@ -438,7 +436,7 @@ export const changeArticleFront = async (req, res) => {
             message: "Article changed successfully",
             id_article: articleId,
             title: article.title,
-            isNewVisit,
+            isNewVisit: true,
             isTargetArticle,
             isLastArticle,
             isMinedArticle,
