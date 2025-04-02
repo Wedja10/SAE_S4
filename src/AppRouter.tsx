@@ -5,6 +5,7 @@ import Game from "./view/Game";
 import Lobby from "./view/Lobby.tsx";
 import Choice from "./view/Choice.tsx";
 import LobbySolo from "./view/LobbySolo.tsx";
+import Leaderboard from "./view/Leaderboard.tsx";
 
 const AppRouter: React.FC = () => {
     return (
@@ -15,6 +16,7 @@ const AppRouter: React.FC = () => {
                 <Route path="/lobby/:gameCode" element={<Lobby />} />
                 <Route path="/lobbySolo" element={<LobbySolo />} />
                 <Route path={"/choice"} element={<Choice />} />
+                <Route path={"/leaderboard"} element={<Leaderboard />} />
             </Routes>
         </Router>
     );

@@ -1,0 +1,182 @@
+.leaderboardBg {
+  background-image: url("/public/assets/leaderboardBg.png");
+  background-size: cover;
+  background-position: center;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.podium {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.firstPlace {
+  width: 400px;
+  height: 400px;
+  background-image: url("/public/assets/leaderboard/firstPlace.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: absolute;
+
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.secondPlace {
+  width: 250px;
+  height: 250px;
+  background-image: url("/public/assets/leaderboard/secondPlace.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: absolute;
+
+  top: 40%;
+  left: 25%;
+  transform: translateX(-50%);
+}
+
+.thirdPlace {
+  width: 250px;
+  height: 250px;
+  background-image: url("/public/assets/leaderboard/thirdPlace.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: absolute;
+
+  top: 40%;
+  left: 75%;
+  transform: translateX(-50%);
+}
+
+.textContainer {
+  position: absolute;
+  bottom: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80%;
+}
+
+.textContainer2 {
+  position: absolute;
+  bottom: -30%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.textContainer3 {
+  position: absolute;
+  bottom: -30%;
+  left: 50%;
+  transform: translateX(-45%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.playerName {
+  width: 60%;
+  font-size: 2rem;
+  font-weight: bold;
+  background: linear-gradient(to top, #C68A2A, #E0B965);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.playerName2 {
+  width: 60%;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #C0C0C0;
+}
+
+.playerName3 {
+  width: 60%;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #CD7F32;
+}
+
+.playerScore {
+  font-size: 1.5rem;
+  color: #FFFFFF;
+}
+
+/* ------------------------------------------------------------------------------------------------------------------- */
+
+.leaderboardList {
+  display: flex;
+  gap: 32px;
+  min-width: 1000px;
+  margin: 0 auto 100px;
+}
+
+.leaderboardColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboardRow {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.rowClassment {
+  width: 30px;
+  font-weight: bold;
+  color: #E0B965;
+  text-align: center;
+}
+
+.rowPlayer {
+  flex: 1;
+  padding: 0 12px;
+}
+
+.rowScore {
+  min-width: 60px;
+  padding: 4px 8px;
+  background: linear-gradient(90deg, #C68A2A, #E0B965);
+  border-radius: 12px;
+  text-align: center;
+  font-weight: bold;
+  color: #FFFFFF;
+}
+
+@media (max-width: 1250px) {
+
+  .leaderboardList {
+    max-width: 800px;
+    min-width: unset;
+  }
+
+  .secondPlace {
+    transform: scale(0.5) translateX(-50%);
+    top: 35vh;
+  }
+
+  .thirdPlace {
+    transform: scale(0.5) translateX(-150%);
+    top: 35vh;
+  }
+}
