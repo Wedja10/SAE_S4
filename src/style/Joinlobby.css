@@ -1,0 +1,92 @@
+.join-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-image: url('../assets/bg-lobby.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.join-box {
+    background: rgba(11, 18, 57, 0.63);
+    backdrop-filter: blur(10px);
+    padding: 2rem;
+    border-radius: 25px;
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    color: white;
+    margin-top: -60px; /* Pour compenser la navbar */
+}
+
+.join-box h2 {
+    color: #F1B24A;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    font-family: cowboy, sans-serif;
+}
+
+.join-box p {
+    color: white;
+    margin-bottom: 2rem;
+    font-size: 1.2rem;
+    font-family: cowboy, sans-serif;
+}
+
+.join-btnDiv2 {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.join-submit2, .cancel-button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    font-family: cowboy, sans-serif;
+    font-size: 1rem;
+}
+
+.join-submit2 {
+    background: #1a472a;
+    color: white;
+    border-bottom: solid 4px #2a5a3a;
+}
+
+.join-submit2:hover {
+    background: #2a5a3a;
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+}
+
+.cancel-button {
+    background: #6c1a1a;
+    color: white;
+    border-bottom: solid 4px #8a2121;
+}
+
+.cancel-button:hover {
+    background: #8a2121;
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+}
+
+.join-submit2:disabled, .cancel-button:disabled {
+    background: #666;
+    border-bottom-color: #444;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.error-message {
+    color: #ff4444;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    font-family: cowboy, sans-serif;
+} 
