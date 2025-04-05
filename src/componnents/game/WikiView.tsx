@@ -26,7 +26,7 @@ const WikiView: React.FC = () => {
   // Get dynamic IDs from storage
   const gameId = Storage.getGameId();
   const playerId = Storage.getPlayerId();
-
+  console.log("gameId : ", gameId);
   const setMaxTime = async (): Promise<{time: number, isInfinite: boolean}> => {
     try {
       const response = await postRequest(getApiUrl("/games/get-max-time"), {
@@ -87,7 +87,7 @@ const WikiView: React.FC = () => {
 
         timerRef.current = setTimeout(() => {
           clearStoredTimer();
-          window.location.href = "http://localhost:5174/leaderboard";
+          window.location.href = "http://localhost:5173/leaderboard";
         }, storedTimer.endTime - now);
 
         return;
@@ -241,13 +241,22 @@ const WikiView: React.FC = () => {
         });
 
         // First try to get the current article from the game
-        const currentArticle = await getCurrentArticle(gameIdentifier);
-        console.log('Current article response:', currentArticle);
-
-        if (currentArticle) {
+        let currentArticle = currentTitle;
+        if(currentArticle === null){
+          const intervalId = setInterval(async () => {
+            currentArticle = await getCurrentArticle(gameIdentifier);
+            console.log('Current article response:', currentArticle);
+            if (currentArticle) {
+              setCurrentTitle(currentArticle);
+              await fetchWikiContent(currentArticle);
+              clearInterval(intervalId);
+            }
+          }, 100);
+        } else {
           setCurrentTitle(currentArticle);
           await fetchWikiContent(currentArticle);
         }
+
       } catch (error) {
         console.error("Error initializing article:", error);
       } finally {
@@ -272,7 +281,7 @@ const WikiView: React.FC = () => {
         window.clearTimeout(retryTimer);
       }
     };
-  }, [navigate]);
+  }, [navigate, currentTitle]);
 
   // Fonction pour notifier la base de données lors de chaque changement d'article
   const updateArticleInDB = async (title: string, gameIdentifier?: string) => {
@@ -337,7 +346,7 @@ const WikiView: React.FC = () => {
           const leaderBoard = await postRequest(getApiUrl("/games/leaderBoard"), {
             id_game: gameParam
           });
-          window.location.href = "http://localhost:5174/leaderboard";
+          window.location.href = "http://localhost:5173/leaderboard";
         }
 
         if (message) alert(message);

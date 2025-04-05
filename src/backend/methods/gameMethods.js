@@ -840,6 +840,7 @@ export const createGame = async (req, res) => {
         const savedGame = await newGame.save();
 
         res.status(201).json({
+            game_id: savedGame._id,
             game_code: savedGame.game_code,
             message: "Game created successfully"
         });
@@ -851,6 +852,8 @@ export const createGame = async (req, res) => {
         });
     }
 };
+
+
 
 export const gameAndPlayers = async (id_game, id_player) => {
     try {
