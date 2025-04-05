@@ -273,12 +273,13 @@ export const OptionsPanelSolo = () => {
     const formData = new FormData(event.currentTarget);
     const data = {
       ...Object.fromEntries(formData.entries()),
+      time_limit: unlimitedTime ? null : Number(formData.get("timeLimit")),
       enabled_artifacts: enabledArtifacts
     };
-
     alert(JSON.stringify(data, null, 2)); // -------------- Ici pour le back à ajouter
 
-    navigate(`/game`);
+    navigate(`/gameSolo`, { state: data });
+
   };
 
   return (

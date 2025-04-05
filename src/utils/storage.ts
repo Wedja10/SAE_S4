@@ -37,4 +37,6 @@ export const Storage = {
         localStorage.removeItem(StorageKeys.PROFILE_PICTURE);
         localStorage.removeItem(StorageKeys.PROFILE_PICTURE_COLOR);
     }
+
+
 }; 
