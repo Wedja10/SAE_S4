@@ -54,6 +54,7 @@ const Lobby: React.FC = () => {
   const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
   const [hasJoined, setHasJoined] = useState(false);
   const [leaveSent, setLeaveSent] = useState(false);
+  const [showCopiedMessage, setShowCopiedMessage] = useState(false);
 
   // Get player ID from local storage
   useEffect(() => {
@@ -71,13 +72,13 @@ const Lobby: React.FC = () => {
       case 'player_join':
         setPlayers(prevPlayers => {
           const newPlayer = normalizePlayer(event.data.player);
-          
+
           // Check if player already exists
           const playerExists = prevPlayers.some((p: Player) => p.id === newPlayer.id);
           if (playerExists) {
             return prevPlayers; // Don't add duplicate player
           }
-          
+
           const newPlayers = [...prevPlayers, newPlayer];
           // Update host status when players change
           const isCurrentPlayerHost = newPlayers.some((p: Player) => p.id === currentPlayerId && p.is_host);
@@ -111,8 +112,8 @@ const Lobby: React.FC = () => {
         break;
       case 'player_rename':
         setPlayers(prevPlayers => {
-          return prevPlayers.map(player => 
-            player.id === event.data.playerId 
+          return prevPlayers.map(player =>
+            player.id === event.data.playerId
               ? { ...player, pseudo: event.data.newName }
               : player
           );
@@ -120,13 +121,13 @@ const Lobby: React.FC = () => {
         break;
       case 'profile_picture_change':
         setPlayers(prevPlayers => {
-          return prevPlayers.map(player => 
-            player.id === event.data.playerId 
-              ? { 
-                  ...player, 
-                  profilePicture: event.data.pictureUrl,
-                  pp_color: event.data.pp_color || player.pp_color || '#FFAD80' 
-                }
+          return prevPlayers.map(player =>
+            player.id === event.data.playerId
+              ? {
+                ...player,
+                profilePicture: event.data.pictureUrl,
+                pp_color: event.data.pp_color || player.pp_color || '#FFAD80'
+              }
               : player
           );
         });
@@ -137,13 +138,13 @@ const Lobby: React.FC = () => {
         if (event.data.gameId) {
           console.log('Setting game ID:', event.data.gameId);
           Storage.setGameId(event.data.gameId);
-          
+
           // Verify storage is set before navigating
           const storedGameId = Storage.getGameId();
           const storedPlayerId = Storage.getPlayerId();
           console.log('Stored game ID:', storedGameId);
           console.log('Stored player ID:', storedPlayerId);
-          
+
           if (storedGameId) {
             // Add a small delay to ensure storage is properly set
             setTimeout(() => {
@@ -180,14 +181,14 @@ const Lobby: React.FC = () => {
       if (joinTimestampStr) {
         const joinTimestamp = parseInt(joinTimestampStr, 10);
         const now = Date.now();
-        
+
         // If we joined less than 3 seconds ago, don't send a leave event
         if (now - joinTimestamp < 3000) {
-          console.log(`Preventing leave event shortly after joining (${(now - joinTimestamp)/1000}s). Skipping leave event.`);
+          console.log(`Preventing leave event shortly after joining (${(now - joinTimestamp) / 1000}s). Skipping leave event.`);
           return;
         }
       }
-      
+
       console.log(`Sending leave event for player ${currentPlayerId} in lobby ${gameCode}`);
       ws.sendEvent({
         type: 'player_leave',
@@ -196,7 +197,7 @@ const Lobby: React.FC = () => {
           playerId: currentPlayerId
         }
       });
-      
+
       // Mark that we've sent a leave event
       setLeaveSent(true);
     }
@@ -206,7 +207,7 @@ const Lobby: React.FC = () => {
   useEffect(() => {
     // We don't need to handle beforeunload anymore
     // The WebSocket connection will stay alive during page refreshes
-    
+
     // Cleanup function for component unmount
     return () => {
       // Only send leave event when component unmounts due to navigation to a different page
@@ -214,7 +215,7 @@ const Lobby: React.FC = () => {
       if (gameCode && currentPlayerId) {
         const currentPath = window.location.pathname;
         const isNavigatingToGame = currentPath.includes('/game/');
-        
+
         // Only send leave event if we're not navigating to the game page
         if (!isNavigatingToGame) {
           sendLeaveEvent();
@@ -235,18 +236,18 @@ const Lobby: React.FC = () => {
             'Accept': 'application/json'
           }
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch lobby data');
         }
-        
+
         const data = await response.json();
         console.log('Lobby data received:', data);
-        
+
         // Normalize all players
         const normalizedPlayers = (data.players || []).map(normalizePlayer);
         setPlayers(normalizedPlayers);
-        
+
         // Default settings if none are provided
         const defaultSettings = {
           max_players: null,
@@ -265,10 +266,10 @@ const Lobby: React.FC = () => {
             "Dictator": true
           }
         };
-        
+
         // Start with default settings
         const settings = { ...defaultSettings };
-        
+
         // If we have settings from the server, update our defaults
         if (data.settings) {
           // Copy basic settings
@@ -277,7 +278,7 @@ const Lobby: React.FC = () => {
           settings.articles_number = data.settings.articles_number;
           settings.visibility = data.settings.visibility || "private";
           settings.allow_join = data.settings.allow_join;
-          
+
           // Handle enabled artifacts
           if (data.settings.enabled_artifacts) {
             // If the server provides an array of enabled artifacts, convert it to an object
@@ -293,7 +294,7 @@ const Lobby: React.FC = () => {
                 "Disorienter": true,
                 "Dictator": true
               };
-              
+
               // If the array is empty, keep all artifacts enabled
               if (data.settings.enabled_artifacts.length === 0) {
                 // Do nothing, keep all enabled
@@ -302,7 +303,7 @@ const Lobby: React.FC = () => {
                 for (const key in enabledArtifactsObj) {
                   enabledArtifactsObj[key as keyof typeof enabledArtifactsObj] = false;
                 }
-                
+
                 // Then enable only the ones in the array
                 for (const artifact of data.settings.enabled_artifacts) {
                   if (artifact in enabledArtifactsObj && typeof artifact === 'string') {
@@ -310,7 +311,7 @@ const Lobby: React.FC = () => {
                   }
                 }
               }
-              
+
               settings.enabled_artifacts = enabledArtifactsObj;
             } else if (typeof data.settings.enabled_artifacts === 'object') {
               // If it's already an object, use it directly
@@ -318,10 +319,10 @@ const Lobby: React.FC = () => {
             }
           }
         }
-        
+
         console.log('Using settings:', settings);
         setSettings(settings);
-        
+
         // Check if current user is host
         const isCurrentPlayerHost = normalizedPlayers.some((p: { id: string; is_host: any; }) => p.id === currentPlayerId && p.is_host);
         setIsHost(isCurrentPlayerHost);
@@ -329,7 +330,7 @@ const Lobby: React.FC = () => {
         // Store join timestamp to prevent immediate leave events
         const joinTimestamp = Date.now();
         sessionStorage.setItem(`join_${gameCode}_${currentPlayerId}`, joinTimestamp.toString());
-        
+
         // Reset leave sent flag when joining
         setLeaveSent(false);
         setHasJoined(true);
@@ -340,7 +341,7 @@ const Lobby: React.FC = () => {
           // Get stored profile picture and skin color
           const storedProfilePic = Storage.getProfilePicture();
           const storedProfilePicColor = Storage.getProfilePictureColor();
-          
+
           // Update player data with stored values if available
           const playerData = { ...currentPlayer };
           if (storedProfilePic) {
@@ -349,7 +350,7 @@ const Lobby: React.FC = () => {
           if (storedProfilePicColor) {
             playerData.pp_color = storedProfilePicColor;
           }
-          
+
           ws.sendEvent({
             type: 'player_join',
             data: {
@@ -358,7 +359,7 @@ const Lobby: React.FC = () => {
             }
           });
         }
-        
+
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching lobby data:', error);
@@ -395,32 +396,32 @@ const Lobby: React.FC = () => {
     if (isHost && gameCode) {
       console.log(`Toggling artifact ${artifact} to ${enabled ? 'enabled' : 'disabled'}`);
       console.log('Current enabled_artifacts before update:', JSON.stringify(settings.enabled_artifacts));
-      
+
       // Create a new object with all artifacts from the current settings
       const updatedEnabledArtifacts = { ...settings.enabled_artifacts };
-      
+
       // Make sure all artifacts exist in the object with default value of true
       for (const art of artefacts) {
         if (!(art in updatedEnabledArtifacts)) {
           updatedEnabledArtifacts[art] = true;
         }
       }
-      
+
       // Update the specific artifact that was toggled
       updatedEnabledArtifacts[artifact] = enabled;
-      
+
       console.log('Updated enabled_artifacts after update:', JSON.stringify(updatedEnabledArtifacts));
-      
+
       const updatedSettings = {
         ...settings,
         enabled_artifacts: updatedEnabledArtifacts
       };
-      
+
       console.log('Sending updated settings to server:', JSON.stringify(updatedSettings));
-      
+
       // Update local state first for immediate UI feedback
       setSettings(updatedSettings);
-      
+
       // Then send to server
       handleSettingsUpdate(updatedSettings);
     }
@@ -430,23 +431,23 @@ const Lobby: React.FC = () => {
     if (isHost && gameCode) {
       console.log('Starting game with settings:', settings);
       console.log('Raw enabled_artifacts object:', settings.enabled_artifacts);
-      
+
       // Get the list of enabled artifacts - only those explicitly set to true
       const enabledArtifactsList = Object.entries(settings.enabled_artifacts)
         .filter(([_, enabled]) => enabled === true)
         .map(([artifact]) => artifact);
-      
+
       console.log('Enabled artifacts list:', enabledArtifactsList);
-      
+
       // Only start the game if at least one artifact is enabled
       if (enabledArtifactsList.length === 0) {
         alert('Please enable at least one artifact before starting the game.');
         return;
       }
-      
+
       ws.sendEvent({
         type: 'game_start',
-        data: { 
+        data: {
           gameCode,
           enabledArtifacts: enabledArtifactsList
         }
@@ -457,7 +458,7 @@ const Lobby: React.FC = () => {
   const handlePictureChange = (playerId: string, newPictureUrl: string, skinColor?: string) => {
     if (gameCode) {
       const finalSkinColor = skinColor || '#FFAD80';
-      
+
       ws.sendEvent({
         type: 'profile_picture_change',
         data: {
@@ -467,7 +468,7 @@ const Lobby: React.FC = () => {
           pp_color: finalSkinColor
         }
       });
-      
+
       // Store the profile picture and skin color in localStorage if it's the current player
       if (playerId === currentPlayerId) {
         Storage.setProfilePicture(newPictureUrl);
@@ -487,7 +488,7 @@ const Lobby: React.FC = () => {
           newName
         }
       });
-      
+
       // Store the player name in localStorage if it's the current player
       if (playerId === currentPlayerId) {
         Storage.setPlayerName(newName);
@@ -510,12 +511,12 @@ const Lobby: React.FC = () => {
   const normalizePlayer = (player: any): Player => {
     const playerId = normalizePlayerId(player);
     const isCurrentPlayer = playerId === currentPlayerId;
-    
+
     // Use stored player name for current player if available
     let playerName = player.pseudo || '';
     let profilePic = player.pp || '';
     let profilePicColor = player.pp_color || '#FFAD80';
-    
+
     if (isCurrentPlayer) {
       // Handle player name
       const storedName = Storage.getPlayerName();
@@ -525,7 +526,7 @@ const Lobby: React.FC = () => {
         // If we have a player name but it's not stored, store it
         Storage.setPlayerName(playerName);
       }
-      
+
       // Handle profile picture
       const storedProfilePic = Storage.getProfilePicture();
       if (storedProfilePic) {
@@ -534,7 +535,7 @@ const Lobby: React.FC = () => {
         // If we have a profile picture but it's not stored, store it
         Storage.setProfilePicture(profilePic);
       }
-      
+
       // Handle profile picture color
       const storedProfilePicColor = Storage.getProfilePictureColor();
       if (storedProfilePicColor) {
@@ -544,7 +545,7 @@ const Lobby: React.FC = () => {
         Storage.setProfilePictureColor(profilePicColor);
       }
     }
-    
+
     return {
       id: playerId,
       pseudo: playerName,
@@ -552,6 +553,14 @@ const Lobby: React.FC = () => {
       pp_color: profilePicColor,
       is_host: !!player.is_host
     };
+  };
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/join/${gameCode}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShowCopiedMessage(true);
+      setTimeout(() => setShowCopiedMessage(false), 2000);
+    });
   };
 
   return (
@@ -566,13 +575,24 @@ const Lobby: React.FC = () => {
           </div>
         ) : (
           <>
-            <PlayerList
-              players={players}
-              currentPlayerId={currentPlayerId}
-            />
+            <div 
+            className="player-list-container">
+              <PlayerList
+                players={players}
+                currentPlayerId={currentPlayerId}
+              />
+              <div className="share-link-container">
+                <div className="share-link-box">
+                  <span>{`${window.location.origin}/join/${gameCode}`}</span>
+                  <button onClick={handleCopyLink} className="copy-button">
+                    {showCopiedMessage ? 'Copié !' : 'Copier'}
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className={"GameInfo"}>
-              <ArtefactsList 
-                artefacts={artefacts} 
+              <ArtefactsList
+                artefacts={artefacts}
                 enabledArtifacts={settings.enabled_artifacts}
                 onToggleArtifact={handleArtifactToggle}
                 isHost={isHost}
