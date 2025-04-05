@@ -7,7 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Storage } from "../utils/storage";
 
-const Game: React.FC = () => {
+const Game: React.FC = (props: {solo: boolean}) => {
   const { gameCode } = useParams<{ gameCode: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -83,11 +83,12 @@ const Game: React.FC = () => {
         <WikiView />
       </main>
 
-      {/* Sidebar droite */}
-      <aside className="sidebar-right">
-        <Players />
-        <Chat />
-      </aside>
+      {props.solo && (
+          <aside className="sidebar-right">
+            <Players />
+            <Chat />
+          </aside>
+      )}
     </div>
   );
 };

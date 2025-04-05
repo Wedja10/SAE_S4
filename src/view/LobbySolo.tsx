@@ -1,7 +1,7 @@
 import Navbar from "../componnents/Navbar.tsx";
 import '../style/Lobby.css';
 import { PlayerList } from "../componnents/lobby/LobbyComponents.tsx";
-import { ArtefactsList, OptionsPanel, StartButton } from "../componnents/lobby/Artefacts.tsx";
+import { ArtefactsList, OptionsPanel, StartButton } from "../componnents/lobby/ArtefactsSolo.tsx";
 import { useEffect, useState, useCallback } from "react";
 import { useWebSocket, type LobbyEvent } from "../services/WebSocketService";
 import { useParams, useNavigate } from "react-router-dom";
@@ -564,10 +564,6 @@ const LobbySolo: React.FC = () => {
               </div>
           ) : (
               <>
-                <PlayerList
-                    players={players}
-                    currentPlayerId={currentPlayerId}
-                />
                 <div className={"GameInfo"}>
                   <ArtefactsList
                       artefacts={artefacts}

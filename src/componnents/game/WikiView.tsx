@@ -104,8 +104,6 @@ const WikiView: React.FC = () => {
 
       const endTime = now + time;
       setStoredTimer(endTime);
-
-      setIsBlocked(true);
       setTimeLeft(Math.floor(time / 1000));
 
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -122,10 +120,9 @@ const WikiView: React.FC = () => {
       }, 1000);
 
       timerRef.current = setTimeout(() => {
-        setIsBlocked(false);
         setTimeLeft(null);
         clearStoredTimer();
-        alert("Le temps est écoulé ! Vous pouvez à nouveau naviguer.");
+        window.location.href = "http://localhost:5173/leaderboard";
       }, time);
     };
 
