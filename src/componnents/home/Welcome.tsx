@@ -1,5 +1,4 @@
 import '../../style/Welcome.css'
-import {NavLink} from "react-router-dom";
 
 function Welcome() {
 
@@ -73,11 +72,6 @@ function Welcome() {
             </h2>
             <h1>WELCOME PLAYER</h1>
             <h3>- A WIKIPEDIA OFFICIAL GAME -</h3>
-
-          <NavLink to={"/leaderboard"} className="leaderboard-link">
-              [GO TO LEADERBOARD]
-          </NavLink>
-
         </div>
     </>
   )
