@@ -589,17 +589,84 @@ export const distributeRandomArticles = async (req, res) => {
     }
 };
 
+const fetchNearestWikipediaArticle = async (latitude, longitude) => {
+    const endpoint = `https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${latitude}|${longitude}&gsradius=10000&gslimit=1&format=json&origin=*`;
+
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+        throw new Error(`Erreur réseau : ${response.status}`);
+    }
+    const data = await response.json();
+
+    if (data.query && data.query.geosearch && data.query.geosearch.length > 0) {
+        const nearest = data.query.geosearch[0];
+        return {
+            title: nearest.title,
+            pageid: nearest.pageid,
+            lat: nearest.lat,
+            lon: nearest.lon
+        };
+    } else {
+        throw new Error("Aucun article trouvé à proximité.");
+    }
+
+};
+
+
+export const distributeChallengeToPlayer = async (game, latitude, longitude) => {
+    try {
+        if (!game.articles_to_visit || game.articles_to_visit.length === 0) {
+            console.error("No articles to distribute");
+            return;
+        }
+
+        const player = game.players[0];
+
+        if (!player.articles_visited) {
+            player.articles_visited = [];
+        }
+
+        if (!player.found_target_articles) {
+            player.found_target_articles = [];
+        }
+
+        const geographicArticle = await fetchNearestWikipediaArticle(latitude, longitude);
+        const startArticle = (await createArticle(geographicArticle.title))._id;
+
+        player.current_article = startArticle;
+
+        if (!player.articles_visited.some(a => a === startArticle)) {
+            player.articles_visited.push(startArticle);
+            player.found_target_articles.push(startArticle);
+        }
+
+        await game.save();
+        console.log(`Successfully distributed articles to players in game ${game._id}`);
+    } catch (error) {
+        console.error("Erreur dans distributeToPlayers :", error);
+        throw error;
+    }
+};
+
+
+
 export const distributeChallengesArticle = async (req, res) => {
     try {
-        const { id_game, challenge_id } = req.body;
+        const { id_game, challenge_id, latitude, longitude } = req.body;
 
-        // Use the findGameByIdOrCode helper function instead of Game.findById
+        const lat = parseFloat(latitude);
+        const lon = parseFloat(longitude);
+
+        if (isNaN(lat) || isNaN(lon)) {
+            throw new Error("Coordonnées invalides.");
+        }
+
         const game = await findGameByIdOrCode(id_game);
         if (!game) {
             return res.status(404).json({ message: "Jeu non trouvé." });
         }
 
-        const challenge = await Challenge.findById(challenge_id)
+        const challenge = await Challenge.findById(challenge_id);
         console.log(`Found game with ID ${game._id} and code ${game.game_code}`);
 
         if (!game.articles_to_visit) game.articles_to_visit = [];
@@ -620,39 +687,30 @@ export const distributeChallengesArticle = async (req, res) => {
             console.error("Erreur lors de la création de l'article :", err);
         }
 
-
         try {
-            await distributeToPlayers(game);
+            await distributeChallengeToPlayer(game, latitude, longitude);
             await game.save();
         } catch (saveError) {
-            // Handle version conflict errors
             if (saveError.name === 'VersionError') {
                 console.log('Version conflict detected, retrying with fresh game document');
-
-                // Fetch a fresh copy of the game
                 const freshGame = await findGameByIdOrCode(id_game);
                 if (!freshGame) {
                     return res.status(404).json({ message: "Jeu non trouvé lors de la tentative de résolution du conflit de version." });
                 }
 
-                // Copy the articles_to_visit to the fresh game
                 if (!freshGame.articles_to_visit) freshGame.articles_to_visit = [];
 
-                // Add any new articles that aren't already in the fresh game
                 for (const articleId of game.articles_to_visit) {
                     if (!freshGame.articles_to_visit.some(id => id.toString() === articleId.toString())) {
                         freshGame.articles_to_visit.push(articleId);
                     }
                 }
 
-                // Try to distribute and save again
-                await distributeToPlayers(freshGame);
+                await distributeChallengeToPlayer(freshGame, latitude, longitude);
                 await freshGame.save();
 
-                // Return the fresh game
                 return res.status(200).json({ message: "Articles distribués avec succès (après résolution de conflit)", game: freshGame });
             } else {
-                // For other errors, rethrow
                 throw saveError;
             }
         }
@@ -662,7 +720,8 @@ export const distributeChallengesArticle = async (req, res) => {
         console.error("Erreur dans distributeRandomArticles :", error);
         res.status(500).json({ message: "Erreur serveur", details: error.message });
     }
-}
+};
+
 
 // Récupérer tous les articles visités d'un joueur dans une partie
 export const getVisitedArticlesPlayer = async (req, res) => {
