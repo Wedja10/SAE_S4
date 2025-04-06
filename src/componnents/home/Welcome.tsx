@@ -1,5 +1,4 @@
 import '../../style/Welcome.css'
-import {NavLink} from "react-router-dom";
 
 function Welcome() {
 
