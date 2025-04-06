@@ -21,7 +21,9 @@ import {
     setMineArtifacts,
     fetchLeaderBoard,
     deleteUsedArtifact,
-    getMaxTime
+    getMaxTime,
+    createGameWithChallenge,
+    distributeChallengesArticle
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -87,5 +89,7 @@ router.post("/distribute-artifacts", distributeArtifacts);
 router.post("/leaderBoard", fetchLeaderBoard);
 router.post("/delete-artefact", deleteUsedArtifact);
 router.post("/get-max-time", getMaxTime);
+router.post("/create-challenge-game", createGameWithChallenge);
+router.post("/distribute-challenge-articles", distributeChallengesArticle);
 
 export default router;

@@ -1,5 +1,6 @@
 import express from "express";
 import Challenge from "../models/Challenge.js";
+import {destinationArticleChallenge} from "../methods/challengesMethods.js";
 
 const router = express.Router();
 
@@ -12,5 +13,7 @@ router.get("/", async (_req, res) => {
         res.status(500).json({ message: "Erreur lors de la récupération des challenges" });
     }
 });
+
+router.post("/create-challenge", destinationArticleChallenge);
 
 export default router;
