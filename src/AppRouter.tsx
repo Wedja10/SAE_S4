@@ -7,19 +7,20 @@ import Choice from "./view/Choice.tsx";
 import LobbySolo from "./view/LobbySolo.tsx";
 import Leaderboard from "./view/Leaderboard.tsx";
 import Joinlobby from "./componnents/lobby/Joinlobby.tsx";
+import DailyChallenge from "./view/DailyChallenge.tsx";
 
 const AppRouter: React.FC = () => {
     return (
         <Router>
             <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/game/:gameCode" element={<Game solo={true} />} />
-                <Route path="/gameSolo" element={<Game solo={false} />} />
+                <Route path="/game/:gameCode" element={<Game />} />
                 <Route path="/lobby/:gameCode" element={<Lobby />} />
                 <Route path="/join/:gameCode" element={<Joinlobby />} />
                 <Route path="/lobbySolo" element={<LobbySolo />} />
                 <Route path={"/choice"} element={<Choice />} />
                 <Route path={"/leaderboard"} element={<Leaderboard />} />
+                <Route path={"/daily-challenge"} element={<DailyChallenge />} />
             </Routes>
         </Router>
     );
