@@ -6,6 +6,7 @@ import Article from "../models/Article.js";
 import Artifact from "../models/Artifact.js";
 import {createArticle, generateRandomArticle} from "./articleMethods.js";
 import artifact from "../models/Artifact.js";
+import Challenge from "../models/Challenge.js";
 
 const { ObjectId } = mongoose.Types;
 
@@ -350,6 +351,8 @@ export const changeArticle = async (gameId, playerId, articleId) => {
     return { message: "Article changé avec succès.", id_article: articleId };
 };
 
+
+
 // Update the changeArticleFront function to use the helper
 export const changeArticleFront = async (req, res) => {
     try {
@@ -585,6 +588,81 @@ export const distributeRandomArticles = async (req, res) => {
         res.status(500).json({ message: "Erreur serveur", details: error.message });
     }
 };
+
+export const distributeChallengesArticle = async (req, res) => {
+    try {
+        const { id_game, challenge_id } = req.body;
+
+        // Use the findGameByIdOrCode helper function instead of Game.findById
+        const game = await findGameByIdOrCode(id_game);
+        if (!game) {
+            return res.status(404).json({ message: "Jeu non trouvé." });
+        }
+
+        const challenge = await Challenge.findById(challenge_id)
+        console.log(`Found game with ID ${game._id} and code ${game.game_code}`);
+
+        if (!game.articles_to_visit) game.articles_to_visit = [];
+
+        const newArticle = await challenge.destination_article;
+
+        try {
+            const generatedArticle = await createArticle(newArticle);
+
+            if (!generatedArticle || !generatedArticle._id) {
+                throw new Error("L'article n'a pas été correctement enregistré en base de données.");
+            }
+
+            if (!game.articles_to_visit.includes(generatedArticle._id)) {
+                game.articles_to_visit.push(generatedArticle._id);
+            }
+        } catch (err) {
+            console.error("Erreur lors de la création de l'article :", err);
+        }
+
+
+        try {
+            await distributeToPlayers(game);
+            await game.save();
+        } catch (saveError) {
+            // Handle version conflict errors
+            if (saveError.name === 'VersionError') {
+                console.log('Version conflict detected, retrying with fresh game document');
+
+                // Fetch a fresh copy of the game
+                const freshGame = await findGameByIdOrCode(id_game);
+                if (!freshGame) {
+                    return res.status(404).json({ message: "Jeu non trouvé lors de la tentative de résolution du conflit de version." });
+                }
+
+                // Copy the articles_to_visit to the fresh game
+                if (!freshGame.articles_to_visit) freshGame.articles_to_visit = [];
+
+                // Add any new articles that aren't already in the fresh game
+                for (const articleId of game.articles_to_visit) {
+                    if (!freshGame.articles_to_visit.some(id => id.toString() === articleId.toString())) {
+                        freshGame.articles_to_visit.push(articleId);
+                    }
+                }
+
+                // Try to distribute and save again
+                await distributeToPlayers(freshGame);
+                await freshGame.save();
+
+                // Return the fresh game
+                return res.status(200).json({ message: "Articles distribués avec succès (après résolution de conflit)", game: freshGame });
+            } else {
+                // For other errors, rethrow
+                throw saveError;
+            }
+        }
+
+        res.status(200).json({ message: "Articles distribués avec succès", game });
+    } catch (error) {
+        console.error("Erreur dans distributeRandomArticles :", error);
+        res.status(500).json({ message: "Erreur serveur", details: error.message });
+    }
+}
 
 // Récupérer tous les articles visités d'un joueur dans une partie
 export const getVisitedArticlesPlayer = async (req, res) => {
@@ -848,6 +926,71 @@ export const createGame = async (req, res) => {
         console.error("Create game error:", error);
         res.status(400).json({ 
             message: "Error creating game. Please try again.",
+            error: error.message
+        });
+    }
+};
+
+export const createGameWithChallenge = async (req, res) => {
+    try {
+        const { id_creator, challenge_id } = req.body;
+
+        // First try to find the player by the exact ID
+        let player = await Player.findById(id_creator).catch(() => null);
+
+        if (!player) {
+            // If not found, try to find by the ID as a string field
+            player = await Player.findOne({ _id: id_creator }).catch(() => null);
+        }
+
+        if (!player) {
+            return res.status(404).json({
+                message: "Player not found. Please log in again.",
+                error: "INVALID_PLAYER"
+            });
+        }
+
+        const game_code = generateCode();
+        const status = "in_progress";
+        const start_time = Date.now();
+
+        const players = [{
+            player_id: player._id,
+            articles_visited: [],
+            current_article: null,
+            artifacts: [],
+            score: 0,
+            is_host: true
+        }];
+
+        const newGame = new Game({
+            game_code,
+            status,
+            start_time,
+            players,
+            challenge_id,
+            settings: {
+                max_players: null,
+                time_limit: null,
+                articles_number: 1,
+                visibility: "private",
+                allow_join: true
+            }
+        });
+
+        player.current_game = newGame._id;
+        await player.save();
+        const savedGame = await newGame.save();
+
+        res.status(201).json({
+            game_id: savedGame._id,
+            game_code: savedGame.game_code,
+            message: "Game created successfully"
+        });
+    } catch (error) {
+        console.error("Create challenge game error:", error);
+        res.status(400).json({
+            message: "Error creating challenge game. Please try again.",
             error: error.message
         });
     }
@@ -1536,3 +1679,4 @@ export const getMaxTime = async (req, res) => {
         return res.status(500).json({ error: "Failed to check max time", details: e.message });
     }
 }
+

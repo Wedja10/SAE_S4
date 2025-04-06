@@ -5,6 +5,7 @@ const GameSchema = new mongoose.Schema({
     status: String,
     start_time: Date,
     end_time: Date,
+    challenge_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Challenge', default: null },
     settings: {
         max_players: Number,
         time_limit: Number,

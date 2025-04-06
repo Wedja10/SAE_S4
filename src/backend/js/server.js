@@ -15,12 +15,11 @@ import dotenv from "dotenv";
 import cors from 'cors';
 import Game from "../models/Game.js";
 import Player from "../models/Player.js";
-import {WebSocketServer, WebSocket} from "ws";
+import {WebSocket, WebSocketServer} from "ws";
 import bodyParser from 'body-parser';
-import { v4 as uuidv4 } from 'uuid';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import fs from 'fs';
+import cron from 'node-cron';
+import {postRequest} from "../services/apiService.js";
+import Challenge from "../models/Challenge.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -1094,6 +1093,34 @@ app.use("/games", gameRoutes);
 app.use("/articles", articleRoutes);
 app.use("/artifacts", artifactRoutes);
 app.use("/challenges", challengeRoutes);
+
+cron.schedule('1 0 * * *', async () => {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const dateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    try {
+        const existing = await Challenge.findOne({ date: dateOnly });
+        if (existing) {
+            console.log('❌ Challenge du jour déjà créé');
+            return;
+        }
+
+        const destination_article = (await postRequest("http://localhost:5000/challenges/create-challenge")).title;
+
+        const challenge = new Challenge({
+            date: today,
+            destination_article,
+            players: []
+        });
+
+        await challenge.save();
+        console.log(`✅ Challenge créé pour ${dateOnly.toISOString().slice(0, 10)} avec l'article "${destination_article}"`);
+    } catch (err) {
+        console.error('🔥 Erreur lors de la création du challenge :', err.message);
+    }
+});
+
 
 // Debug route to check if server is responding
 app.get("/debug", (req, res) => {
