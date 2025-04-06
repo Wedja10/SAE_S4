@@ -6,13 +6,9 @@ function Navbar() {
     return (
         <>
             <nav className="fade-in">
-                <div className="menu-toggle">
-                    <div className="bar"></div>
-                    <div className="bar"></div>
-                    <div className="bar"></div>
-                </div>
                 <ul className="nav-links">
                     <li><NavLink to="/">HOME</NavLink></li>
+                    <li><NavLink to="/daily-challenge">DAILY</NavLink></li>
                 </ul>
             </nav>
         </>
