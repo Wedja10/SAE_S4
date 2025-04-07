@@ -1621,27 +1621,28 @@ export const fetchLeaderBoard = async (req, res) => {
         const articlesToFindLength = game.articles_to_visit.length;
 
         // Sort players based on found_target_articles length
-        const sortedPlayers = game.players.sort((a, b) =>
+        const sortedPlayers = [...game.players].sort((a, b) =>
             b.found_target_articles.length - a.found_target_articles.length
         );
+
 
         // Fetch player details asynchronously
         const informationPlayers = await Promise.all(sortedPlayers.map(async playerInformation => {
             const score = `${playerInformation.found_target_articles.length}/${articlesToFindLength}`;
             const player = await Player.findById(playerInformation.player_id);
-
+            const visitedIds = playerInformation.articles_visited || [];
+            const articles = await Article.find({ _id: { $in: visitedIds } });
+            const visited = articles.map(article => article.title);
             if (!player) {
                 return { pp: null, pseudo: "Unknown", score };
             }
 
-            return { pp: player.pp, pseudo: player.pseudo, score };
+            return { pp: player.pp, pseudo: player.pseudo, score, visited: visited.filter(title => title !== null) };
         }));
 
-        await Game.findOneAndUpdate(
-            { _id: id_game },
-            { $set: { status: "finish" } },
-            { new: true } // Returns the updated document
-        );
+        if (game.status !== "finish") {
+            await Game.findByIdAndUpdate(id_game, { $set: { status: "finish" } }, { new: true });
+        }
 
 
         return res.status(200).json({ message: "Sorted players successfully", players: informationPlayers });
