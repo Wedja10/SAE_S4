@@ -4,6 +4,7 @@
     min-height: 50%;
     max-height: 50%;
     overflow: visible;
+    transition: all 0.3s ease;
 }
 
 .chat-title {
@@ -22,6 +23,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
 }
 
 .connection-status {
@@ -31,6 +33,7 @@
     border-radius: 12px;
     font-weight: normal;
     text-transform: none;
+    transition: all 0.3s ease;
 }
 
 .connection-status.connected {
@@ -68,6 +71,7 @@
     overflow-y: auto;
     background-color: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
 }
 
 .chat-message {
@@ -77,6 +81,7 @@
     border-radius: 12px;
     max-width: 85%;
     word-break: break-word;
+    transition: all 0.3s ease;
 }
 
 .system-message {
@@ -89,6 +94,7 @@
     border-radius: 10px;
     text-align: center;
     max-width: 90%;
+    transition: all 0.3s ease;
 }
 
 .my-message {
@@ -97,12 +103,14 @@
     align-self: flex-end;
     margin-left: auto;
     border-bottom-right-radius: 4px;
+    transition: all 0.3s ease;
 }
 
 .my-message.local-only {
-    background-color: #90caf9; /* Lighter blue */
+    background-color: #90caf9;
     opacity: 0.8;
     position: relative;
+    transition: all 0.3s ease;
 }
 
 .my-message.local-only::after {
@@ -111,6 +119,7 @@
     right: 5px;
     bottom: 5px;
     font-size: 10px;
+    transition: all 0.3s ease;
 }
 
 .other-message {
@@ -118,11 +127,13 @@
     color: white;
     align-self: flex-start;
     border-bottom-left-radius: 4px;
+    transition: all 0.3s ease;
 }
 
 .message-sender {
     font-weight: bold;
     margin-right: 5px;
+    transition: all 0.3s ease;
 }
 
 .empty-chat {
@@ -130,11 +141,13 @@
     text-align: center;
     margin-top: 100px;
     font-style: italic;
+    transition: all 0.3s ease;
 }
 
-.sendcontainer{
+.sendcontainer {
     display: flex;
     margin-top: 10px;
+    transition: all 0.3s ease;
 }
 
 .chat-input {
@@ -165,7 +178,7 @@
     border-radius: 20px;
     border: none;
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
+    transition: all 0.3s ease;
     min-width: 80px;
 }
 
@@ -177,4 +190,133 @@
 .chat-send-button:disabled {
     background-color: #a0a0a0;
     cursor: not-allowed;
+}
+
+/* Media Queries */
+/* Grands écrans */
+@media screen and (max-width: 1400px) {
+    .chat-title {
+        font-size: 1.8rem;
+        width: 120%;
+    }
+
+    .chat-box {
+        height: 230px;
+        max-height: 230px;
+    }
+}
+
+/* Tablettes */
+@media screen and (max-width: 992px) {
+    .chat-title {
+        font-size: 1.6rem;
+        width: 110%;
+        padding: 8px;
+    }
+
+    .connection-status {
+        font-size: 0.9rem;
+        padding: 2px 6px;
+    }
+
+    .chat-box {
+        height: 210px;
+        max-height: 210px;
+        padding: 8px;
+    }
+
+    .chat-message {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
+
+    .system-message {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+}
+
+/* Tablettes et grands smartphones */
+@media screen and (max-width: 768px) {
+    .chat-title {
+        font-size: 1.4rem;
+        width: 100%;
+        padding: 6px;
+    }
+
+    .connection-status {
+        font-size: 0.8rem;
+        padding: 2px 5px;
+    }
+
+    .chat-box {
+        height: 190px;
+        max-height: 190px;
+        padding: 6px;
+    }
+
+    .chat-message {
+        font-size: 0.75rem;
+        padding: 5px 8px;
+        max-width: 90%;
+    }
+
+    .system-message {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+    }
+
+    .chat-input {
+        padding: 8px 12px;
+    }
+
+    .chat-send-button {
+        padding: 6px 12px;
+        min-width: 70px;
+    }
+}
+
+/* Smartphones */
+@media screen and (max-width: 480px) {
+    .chat-title {
+        font-size: 1.2rem;
+        padding: 5px;
+    }
+
+    .connection-status {
+        font-size: 0.7rem;
+        padding: 1px 4px;
+    }
+
+    .chat-box {
+        height: 170px;
+        max-height: 170px;
+        padding: 5px;
+    }
+
+    .chat-message {
+        font-size: 0.7rem;
+        padding: 4px 6px;
+        max-width: 95%;
+    }
+
+    .system-message {
+        font-size: 0.6rem;
+        padding: 2px 4px;
+    }
+
+    .chat-input {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .chat-send-button {
+        padding: 5px 10px;
+        min-width: 60px;
+        font-size: 0.8rem;
+    }
+
+    .message-sender {
+        font-size: 0.8rem;
+    }
 }
