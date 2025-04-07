@@ -53,7 +53,6 @@ header {
     align-items: center;
 }
 
-
 /* Styles pour la barre de défilement (compatible Webkit - Chrome, Edge, Safari) */
 ::-webkit-scrollbar {
     width: 10px; /* Largeur de la scrollbar */
@@ -82,4 +81,31 @@ header {
 * {
     scrollbar-width: thin;
     scrollbar-color: #E09D2D #1c2541;
+}
+
+/* ---------- Media Queries ---------- */
+/* Tablettes */
+@media screen and (max-width: 1024px) {
+    header {
+        height: 60vh;
+    }
+}
+
+/* Grands smartphones */
+@media screen and (max-width: 768px) {
+    header {
+        height: 50vh;
+    }
+}
+
+/* Smartphones */
+@media screen and (max-width: 480px) {
+    header {
+        height: 40vh;
+    }
+    
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
 }
