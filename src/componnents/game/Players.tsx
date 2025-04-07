@@ -62,7 +62,7 @@ const Players: React.FC = () => {
         fetchAllData();
 
         // Refresh every 3 seconds
-        const interval = setInterval(fetchAllData, 3000);
+        const interval = setInterval(fetchAllData, 500);
 
         return () => {
             isMounted.current = false;
