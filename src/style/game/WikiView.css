@@ -1,41 +1,49 @@
 .wiki-title{
     margin-top: 15px;
     color: snow;
+    transition: all 0.3s ease;
 }
 
 .wiki-container a {
     color: #0645ad;
     text-decoration: none;
+    transition: all 0.3s ease;
 }
 
 .wiki-container h1 {
     font-family: "Times New Roman", Times, serif;
     font-size: 2.5rem;
+    transition: all 0.3s ease;
 }
 
 .wiki-container h2 {
     font-family: "Times New Roman", Times, serif;
     font-size: 2rem;
+    transition: all 0.3s ease;
 }
 
 .wiki-container h3 {
     font-family: "Times New Roman", Times, serif;
     font-size: 1.5rem;
+    transition: all 0.3s ease;
 }
 
 .wiki-container h4 {
     font-family: "Times New Roman", Times, serif;
     font-size: 1.2rem;
+    transition: all 0.3s ease;
 }
 
 .wiki-container h5 {
     font-family: "Times New Roman", Times, serif;
     font-size: 1rem;
+    transition: all 0.3s ease;
 }
 
 .wiki-container h6 {
     font-family: "Times New Roman", Times, serif;
     font-size: 0.8rem;
+    transition: all 0.3s ease;
 }
 
 /* Animation fade-in */
@@ -57,6 +65,7 @@
     text-align: center;
     font-size: 1.2rem;
     color: #0645ad;
+    transition: all 0.3s ease;
 }
 
 /* Style pour les erreurs */
@@ -64,6 +73,7 @@
     text-align: center;
     font-size: 1.2rem;
     color: #d33;
+    transition: all 0.3s ease;
 }
 
 /* .vector-header-container{
@@ -81,6 +91,7 @@
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
 }
 
 
@@ -90,6 +101,7 @@
     font-weight: bold;
     margin-bottom: 20px;
     color: #333;
+    transition: all 0.3s ease;
 }
 
 
@@ -105,7 +117,7 @@
     padding: 20px;
     border-radius: 10px;
     min-height: 300px;
-    transition: opacity 0.3s ease-in-out;
+    transition: all 0.3s ease;
 }
 
 .wiki-content.fade-in {
@@ -122,6 +134,7 @@
     height: auto;
     display: block;
     margin: 10px auto;
+    transition: all 0.3s ease;
 }
 
 
@@ -130,11 +143,13 @@
     font-size: 24px;
     text-align: center;
     margin-bottom: 10px;
+    transition: all 0.3s ease;
 }
 
 .wiki-content h2, .wiki-content h3 {
     font-size: 20px;
     margin-top: 20px;
+    transition: all 0.3s ease;
 }
 
 /* Adapter les liens */
@@ -142,6 +157,7 @@
     color: #0078D7;
     text-decoration: none;
     font-weight: bold;
+    transition: all 0.3s ease;
 }
 
 .wiki-content a:hover {
@@ -151,6 +167,7 @@
 /* Améliorer les listes */
 .wiki-content ul, .wiki-content ol {
     margin-left: 20px;
+    transition: all 0.3s ease;
 }
 
 /* Cacher certains éléments inutiles */
@@ -169,22 +186,26 @@
     max-height: 200px;
     overflow-y: auto; /* Scroll si trop d'articles */
     color: #333;
+    transition: all 0.3s ease;
 }
 
 .wiki-history h3 {
     font-size: 18px;
     margin-bottom: 10px;
+    transition: all 0.3s ease;
 }
 
 .wiki-history ul {
     list-style: none;
     padding: 0;
+    transition: all 0.3s ease;
 }
 
 .wiki-history li {
     font-size: 14px;
     padding: 5px 0;
     border-bottom: 1px solid #ddd;
+    transition: all 0.3s ease;
 }
 
 .wiki-history li:last-child {
@@ -194,6 +215,7 @@
 .loading-spinner {
     font-size: 1.2em;
     color: #555;
+    transition: all 0.3s ease;
 }
 
 /* Modern loading screen styles */
@@ -205,6 +227,7 @@
     width: 100%;
     height: 100%;
     min-height: 300px;
+    transition: all 0.3s ease;
 }
 
 .loading-spinner-container {
@@ -212,6 +235,7 @@
     width: 80px;
     height: 80px;
     margin-bottom: 20px;
+    transition: all 0.3s ease;
 }
 
 .loading-spinner-circle {
@@ -222,6 +246,7 @@
     border-top-color: #E09D2D;
     border-radius: 50%;
     animation: spin 1.2s linear infinite;
+    transition: all 0.3s ease;
 }
 
 .loading-spinner-circle:before {
@@ -235,6 +260,7 @@
     border-top-color: #8B672B;
     border-radius: 50%;
     animation: spin 1.8s linear infinite;
+    transition: all 0.3s ease;
 }
 
 .loading-spinner-circle:after {
@@ -248,14 +274,16 @@
     border-top-color: #0d0d3b;
     border-radius: 50%;
     animation: spin 2.4s linear infinite;
+    transition: all 0.3s ease;
 }
 
 .loading-text {
     font-family: "cowboy", sans-serif;
-    font-size: 1.2em;
+    font-size: 1.5rem;
     color: #E09D2D;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     letter-spacing: 1px;
+    transition: all 0.3s ease;
 }
 
 @keyframes spin {
@@ -268,9 +296,14 @@
 }
 
 .back-button {
-    margin-bottom: 10px;
-    padding: 8px 12px;
+    background-color: #E09D2D;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
 }
 
 .back-button:disabled {
@@ -279,14 +312,173 @@
 }
 
 .time-counter {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background-color: #ff5722;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    z-index: 1000;
-    font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    font-size: 1.2rem;
+    color: #333;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+/* Media Queries */
+/* Grands écrans */
+@media screen and (max-width: 1400px) {
+    .wiki-container {
+        max-width: 700px;
+        height: 75vh;
+    }
+
+    .wiki-title {
+        font-size: 24px;
+    }
+
+    .wiki-content {
+        font-size: 15px;
+    }
+
+    .wiki-content h1 {
+        font-size: 22px;
+    }
+
+    .wiki-content h2, .wiki-content h3 {
+        font-size: 18px;
+    }
+
+    .loading-spinner-container {
+        width: 70px;
+        height: 70px;
+    }
+}
+
+/* Tablettes */
+@media screen and (max-width: 992px) {
+    .wiki-container {
+        max-width: 600px;
+        height: 70vh;
+        padding: 15px;
+    }
+
+    .wiki-title {
+        font-size: 22px;
+    }
+
+    .wiki-content {
+        font-size: 14px;
+        padding: 15px;
+    }
+
+    .wiki-content h1 {
+        font-size: 20px;
+    }
+
+    .wiki-content h2, .wiki-content h3 {
+        font-size: 16px;
+    }
+
+    .loading-spinner-container {
+        width: 60px;
+        height: 60px;
+    }
+
+    .loading-text {
+        font-size: 1.3rem;
+    }
+}
+
+/* Tablettes et grands smartphones */
+@media screen and (max-width: 768px) {
+    .wiki-container {
+        max-width: 500px;
+        height: 65vh;
+        padding: 12px;
+        margin-top: 15px;
+    }
+
+    .wiki-title {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+
+    .wiki-content {
+        font-size: 13px;
+        padding: 12px;
+        min-height: 250px;
+    }
+
+    .wiki-content h1 {
+        font-size: 18px;
+    }
+
+    .wiki-content h2, .wiki-content h3 {
+        font-size: 15px;
+    }
+
+    .wiki-history {
+        max-height: 150px;
+        padding: 12px;
+    }
+
+    .loading-spinner-container {
+        width: 50px;
+        height: 50px;
+    }
+
+    .loading-text {
+        font-size: 1.1rem;
+    }
+
+    .back-button {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Smartphones */
+@media screen and (max-width: 480px) {
+    .wiki-container {
+        max-width: 350px;
+        height: 60vh;
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    .wiki-title {
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+
+    .wiki-content {
+        font-size: 12px;
+        padding: 10px;
+        min-height: 200px;
+    }
+
+    .wiki-content h1 {
+        font-size: 16px;
+    }
+
+    .wiki-content h2, .wiki-content h3 {
+        font-size: 14px;
+    }
+
+    .wiki-history {
+        max-height: 120px;
+        padding: 10px;
+    }
+
+    .loading-spinner-container {
+        width: 40px;
+        height: 40px;
+    }
+
+    .loading-text {
+        font-size: 1rem;
+    }
+
+    .back-button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .time-counter {
+        font-size: 1rem;
+    }
 }

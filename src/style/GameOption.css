@@ -4,10 +4,16 @@
     width: 100%;
     justify-content: space-around;
     gap: 50px;
+    padding: 20px;
 }
 
 .option {
     border-radius: 10px;
+    transition: transform 0.3s ease;
+}
+
+.option:hover {
+    transform: scale(1.02);
 }
 
 .option h2 {
@@ -38,6 +44,12 @@
     font-family: "cowboy", sans-serif;
     margin-bottom: 20px;
     text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.start-btn:hover {
+    transform: translate(-2px, 2px);
+    box-shadow: -3px 3px 0px 0px #F1B24A;
 }
 
 .start-btn a {
@@ -65,6 +77,12 @@
     color: white;
     font-family: "cowboy", sans-serif;
     margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.join-btn:hover {
+    transform: translate(-2px, 2px);
+    box-shadow: -3px 3px 0px 0px #150D44;
 }
 
 .join-btn::placeholder {
@@ -102,6 +120,11 @@
     top: -60px;
     right: -5px;
     width: 60px;
+    transition: transform 0.3s ease;
+}
+
+.topright:hover {
+    transform: rotate(10deg);
 }
 
 .topright2 {
@@ -109,6 +132,11 @@
     top: -10px;
     right: -5px;
     width: 60px;
+    transition: transform 0.3s ease;
+}
+
+.topright2:hover {
+    transform: rotate(-10deg);
 }
 
 .error-message {
@@ -124,51 +152,70 @@
     gap: 1rem;
 }
 
+/* Media Queries */
+/* Grands écrans */
+@media screen and (max-width: 1400px) {
+    .game-options {
+        gap: 40px;
+    }
+}
+
+/* Tablettes */
 @media screen and (max-width: 1200px) {
     .game-options {
         flex-direction: column;
         align-items: center;
+        gap: 40px;
     }
 
     .option {
+        margin-top: 20px;
         width: 90%;
         text-align: center;
     }
 
     .start-btn,
     .join-btn {
-        width: 80%;
+        width: 100%;
     }
 }
 
-/* Tablettes (iPads, petits PC) */
+/* Tablettes et grands smartphones */
 @media screen and (max-width: 992px) {
     .game-options {
-        flex-direction: column;
-        align-items: center;
         gap: 30px;
     }
 
-    .start-btn,
     .join-btn {
         width: 90%;
+        max-width: 250px;
+    }
+
+    .start-btn {
+        width: 100% !important;
     }
 
     .option h2.start {
-        margin-bottom: 50px;
+        margin-bottom: 30px;
     }
 }
 
-/* Smartphones grands (iPhone 12+, Android grands écrans) */
+/* Smartphones */
 @media screen and (max-width: 768px) {
     .game-options {
-        flex-direction: column;
         gap: 20px;
+        padding: 10px;
     }
 
-    .start-btn,
+    .topright {
+        display: none;
+    }
+
     .join-btn {
         width: 100%;
+        max-width: 200px;
+        font-size: 1.1rem;
+        padding: 8px 15px;
     }
 
     .topright {
@@ -178,28 +225,56 @@
     }
 
     .topright2 {
+        width: 40px;
         right: -20px;
+    }
+
+    .option h2 {
+        font-size: 1.5rem;
     }
 }
 
-/* Smartphones petits (iPhone SE, petits Android) */
+/* Petits smartphones */
 @media screen and (max-width: 480px) {
     .game-options {
-        flex-direction: column;
         gap: 15px;
+        padding: 5px;
     }
 
     .start-btn,
     .join-btn {
         font-size: 1rem;
-        padding: 8px 15px;
+        padding: 6px 12px;
+        max-width: 200px;
+    }
+
+    .join-btnDiv {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     .topright {
         width: 35px;
     }
 
-    h2.start {
-        margin-bottom: 0;
+    .topright2 {
+        width: 35px;
+    }
+
+    .option h2 {
+        font-size: 1.3rem;
+        margin-top: -10px;
+    }
+
+    .option h2.start {
+        margin-bottom: 20px;
+    }
+
+    .join-submit {
+        padding: 0.5rem 1.5rem;
+        font-size: 1rem;
     }
 }

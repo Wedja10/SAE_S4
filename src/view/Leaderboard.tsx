@@ -1,6 +1,6 @@
 import '../style/leaderboard/leaderboard.css';
 import {LeaderboardList, Podium} from "../componnents/leaderboard/LeaderboardComponent.tsx";
-
+import Navbar from '../componnents/Navbar.tsx';
 interface Player {
   player: string;
   score: string;
@@ -25,6 +25,7 @@ const Leaderboard: React.FC = () => {
 
   return (
     <div className="leaderboardBg">
+      <Navbar />
       <Podium playerScore={podiumPlayers} />
       <LeaderboardList playerScore={otherPlayers} />
     </div>

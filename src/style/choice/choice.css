@@ -15,6 +15,7 @@
   background-color: rgba(11, 18, 57, 0.63);
   backdrop-filter: blur(10px);
   border-radius: 25px;
+  transition: all 0.3s ease;
 }
 
 .Solo {
@@ -26,6 +27,7 @@
   background-repeat: no-repeat;
   background-position: center;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .Multi {
@@ -37,6 +39,7 @@
   background-repeat: no-repeat;
   background-position: center;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .Solo h1, .Multi h1 {
@@ -48,13 +51,14 @@
   font-size: 4vh;
   text-align: center;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
 .Solo:hover, .Multi:hover {
   transform: scale(1.1);
   opacity: 0.75;
-  transition-duration: 300ms;
+  transition: all 0.3s ease;
 }
 
 .Solo:hover h1, .Multi:hover h1 {
@@ -62,19 +66,63 @@
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
+/* Media Queries */
+/* Grands écrans */
+@media screen and (max-width: 1400px) {
+  .ChoicePanel {
+    width: 80%;
+    height: 70%;
+  }
+}
+
+/* Tablettes */
+@media screen and (max-width: 992px) {
+  .ChoicePanel {
+    width: 85%;
+    height: 75%;
+  }
+
+  .Solo, .Multi {
+    width: 35%;
+  }
+
+  .Solo h1, .Multi h1 {
+    font-size: 3.5vh;
+  }
+}
+
+/* Tablettes et grands smartphones */
 @media screen and (max-width: 768px) {
   .ChoicePanel {
     height: 80%;
-    width: 60%;
+    width: 90%;
     flex-direction: column;
   }
 
   .Solo, .Multi {
-    width: 50%;
-    height: 50%;
+    width: 60%;
+    height: 45%;
+    margin: 10px 0;
   }
 
   .Solo h1, .Multi h1 {
     font-size: 3vh;
+  }
+}
+
+/* Smartphones */
+@media screen and (max-width: 480px) {
+  .ChoicePanel {
+    height: 85%;
+    width: 95%;
+  }
+
+  .Solo, .Multi {
+    width: 80%;
+    height: 40%;
+  }
+
+  .Solo h1, .Multi h1 {
+    font-size: 2.5vh;
   }
 }

@@ -6,6 +6,7 @@
     background-image: url('../assets/bg-lobby.jpg');
     background-size: cover;
     background-position: center;
+    padding: 20px;
 }
 
 .join-box {
@@ -17,7 +18,14 @@
     max-width: 500px;
     width: 90%;
     color: white;
-    margin-top: -60px; /* Pour compenser la navbar */
+    margin-top: -60px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.join-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.47);
 }
 
 .join-box h2 {
@@ -25,6 +33,7 @@
     margin-bottom: 1.5rem;
     font-size: 2rem;
     font-family: cowboy, sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .join-box p {
@@ -32,6 +41,7 @@
     margin-bottom: 2rem;
     font-size: 1.2rem;
     font-family: cowboy, sans-serif;
+    line-height: 1.5;
 }
 
 .join-btnDiv2 {
@@ -39,6 +49,7 @@
     gap: 1rem;
     justify-content: center;
     margin-top: 1rem;
+    flex-wrap: wrap;
 }
 
 .join-submit2, .cancel-button {
@@ -89,4 +100,70 @@
     margin-top: 1rem;
     font-size: 0.9rem;
     font-family: cowboy, sans-serif;
+}
+
+/* Media Queries */
+/* Tablettes */
+@media screen and (max-width: 768px) {
+    .join-container {
+        padding: 15px;
+    }
+
+    .join-box {
+        padding: 1.5rem;
+        margin-top: -40px;
+    }
+
+    .join-box h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .join-box p {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .join-submit2, .cancel-button {
+        padding: 0.7rem 1.2rem;
+        min-width: 110px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Smartphones */
+@media screen and (max-width: 480px) {
+    .join-container {
+        padding: 10px;
+    }
+
+    .join-box {
+        padding: 1.2rem;
+        margin-top: -30px;
+        width: 95%;
+    }
+
+    .join-box h2 {
+        font-size: 1.6rem;
+        margin-bottom: 1rem;
+    }
+
+    .join-box p {
+        font-size: 1rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .join-btnDiv2 {
+        gap: 0.8rem;
+    }
+
+    .join-submit2, .cancel-button {
+        padding: 0.6rem 1rem;
+        min-width: 100px;
+        font-size: 0.8rem;
+    }
+
+    .error-message {
+        font-size: 0.8rem;
+    }
 } 

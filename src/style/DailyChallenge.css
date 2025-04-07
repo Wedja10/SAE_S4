@@ -5,6 +5,7 @@
     background-position: center;
     color: white;
     padding-bottom: 2rem;
+    transition: all 0.3s ease;
 }
 
 .daily-content {
@@ -12,6 +13,7 @@
     max-width: 600px;
     margin: 0 auto;
     padding-top: 2rem;
+    transition: all 0.3s ease;
 }
 
 .daily-content h1 {
@@ -20,6 +22,8 @@
     font-family: cowboy, sans-serif;
     font-size: 2.5rem;
     margin-bottom: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
 }
 
 .challenge-card {
@@ -29,6 +33,12 @@
     padding: 1.5rem;
     margin-bottom: 2rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.challenge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 .challenge-header {
@@ -45,6 +55,7 @@
     font-family: cowboy, sans-serif;
     font-size: 1.5rem;
     margin: 0;
+    transition: all 0.3s ease;
 }
 
 .difficulty {
@@ -54,12 +65,14 @@
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: bold;
+    transition: all 0.3s ease;
 }
 
 .challenge-description {
     margin-bottom: 1.5rem;
     line-height: 1.5;
     font-size: 1.1rem;
+    transition: all 0.3s ease;
 }
 
 .challenge-reward {
@@ -70,6 +83,7 @@
     padding: 0.8rem 1rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
 }
 
 .reward-label {
@@ -108,6 +122,12 @@
     background: rgba(11, 18, 57, 0.43);
     border-radius: 15px;
     padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.daily-info:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .daily-info h3 {
@@ -202,13 +222,124 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Media query pour s'assurer que le design s'adapte bien sur mobile */
-@media (max-width: 767px) {
+/* Media Queries */
+/* Grands écrans */
+@media screen and (max-width: 1400px) {
+    .daily-content {
+        max-width: 550px;
+    }
+
+    .daily-content h1 {
+        font-size: 2.3rem;
+    }
+}
+
+/* Tablettes */
+@media screen and (max-width: 992px) {
+    .daily-content {
+        max-width: 500px;
+        padding: 0.8rem;
+    }
+
+    .daily-content h1 {
+        font-size: 2.1rem;
+    }
+
+    .challenge-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .challenge-description {
+        font-size: 1rem;
+    }
+}
+
+/* Tablettes et grands smartphones */
+@media screen and (max-width: 768px) {
+    .daily-content {
+        max-width: 450px;
+        padding: 0.6rem;
+    }
+
     .daily-content h1 {
         font-size: 2rem;
+        margin-bottom: 1.5rem;
     }
-    
+
+    .challenge-card {
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
+    }
+
     .challenge-header h2 {
         font-size: 1.3rem;
+    }
+
+    .challenge-description {
+        font-size: 0.95rem;
+    }
+
+    .start-challenge-btn {
+        padding: 0.9rem;
+        font-size: 1rem;
+    }
+}
+
+/* Smartphones */
+@media screen and (max-width: 480px) {
+    .daily-container {
+        padding-bottom: 1.5rem;
+    }
+
+    .daily-content {
+        max-width: 95%;
+        padding: 0.5rem;
+        padding-top: 1.5rem;
+    }
+
+    .daily-content h1 {
+        font-size: 1.8rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .challenge-card {
+        padding: 1rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .challenge-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .difficulty {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+    }
+
+    .challenge-description {
+        font-size: 0.9rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .challenge-reward {
+        padding: 0.6rem 0.8rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .reward-label {
+        font-size: 0.8rem;
+    }
+
+    .reward-value {
+        font-size: 1rem;
+    }
+
+    .start-challenge-btn {
+        padding: 0.8rem;
+        font-size: 0.95rem;
+    }
+
+    .daily-info {
+        padding: 1.2rem;
     }
 } 
