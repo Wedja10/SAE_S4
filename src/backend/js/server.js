@@ -1121,6 +1121,23 @@ cron.schedule('1 0 * * *', async () => {
     }
 });
 
+// Tâche cron pour supprimer les jeux publics non terminés après 1 jour - EXÉCUTION À 23h10
+cron.schedule('10 23 * * *', async () => { // Exécuté à 23h10 chaque jour
+    try {
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+        // Supprimer les jeux publics qui ne sont pas 'finished' et créés il y a plus de 1 jour
+        const result = await Game.deleteMany({
+            'settings.visibility': 'public',
+            start_time: { $lt: oneDayAgo }
+        });
+
+        console.log(`✅ ${result.deletedCount} jeux publics non terminés supprimés (critère: 1 jour d'ancienneté)`);
+    } catch (err) {
+        console.error('🔥 Erreur lors de la suppression des jeux publics anciens :', err.message);
+    }
+});
 
 // Debug route to check if server is responding
 app.get("/debug", (req, res) => {
