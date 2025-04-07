@@ -1,11 +1,12 @@
 .game-container {
     display: flex;
     width: 100%;
-    height: 100vh;
+    min-height: 100vh;
     background-image: url('../../assets/bg.jpg');
     background-size: cover;
     background-position: center;
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
 .sidebar-left, .sidebar-right {
@@ -16,10 +17,11 @@
     overflow-y: hidden;
     max-height: 100vh;
     padding-top: 7%;
-    backdrop-filter: blur( 7px );
-    -webkit-backdrop-filter: blur( 4px );
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(4px);
     position: relative;
     overflow: visible;
+    transition: all 0.3s ease;
 }
 
 .main-content {
@@ -30,6 +32,7 @@
     overflow-y: hidden;
     max-height: 100vh;
     overflow: visible;
+    transition: all 0.3s ease;
 }
 
 .game-title {
@@ -38,6 +41,7 @@
     color: white;
     text-align: center;
     margin-top: 16px;
+    transition: all 0.3s ease;
 }
 
 /* Full-screen loading screen */
@@ -52,6 +56,7 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    transition: all 0.3s ease;
 }
 
 .game-loading-content {
@@ -59,6 +64,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
 }
 
 .game-loading-logo {
@@ -68,6 +74,7 @@
     margin-bottom: 30px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     letter-spacing: 2px;
+    transition: all 0.3s ease;
 }
 
 .game-loading-spinner-container {
@@ -75,6 +82,7 @@
     width: 100px;
     height: 100px;
     margin-bottom: 30px;
+    transition: all 0.3s ease;
 }
 
 .game-loading-spinner-circle {
@@ -85,6 +93,7 @@
     border-top-color: #E09D2D;
     border-radius: 50%;
     animation: game-spin 1.2s linear infinite;
+    transition: all 0.3s ease;
 }
 
 .game-loading-spinner-circle:before {
@@ -98,6 +107,7 @@
     border-top-color: #8B672B;
     border-radius: 50%;
     animation: game-spin 1.8s linear infinite;
+    transition: all 0.3s ease;
 }
 
 .game-loading-spinner-circle:after {
@@ -111,6 +121,7 @@
     border-top-color: #fff;
     border-radius: 50%;
     animation: game-spin 2.4s linear infinite;
+    transition: all 0.3s ease;
 }
 
 .game-loading-text {
@@ -119,6 +130,7 @@
     color: #E09D2D;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     letter-spacing: 1px;
+    transition: all 0.3s ease;
 }
 
 @keyframes game-spin {
@@ -127,5 +139,122 @@
     }
     100% {
         transform: rotate(360deg);
+    }
+}
+
+/* Media Queries */
+/* Grands écrans */
+@media screen and (max-width: 1400px) {
+    .sidebar-left, .sidebar-right {
+        width: 17%;
+        padding: 12px;
+    }
+
+    .main-content {
+        width: 66%;
+    }
+
+    .game-title {
+        font-size: 1.8rem;
+    }
+}
+
+/* Tablettes */
+@media screen and (max-width: 992px) {
+    .sidebar-left, .sidebar-right {
+        width: 20%;
+        padding: 10px;
+    }
+
+    .main-content {
+        width: 60%;
+    }
+
+    .game-title {
+        font-size: 1.6rem;
+    }
+
+    .game-loading-logo {
+        font-size: 2.5rem;
+    }
+
+    .game-loading-spinner-container {
+        width: 80px;
+        height: 80px;
+    }
+
+    .game-loading-text {
+        font-size: 1.3rem;
+    }
+
+    .game-container {
+        margin-bottom: 35%;
+    }
+}
+
+/* Tablettes et grands smartphones */
+@media screen and (max-width: 768px) {
+    .game-container {
+        flex-direction: column;
+    }
+
+    .sidebar-left, .sidebar-right {
+        width: 100%;
+        height: auto;
+        padding: 8px;
+        padding-top: 5%;
+    }
+
+    .main-content {
+        width: 100%;
+        height: auto;
+    }
+
+    .game-title {
+        font-size: 1.4rem;
+        margin-top: 10px;
+    }
+
+    .game-loading-logo {
+        font-size: 2rem;
+        margin-bottom: 20px;
+    }
+
+    .game-loading-spinner-container {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 20px;
+    }
+
+    .game-loading-text {
+        font-size: 1.1rem;
+    }
+}
+
+/* Smartphones */
+@media screen and (max-width: 480px) {
+    .sidebar-left, .sidebar-right {
+        padding: 6px;
+        padding-top: 4%;
+    }
+
+    .game-title {
+        font-size: 1.2rem;
+        margin-top: 8px;
+    }
+
+    .game-loading-logo {
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+    }
+
+    .game-loading-spinner-container {
+        width: 50px;
+        height: 50px;
+        margin-bottom: 15px;
+    }
+
+    .game-loading-text {
+        font-size: 1rem;
     }
 }
