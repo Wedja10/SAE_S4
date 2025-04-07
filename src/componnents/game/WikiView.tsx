@@ -516,8 +516,8 @@ const WikiView: React.FC = () => {
 
       if (response && response.previousArticle) {
         // Update the UI with the previous article
-        setCurrentTitle(response.previousArticle);
-        await fetchWikiContent(response.previousArticle);
+        setCurrentTitle(response.previousArticle.title);
+        await fetchWikiContent(response.previousArticle.title);
 
         // Optionally, you can update the history if needed
         // setHistory((prevHistory) => [...prevHistory, response.previousArticle]);
@@ -654,7 +654,7 @@ const WikiView: React.FC = () => {
     await postRequest(getApiUrl("/games/delete-artefact"), {
       id_game: gameId,
       id_player: playerId, // Doit être défini et valide
-      artifact: "Mine"
+      artifact: "Backtrack"
     });
   };
 
