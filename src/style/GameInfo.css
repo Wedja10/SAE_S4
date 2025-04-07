@@ -13,6 +13,12 @@
 .content img {
     width: 150px;
     border: 2px solid #ffcc00;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+}
+
+.content img:hover {
+    transform: scale(1.05);
 }
 
 .content p {
@@ -20,8 +26,18 @@
     font-size: 1.5rem;
     font-weight: 700;
     margin-left: 70px;
+    line-height: 1.4;
 }
 
+/* Media Queries */
+/* Grands écrans */
+@media screen and (max-width: 1400px) {
+    .game-info {
+        width: 60%;
+    }
+}
+
+/* Tablettes */
 @media screen and (max-width: 1200px) {
     .game-info {
         width: 70%;
@@ -35,25 +51,42 @@
 
     .content p {
         margin-left: 0;
+        font-size: 1.3rem;
     }
 }
 
-/* Smartphones grands (iPhone 12+, Android grands écrans) */
+/* Tablettes et grands smartphones */
 @media screen and (max-width: 768px) {
-
     .content img {
         width: 100px;
     }
 
     .game-info {
         width: 90%;
+        margin: 30px auto;
+    }
+
+    .content p {
+        font-size: 1.2rem;
     }
 }
 
-/* Smartphones petits (iPhone SE, petits Android) */
+/* Smartphones */
 @media screen and (max-width: 480px) {
-
     .content img {
         width: 80px;
+    }
+
+    .game-info {
+        margin: 20px auto;
+    }
+
+    .content p {
+        font-size: 1rem;
+        padding: 0 10px;
+    }
+
+    .content {
+        gap: 15px;
     }
 }
