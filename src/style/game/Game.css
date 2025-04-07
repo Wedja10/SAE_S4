@@ -14,7 +14,7 @@
     background-color: #0b1239da;
     padding: 16px;
     color: white;
-    overflow-y: hidden;
+    overflow-y: auto;
     max-height: 100vh;
     padding-top: 7%;
     backdrop-filter: blur(7px);
@@ -22,6 +22,13 @@
     position: relative;
     overflow: visible;
     transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sidebar-right {
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .main-content {
@@ -29,10 +36,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    overflow-y: hidden;
+    overflow-y: auto;
     max-height: 100vh;
     overflow: visible;
     transition: all 0.3s ease;
+    padding: 20px;
 }
 
 .game-title {
@@ -148,10 +156,12 @@
     .sidebar-left, .sidebar-right {
         width: 17%;
         padding: 12px;
+        gap: 15px;
     }
 
     .main-content {
         width: 66%;
+        padding: 15px;
     }
 
     .game-title {
@@ -164,10 +174,13 @@
     .sidebar-left, .sidebar-right {
         width: 20%;
         padding: 10px;
+        gap: 12px;
+        padding-top: 5%;
     }
 
     .main-content {
         width: 60%;
+        padding: 12px;
     }
 
     .game-title {
@@ -196,6 +209,7 @@
 @media screen and (max-width: 768px) {
     .game-container {
         flex-direction: column;
+        min-height: auto;
     }
 
     .sidebar-left, .sidebar-right {
@@ -203,11 +217,22 @@
         height: auto;
         padding: 8px;
         padding-top: 5%;
+        gap: 10px;
+        margin-top: 50px;
+        max-height: none;
+        border-left: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-right {
+        order: 3;
     }
 
     .main-content {
         width: 100%;
         height: auto;
+        padding: 10px;
+        order: 2;
     }
 
     .game-title {
@@ -236,6 +261,11 @@
     .sidebar-left, .sidebar-right {
         padding: 6px;
         padding-top: 4%;
+        gap: 8px;
+    }
+
+    .main-content {
+        padding: 8px;
     }
 
     .game-title {
