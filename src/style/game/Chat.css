@@ -17,12 +17,11 @@
     border-radius: 50px;
     white-space: nowrap;
     overflow: visible; 
-    z-index: 10;
-    width: 130%;
-    transform: translateX(-20%);
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 0 auto;
     transition: all 0.3s ease;
 }
 
@@ -197,7 +196,7 @@
 @media screen and (max-width: 1400px) {
     .chat-title {
         font-size: 1.8rem;
-        width: 120%;
+        width: 100%;
     }
 
     .chat-box {
@@ -210,7 +209,7 @@
 @media screen and (max-width: 992px) {
     .chat-title {
         font-size: 1.6rem;
-        width: 110%;
+        width: 100%;
         padding: 8px;
     }
 
@@ -281,6 +280,7 @@
     .chat-title {
         font-size: 1.2rem;
         padding: 5px;
+        width: 100%;
     }
 
     .connection-status {
