@@ -13,6 +13,7 @@
     transform: translateX(-50%);
     padding-left: 50px;
     padding-right: 50px;
+    transition: all 0.3s ease;
 }
 
 /* Boutons d'action qui dépassent */
@@ -27,7 +28,7 @@
     white-space: nowrap;
     overflow: visible; 
     z-index: 10;
-    transition: background-color 0.2s ease-in-out, transform 0.3s ease-in-out;
+    transition: all 0.3s ease;
     width: 150px;
     height: 130px;
     bottom: 50px;
@@ -59,6 +60,7 @@
 .teleport-button:hover {
     background-color: #0288d1;
 }
+
 .mine-search-container {
     position: absolute;
     top: 50px;
@@ -68,5 +70,76 @@
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+/* Media Queries */
+/* Grands écrans */
+@media screen and (max-width: 1400px) {
+    .actions-container {
+        width: 50%;
+    }
+
+    .action-button {
+        width: 140px;
+        height: 120px;
+    }
+}
+
+/* Tablettes */
+@media screen and (max-width: 992px) {
+    .actions-container {
+        width: 60%;
+        height: 90px;
+        padding-left: 40px;
+        padding-right: 40px;
+    }
+
+    .action-button {
+        width: 130px;
+        height: 110px;
+        bottom: 40px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Tablettes et grands smartphones */
+@media screen and (max-width: 768px) {
+    .actions-container {
+        width: 70%;
+        height: 80px;
+        padding-left: 30px;
+        padding-right: 30px;
+    }
+
+    .action-button {
+        width: 120px;
+        height: 100px;
+        bottom: 30px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Smartphones */
+@media screen and (max-width: 480px) {
+    .actions-container {
+        width: 85%;
+        height: 70px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .action-button {
+        width: 100px;
+        height: 90px;
+        bottom: 20px;
+        font-size: 0.7rem;
+        padding: 8px 16px;
+    }
+
+    .mine-search-container {
+        width: 90%;
+        padding: 8px;
+    }
 }
 
