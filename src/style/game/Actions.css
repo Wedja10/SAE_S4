@@ -14,6 +14,7 @@
     padding-left: 50px;
     padding-right: 50px;
     transition: all 0.3s ease;
+    z-index: 10;
 }
 
 /* Boutons d'action qui dépassent */
