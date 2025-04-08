@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../componnents/Navbar';
 import '../style/DailyChallenge.css';
+import {postRequest} from "../backend/services/apiService.js";
+import {getApiUrl} from "../utils/config";
 import { Storage } from '../utils/storage';
 
 const DailyChallenge: React.FC = () => {
@@ -40,15 +42,44 @@ const DailyChallenge: React.FC = () => {
         }
     }, [isMobile]);
 
-    const handleStartChallenge = () => {
-        if (dailyChallenge) {
-            // Stockage des informations du challenge dans localStorage au lieu de Storage
-            localStorage.setItem('dailyChallenge', JSON.stringify(dailyChallenge));
-            
-            // Créer une partie solo avec l'article cible
-            navigate('/gameSolo', { state: { targetArticle: dailyChallenge.target } });
+    const handleStartChallenge = async () => {
+        if (!dailyChallenge) return;
+
+        try {
+            // Demande la position à l'utilisateur
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+
+                // Stocke le challenge localement
+                localStorage.setItem('dailyChallenge', JSON.stringify(dailyChallenge));
+
+                // Crée la partie avec le challenge du jour
+                const challengeGame = await postRequest(getApiUrl("/games/create-challenge-game"), {
+                    id_creator: Storage.getPlayerId()
+                });
+
+                Storage.setGameId(challengeGame.game_id);
+
+                // Distribue l'article en fonction de la position de l'utilisateur
+                await postRequest(getApiUrl("/games/distribute-challenge-articles"), {
+                    id_game: challengeGame.game_id,
+                    latitude,
+                    longitude
+                });
+
+                // Redirige vers la partie solo
+                navigate('/gameSolo', { state: { targetArticle: dailyChallenge.target } });
+
+            }, (error) => {
+                console.error("Erreur de géolocalisation :", error);
+                alert("Impossible de récupérer votre position. Veuillez autoriser l'accès à la localisation.");
+            });
+        } catch (err) {
+            console.error("Erreur lors du démarrage du challenge :", err);
+            alert("Une erreur est survenue lors du démarrage du challenge.");
         }
     };
+
 
     if (isLoading) {
         return (

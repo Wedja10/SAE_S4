@@ -637,7 +637,6 @@ export const distributeChallengeToPlayer = async (game, latitude, longitude) => 
 
         if (!player.articles_visited.some(a => a === startArticle)) {
             player.articles_visited.push(startArticle);
-            player.found_target_articles.push(startArticle);
         }
 
         await game.save();
@@ -652,7 +651,7 @@ export const distributeChallengeToPlayer = async (game, latitude, longitude) => 
 
 export const distributeChallengesArticle = async (req, res) => {
     try {
-        const { id_game, challenge_id, latitude, longitude } = req.body;
+        const { id_game, latitude, longitude } = req.body;
 
         const lat = parseFloat(latitude);
         const lon = parseFloat(longitude);
@@ -666,12 +665,24 @@ export const distributeChallengesArticle = async (req, res) => {
             return res.status(404).json({ message: "Jeu non trouvé." });
         }
 
-        const challenge = await Challenge.findById(challenge_id);
+        // Récupérer le challenge du jour
+        const today = new Date();
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+        const challenge = await Challenge.findOne({
+            date: { $gte: startOfDay, $lte: endOfDay }
+        });
+
+        if (!challenge) {
+            return res.status(404).json({ message: "Challenge du jour introuvable." });
+        }
+
         console.log(`Found game with ID ${game._id} and code ${game.game_code}`);
 
         if (!game.articles_to_visit) game.articles_to_visit = [];
 
-        const newArticle = await challenge.destination_article;
+        const newArticle = challenge.destination_article;
 
         try {
             const generatedArticle = await createArticle(newArticle);
@@ -717,11 +728,10 @@ export const distributeChallengesArticle = async (req, res) => {
 
         res.status(200).json({ message: "Articles distribués avec succès", game });
     } catch (error) {
-        console.error("Erreur dans distributeRandomArticles :", error);
+        console.error("Erreur dans distributeChallengesArticle :", error);
         res.status(500).json({ message: "Erreur serveur", details: error.message });
     }
 };
-
 
 // Récupérer tous les articles visités d'un joueur dans une partie
 export const getVisitedArticlesPlayer = async (req, res) => {
@@ -992,13 +1002,31 @@ export const createGame = async (req, res) => {
 
 export const createGameWithChallenge = async (req, res) => {
     try {
-        const { id_creator, challenge_id } = req.body;
+        const { id_creator } = req.body;
 
-        // First try to find the player by the exact ID
+        // Récupère la date du jour sans l'heure (pour une correspondance exacte avec celle stockée dans MongoDB)
+        const today = new Date();
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+        // Recherche du challenge du jour
+        const challenge = await Challenge.findOne({
+            date: { $gte: startOfDay, $lte: endOfDay }
+        });
+
+        if (!challenge) {
+            return res.status(404).json({
+                message: "Challenge for today not found.",
+                error: "CHALLENGE_NOT_FOUND"
+            });
+        }
+
+        const challenge_id = challenge._id;
+
+        // Récupération du joueur
         let player = await Player.findById(id_creator).catch(() => null);
 
         if (!player) {
-            // If not found, try to find by the ID as a string field
             player = await Player.findOne({ _id: id_creator }).catch(() => null);
         }
 
@@ -1054,7 +1082,6 @@ export const createGameWithChallenge = async (req, res) => {
         });
     }
 };
-
 
 
 export const gameAndPlayers = async (id_game, id_player) => {
