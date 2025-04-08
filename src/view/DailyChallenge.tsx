@@ -66,40 +66,54 @@ const DailyChallenge: React.FC = () => {
         return (
             <div className="daily-container desktop-message">
                 <Navbar />
-                <div className="not-mobile-message">
-                    <h2>Daily Challenge uniquement sur mobile</h2>
-                    <p>Les daily challenges sont disponibles uniquement sur les appareils mobiles.</p>
-                    <p>Veuillez vous connecter depuis votre smartphone ou tablette pour y accéder.</p>
-                    <div className="phone-icon">
-                        <i className="fas fa-mobile-alt"></i>
+                <div className="apercuAndMessage">
+                    <img className="apercuMobile" src="public/assets/apercuMobile.png" alt="apercuMobile" style={{
+                        height: '60vh',
+                        borderRadius: '20px',
+                        border: 'solid 5px black',
+                        marginTop: '20px'
+                    }}/>
+                    <div className="not-mobile-message">
+                        <h2>Daily Challenge uniquement sur mobile</h2>
+                        <p>Les daily challenges sont disponibles uniquement sur les appareils mobiles.</p>
+                        <p>Veuillez vous connecter depuis votre smartphone ou tablette pour y accéder.</p>
+                        <div className="phone-icon">
+                            <i className="fas fa-mobile-alt"></i>
+                        </div>
+                        <button onClick={() => navigate('/')} className="back-button">
+                            Retour à l'accueil
+                        </button>
+
+                        <div className="download-buttons">
+                            <img src="public/assets/appStoreButton.png" alt="AppStoreButton"/>
+                            <img src="public/assets/playStoreButton.png" alt="playStoreButton"/>
+                        </div>
+
                     </div>
-                    <button onClick={() => navigate('/')} className="back-button">
-                        Retour à l'accueil
-                    </button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="daily-container">
-            <Navbar />
-            <div className="daily-content">
-                <h1>DAILY CHALLENGE</h1>
-                
-                {dailyChallenge ? (
-                    <div className="challenge-card">
-                        <div className="challenge-header">
-                            <h2>{dailyChallenge.title}</h2>
-                            <span className="difficulty">{dailyChallenge.difficulty}</span>
-                        </div>
-                        <p className="challenge-description">{dailyChallenge.description}</p>
-                        <button onClick={handleStartChallenge} className="start-challenge-btn">
-                            RELEVER LE DÉFI
-                        </button>
+      <div className="daily-container">
+          <Navbar/>
+          <div className="daily-content">
+              <h1>DAILY CHALLENGE</h1>
+
+              {dailyChallenge ? (
+                <div className="challenge-card">
+                    <div className="challenge-header">
+                        <h2>{dailyChallenge.title}</h2>
+                        <span className="difficulty">{dailyChallenge.difficulty}</span>
                     </div>
-                ) : (
-                    <div className="daily-loading">
+                    <p className="challenge-description">{dailyChallenge.description}</p>
+                    <button onClick={handleStartChallenge} className="start-challenge-btn">
+                        RELEVER LE DÉFI
+                    </button>
+                </div>
+              ) : (
+                <div className="daily-loading">
                         <div className="loading-spinner"></div>
                         <p>Chargement du défi du jour...</p>
                     </div>
