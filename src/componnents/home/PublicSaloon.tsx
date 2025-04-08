@@ -67,7 +67,7 @@ export const PublicSaloonList = () => {
     }
 
     function startPage() {
-        setBegin(0);
+        setBegin(1);
     }
 
     function endPage() {
@@ -85,7 +85,7 @@ export const PublicSaloonList = () => {
           <div className={"pagination"}>
             <img src={paginationStart} alt="Start" onClick={startPage} />
             <img src={paginationPrevious} alt="Previous" onClick={previousPage} />
-            <p className={"pageNumber"}>{begin / 9 + 1} / {games.length / 9}</p>
+            <p className={"pageNumber"}>{Math.floor(begin / 9) + 1 == 0 ? 1 : Math.floor(begin / 9) + 1 /* A cause du endPage() */} / {Math.ceil(games.length / 9) == 0 ? 1 : Math.ceil(games.length / 9) /* Si 0 games */}</p>
             <img src={paginationNext} alt="Next" onClick={nextPage} />
             <img src={paginationEnd} alt="End" onClick={endPage} />
           </div>
