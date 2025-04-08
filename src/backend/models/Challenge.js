@@ -16,11 +16,6 @@ const PlayerSchema = new mongoose.Schema({
     time_taken: {
         type: Number,
         required: true
-    },
-    rank: Number,
-    completed: {
-        type: Boolean,
-        default: false
     }
 });
 

@@ -23,7 +23,8 @@ import {
     deleteUsedArtifact,
     getMaxTime,
     createGameWithChallenge,
-    distributeChallengesArticle
+    distributeChallengesArticle,
+    updateChallengeLeaderboard
 } from "../methods/gameMethods.js";
 import { joinLobby } from "../methods/lobbyMethods.js";
 import Game from "../models/Game.js";
@@ -91,5 +92,6 @@ router.post("/delete-artefact", deleteUsedArtifact);
 router.post("/get-max-time", getMaxTime);
 router.post("/create-challenge-game", createGameWithChallenge);
 router.post("/distribute-challenge-articles", distributeChallengesArticle);
+router.post("/update-challenge", updateChallengeLeaderboard);
 
 export default router;

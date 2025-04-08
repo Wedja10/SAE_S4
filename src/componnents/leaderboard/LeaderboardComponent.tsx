@@ -70,6 +70,7 @@ const ArticlesModal = ({ player, articles, onClose }: { player: string; articles
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+
     // Filtrer les articles en fonction du terme de recherche
     const filteredArticles = articles.filter(article =>
         article.toLowerCase().includes(searchTerm.toLowerCase())
@@ -186,6 +187,25 @@ export const Podium = () => {
     const [showModal, setShowModal] = useState<boolean>(false);
 
     const gameId = Storage.getGameId();
+
+    useEffect(() => {
+        const checkActiveChallenge = async () => {
+            const activeChallengeData = localStorage.getItem('dailyChallenge');
+
+            if (activeChallengeData) {
+                try {
+                    await postRequest(getApiUrl("/games/update-challenge"), {
+                        id_game: gameId
+                    });
+                } catch (error) {
+                    console.error('Error parsing active challenge data:', error);
+                }
+            }
+        };
+
+        checkActiveChallenge();
+    }, []);
+
 
     useEffect(() => {
         const fetchLeaderboard = async () => {
