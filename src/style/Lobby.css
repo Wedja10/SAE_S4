@@ -268,13 +268,11 @@
   margin-top: 25px;
   margin-bottom: 25px;
   width: 100%;
-  height: 200px;
 }
 
 .Option {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   width: 20%;
   position: relative;
 }
@@ -283,7 +281,7 @@
   position: absolute;
   width: 20px;
   right: 8px;
-  bottom: 2px;
+  top: 70px;
   transform: translateY(-50%);
   cursor: pointer;
 }
