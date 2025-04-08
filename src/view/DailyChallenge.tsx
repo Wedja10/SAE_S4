@@ -42,8 +42,33 @@ const DailyChallenge: React.FC = () => {
         }
     }, [isMobile]);
 
+    const ensurePlayer = async () => {
+        const playerId = Storage.getPlayerId();
+        if (playerId) return playerId;
+
+        try {
+            const response = await fetch('http://localhost:5000/players/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
+
+            Storage.setPlayerId(data.id);
+            return data.id;
+        } catch (error) {
+            console.error('Error creating player:', error);
+            throw error;
+        }
+    };
+
+
     const handleStartChallenge = async () => {
         if (!dailyChallenge) return;
+        const playerId = await ensurePlayer();
 
         try {
             // Demande la position à l'utilisateur
@@ -55,7 +80,7 @@ const DailyChallenge: React.FC = () => {
 
                 // Crée la partie avec le challenge du jour
                 const challengeGame = await postRequest(getApiUrl("/games/create-challenge-game"), {
-                    id_creator: Storage.getPlayerId()
+                    id_creator: playerId
                 });
 
                 Storage.setGameId(challengeGame.game_id);

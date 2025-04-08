@@ -1459,7 +1459,7 @@ export const dictatorArtifact = async (req, res) => {
 
 export const getPublicGames = async (req, res) => {
     try {
-        const publicGames = await Game.find({ "settings.visibility": "public", status: "waiting" });
+        const publicGames = await Game.find({ "settings.visibility": "public", status: "waiting", "settings.allow_join": true});
 
 
         const infoGames = await Promise.all(publicGames.map(async (game) => {
@@ -1647,38 +1647,58 @@ export const fetchLeaderBoard = async (req, res) => {
 
         const articlesToFindLength = game.articles_to_visit.length;
 
-        // Sort players based on found_target_articles length
-        const sortedPlayers = [...game.players].sort((a, b) =>
-            b.found_target_articles.length - a.found_target_articles.length
+        // Sort players by number of found target articles
+        const sortedPlayers = [...game.players].sort(
+            (a, b) => b.found_target_articles.length - a.found_target_articles.length
         );
 
+        const informationPlayers = await Promise.all(
+            sortedPlayers.map(async (playerInformation) => {
+                const score = `${playerInformation.found_target_articles.length}/${articlesToFindLength}`;
+                const player = await Player.findById(playerInformation.player_id);
 
-        // Fetch player details asynchronously
-        const informationPlayers = await Promise.all(sortedPlayers.map(async playerInformation => {
-            const score = `${playerInformation.found_target_articles.length}/${articlesToFindLength}`;
-            const player = await Player.findById(playerInformation.player_id);
-            const visitedIds = playerInformation.articles_visited || [];
-            const articles = await Article.find({ _id: { $in: visitedIds } });
-            const visited = articles.map(article => article.title);
-            if (!player) {
-                return { pp: null, pseudo: "Unknown", score };
-            }
+                const visitedIds = playerInformation.articles_visited || [];
+                const articles = await Article.find({ _id: { $in: visitedIds } });
 
-            return { pp: player.pp, pseudo: player.pseudo, score, visited: visited.filter(title => title !== null) };
-        }));
+                const visited = articles
+                    .filter(article => article && article.title)
+                    .map(article => article.title);
 
-        if (game.status !== "finish") {
-            await Game.findByIdAndUpdate(id_game, { $set: { status: "finish" } }, { new: true });
+                if (!player) {
+                    return { pp: null, pseudo: "Unknown", score, visited };
+                }
+
+                return {
+                    pp: player.pp,
+                    pseudo: player.pseudo,
+                    score,
+                    visited
+                };
+            })
+        );
+
+        if (!game.end_time) {
+            await Game.findByIdAndUpdate(
+                id_game,
+                { $set: { end_time: new Date(), status: "finish" } },
+                { new: true }
+            );
         }
 
-
-        return res.status(200).json({ message: "Sorted players successfully", players: informationPlayers });
+        return res.status(200).json({
+            message: "Sorted players successfully",
+            players: informationPlayers
+        });
 
     } catch (e) {
         console.error("Error fetchLeaderBoard:", e);
-        return res.status(500).json({ error: "Failed to fetch leaderboard", details: e.message });
+        return res.status(500).json({
+            error: "Failed to fetch leaderboard",
+            details: e.message
+        });
     }
 };
+
 
 export const deleteUsedArtifact = async (req, res) => {
     const { id_game, id_player, artifact } = req.body;
@@ -1766,4 +1786,62 @@ export const getMaxTime = async (req, res) => {
         return res.status(500).json({ error: "Failed to check max time", details: e.message });
     }
 }
+
+export const updateChallengeLeaderboard = async (req, res) => {
+    const { id_game } = req.body;
+
+    try {
+        const game = await Game.findById(id_game);
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        const today = new Date();
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+        const challenge = await Challenge.findOne({
+            date: { $gte: startOfDay, $lte: endOfDay }
+        });
+
+        if (!challenge) {
+            return res.status(404).json({ message: "Challenge du jour introuvable." });
+        }
+
+        const playerData = game.players[0];
+        const timeTaken = (new Date(game.end_time) - new Date(game.start_time)) / 1000;
+
+        // Vérifie si le joueur est déjà présent
+        const existingPlayerIndex = challenge.players.findIndex(
+            (p) => p.player_id.toString() === playerData.player_id.toString()
+        );
+
+        if (existingPlayerIndex !== -1) {
+            // Mise à jour des données existantes
+            challenge.players[existingPlayerIndex].start_article = playerData.articles_visited[0];
+            challenge.players[existingPlayerIndex].path = playerData.articles_visited;
+            challenge.players[existingPlayerIndex].time_taken = timeTaken;
+        } else {
+            // Ajout d'un nouveau joueur
+            challenge.players.push({
+                player_id: playerData.player_id,
+                start_article: playerData.articles_visited[0],
+                path: playerData.articles_visited,
+                time_taken: timeTaken
+            });
+        }
+
+        await challenge.save();
+
+        return res.status(200).json({ message: "Leaderboard updated successfully" });
+
+    } catch (e) {
+        console.error("Error in updateChallengeLeaderboard:", e);
+        return res.status(500).json({
+            error: "Failed to updateChallengeLeaderboard",
+            details: e.message
+        });
+    }
+};
+
 
