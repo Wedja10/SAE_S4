@@ -73,100 +73,13 @@ const DailyChallenge: React.FC = () => {
             }, 1500);
 
             // Simulation de l'API qui renvoie les anciens challenges
-            setTimeout(() => {
-                const mockPastChallenges: PastChallenge[] = [
-                    {
-                        id: 'dc-2025-04-08',
-                        title: 'Aventuriers Numériques',
-                        description: 'Trouvez l\'article "Jeux vidéo" en moins de 2:30',
-                        target: 'Jeux_vidéo',
-                        reward: 100,
-                        difficulty: 'Facile',
-                        date: '08/04/2025',
-                        completionTime: 127,
-                        rank: 245,
-                        players: [
-                            { id: 'p1', name: 'AlexGamer', completionTime: 92, rank: 1 },
-                            { id: 'p2', name: 'WikiMaster', completionTime: 105, rank: 2 },
-                            { id: 'p3', name: 'SpeedRunner', completionTime: 118, rank: 3 },
-                            { id: 'p4', name: 'PlayerOne', completionTime: 127, rank: 4 },
-                            { id: 'p5', name: 'GameExplorer', completionTime: 142, rank: 5 }
-                        ]
-                    },
-                    {
-                        id: 'dc-2025-04-07',
-                        title: 'Explorateurs du Cosmos',
-                        description: 'Trouvez l\'article "Voie Lactée" en moins de 4 minutes',
-                        target: 'Voie_Lactée',
-                        reward: 150,
-                        difficulty: 'Difficile',
-                        date: '07/04/2025',
-                        completionTime: 189,
-                        rank: 124,
-                        players: [
-                            { id: 'p6', name: 'StarGazer', completionTime: 143, rank: 1 },
-                            { id: 'p7', name: 'CosmosQuest', completionTime: 156, rank: 2 },
-                            { id: 'p1', name: 'AlexGamer', completionTime: 167, rank: 3 },
-                            { id: 'p8', name: 'SpaceNavigator', completionTime: 178, rank: 4 },
-                            { id: 'p5', name: 'GameExplorer', completionTime: 189, rank: 5 }
-                        ]
-                    },
-                    {
-                        id: 'dc-2025-04-06',
-                        title: 'Défi Historique',
-                        description: 'Trouvez l\'article "Révolution Française" en moins de 3 minutes',
-                        target: 'Révolution_française',
-                        reward: 125,
-                        difficulty: 'Moyen',
-                        date: '06/04/2025',
-                        completionTime: 152,
-                        rank: 356,
-                        players: [
-                            { id: 'p9', name: 'HistoryBuff', completionTime: 121, rank: 1 },
-                            { id: 'p10', name: 'TimeTraveler', completionTime: 135, rank: 2 },
-                            { id: 'p7', name: 'CosmosQuest', completionTime: 144, rank: 3 },
-                            { id: 'p2', name: 'WikiMaster', completionTime: 149, rank: 4 },
-                            { id: 'p3', name: 'SpeedRunner', completionTime: 152, rank: 5 }
-                        ]
-                    },
-                    {
-                        id: 'dc-2025-04-05',
-                        title: 'Mystères Océaniques',
-                        description: 'Trouvez l\'article "Fosse des Mariannes" en moins de 2 minutes',
-                        target: 'Fosse_des_Mariannes',
-                        reward: 100,
-                        difficulty: 'Moyen',
-                        date: '05/04/2025',
-                        completionTime: 0,
-                        rank: null,
-                        players: [
-                            { id: 'p6', name: 'StarGazer', completionTime: 89, rank: 1 },
-                            { id: 'p11', name: 'DeepDiver', completionTime: 94, rank: 2 },
-                            { id: 'p12', name: 'OceanExplorer', completionTime: 106, rank: 3 },
-                            { id: 'p10', name: 'TimeTraveler', completionTime: 115, rank: 4 },
-                            { id: 'p1', name: 'AlexGamer', completionTime: 120, rank: 5 }
-                        ]
-                    },
-                    {
-                        id: 'dc-2025-04-04',
-                        title: 'Art & Culture',
-                        description: 'Trouvez l\'article "Impressionnisme" en moins de 2:15',
-                        target: 'Impressionnisme',
-                        reward: 100,
-                        difficulty: 'Facile',
-                        date: '04/04/2025',
-                        completionTime: 119,
-                        rank: 78,
-                        players: [
-                            { id: 'p13', name: 'ArtLover', completionTime: 82, rank: 1 },
-                            { id: 'p14', name: 'CultureSeeker', completionTime: 94, rank: 2 },
-                            { id: 'p15', name: 'GalleryVisitor', completionTime: 105, rank: 3 },
-                            { id: 'p2', name: 'WikiMaster', completionTime: 112, rank: 4 },
-                            { id: 'p4', name: 'PlayerOne', completionTime: 119, rank: 5 }
-                        ]
-                    }
-                ];
-                setPastChallenges(mockPastChallenges);
+            setTimeout(async () => {
+                try {
+                    const mockPastChallenges = await postRequest(getApiUrl("/challenges/past-challenge"), {});
+                    setPastChallenges(mockPastChallenges);
+                } catch (error) {
+                    console.error("Erreur lors du chargement des sessions de jeu :", error);
+                }
             }, 2000);
         }
     }, [isMobile]);
