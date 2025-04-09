@@ -1,6 +1,6 @@
 import express from "express";
 import Challenge from "../models/Challenge.js";
-import {destinationArticleChallenge} from "../methods/challengesMethods.js";
+import {destinationArticleChallenge, getPastChallengesWithPlayers} from "../methods/challengesMethods.js";
 
 const router = express.Router();
 
@@ -15,5 +15,7 @@ router.get("/", async (_req, res) => {
 });
 
 router.post("/create-challenge", destinationArticleChallenge);
+router.post("/past-challenge", getPastChallengesWithPlayers);
+
 
 export default router;
