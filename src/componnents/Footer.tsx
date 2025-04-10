@@ -19,15 +19,6 @@ function Footer() {
                             </ul>
                     </div>
                     <div className="footer-section">
-                        <h3>Mentions Légales</h3>
-                        <ul>
-                            <li><a href="#">Mentions légales</a></li>
-                            <li><a href="#">Conditions générales d'utilisation</a></li>
-                            <li><a href="#">Politique de confidentialité</a></li>
-                            <li><a href="#">Cookies</a></li>
-                        </ul>
-                    </div>
-                    <div className="footer-section">
                         <h3>Contact</h3>
                         <p>Email : <a href="#">contact.example@gmail.com</a></p>
                     </div>
