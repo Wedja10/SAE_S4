@@ -32,27 +32,108 @@ interface OptionsPanelProps {
 export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPanelProps) => {
   const [unlimitedPlayers, setUnlimitedPlayers] = useState(settings.max_players === null);
   const [unlimitedTime, setUnlimitedTime] = useState(settings.time_limit === null);
+  // Error states
+  const [maxPlayersError, setMaxPlayersError] = useState<string | null>(null);
+  const [timeLimitError, setTimeLimitError] = useState<string | null>(null);
+  const [articlesNumberError, setArticlesNumberError] = useState<string | null>(null);
+  
+  // Get current player count from localStorage for validation
+  const getCurrentPlayerCount = () => {
+    try {
+      const lobbySizeProp = localStorage.getItem('currentPlayerCount');
+      return lobbySizeProp ? parseInt(lobbySizeProp, 10) : 0;
+    } catch (e) {
+      return 0;
+    }
+  };
 
   useEffect(() => {
     setUnlimitedPlayers(settings.max_players === null);
     setUnlimitedTime(settings.time_limit === null);
+    
+    // Validate settings when they change
+    validateMaxPlayers(settings.max_players);
+    validateTimeLimit(settings.time_limit);
+    validateArticlesNumber(settings.articles_number);
   }, [settings]);
+
+  // Validation functions
+  const validateMaxPlayers = (value: number | null) => {
+    if (value === null) {
+      setMaxPlayersError(null);
+      return true;
+    }
+    
+    const currentPlayerCount = getCurrentPlayerCount();
+    
+    if (value < 2) {
+      setMaxPlayersError("Must be at least 2 players");
+      return false;
+    } else if (currentPlayerCount > 0 && value < currentPlayerCount) {
+      setMaxPlayersError(`Must be ≥ current player count (${currentPlayerCount})`);
+      return false;
+    } else {
+      setMaxPlayersError(null);
+      return true;
+    }
+  };
+  
+  const validateTimeLimit = (value: number | null) => {
+    if (value === null) {
+      setTimeLimitError(null);
+      return true;
+    }
+    
+    if (value < 1) {
+      setTimeLimitError("Time limit must be at least 1 second");
+      return false;
+    } else if (value > 1000) {
+      setTimeLimitError("Time limit must be at most 1000 seconds");
+      return false;
+    } else {
+      setTimeLimitError(null);
+      return true;
+    }
+  };
+  
+  const validateArticlesNumber = (value: number) => {
+    if (value < 2) {
+      setArticlesNumberError("Must have at least 2 articles");
+      return false;
+    } else if (value > 100) {
+      setArticlesNumberError("Must have at most 100 articles");
+      return false;
+    } else {
+      setArticlesNumberError(null);
+      return true;
+    }
+  };
 
   const handleUnlimitedPlayers = () => {
     if (!isHost || settings.allow_join) return;
     setUnlimitedPlayers(!unlimitedPlayers);
+    
+    const newMaxPlayers = !unlimitedPlayers ? null : 2;
+    // Validate before updating
+    validateMaxPlayers(newMaxPlayers);
+    
     onSettingsUpdate({
       ...settings,
-      max_players: !unlimitedPlayers ? null : 2
+      max_players: newMaxPlayers
     });
   };
 
   const handleUnlimitedTime = () => {
     if (!isHost) return;
     setUnlimitedTime(!unlimitedTime);
+    
+    const newTimeLimit = !unlimitedTime ? null : 60;
+    // Validate before updating
+    validateTimeLimit(newTimeLimit);
+    
     onSettingsUpdate({
       ...settings,
-      time_limit: !unlimitedTime ? null : 60
+      time_limit: newTimeLimit
     });
   }
 
@@ -65,41 +146,108 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
     });
   }
 
+  const handleMaxPlayersChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isHost || settings.allow_join) return;
+    
+    const newValue = e.target.value === '' ? null : Number(e.target.value);
+    const isValid = validateMaxPlayers(newValue);
+    
+    if (isValid || newValue === null) {
+      onSettingsUpdate({
+        ...settings,
+        max_players: newValue
+      });
+    }
+  };
+  
+  const handleTimeLimitChange = (timeString: string) => {
+    if (!isHost) return;
+    
+    const seconds = convertMinutesSecondsToSeconds(timeString);
+    const isValid = validateTimeLimit(seconds);
+    
+    if (isValid || seconds === null) {
+      onSettingsUpdate({
+        ...settings,
+        time_limit: seconds
+      });
+    }
+  };
+  
+  const handleArticlesNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isHost) return;
+    
+    const newValue = Number(e.target.value);
+    const isValid = validateArticlesNumber(newValue);
+    
+    if (isValid) {
+      onSettingsUpdate({
+        ...settings,
+        articles_number: newValue
+      });
+    }
+  };
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!isHost) return;
 
     const formData = new FormData(event.currentTarget);
-    const newSettings = {
-      max_players: unlimitedPlayers ? null : Number(formData.get('playersNumber')),
-      time_limit: unlimitedTime ? null : Number(formData.get('timeLimit')),
-      articles_number: Number(formData.get('articlesNumber')),
-      visibility: formData.get('visibility') as string,
-      allow_join: settings.allow_join,
-      enabled_artifacts: settings.enabled_artifacts
-    };
+    const newMaxPlayers = unlimitedPlayers ? null : Number(formData.get('playersNumber'));
+    const newTimeLimit = unlimitedTime ? null : convertMinutesSecondsToSeconds(formData.get('timeLimit') as string);
+    const newArticlesNumber = Number(formData.get('articlesNumber'));
+    
+    // Validate all values before updating
+    const isMaxPlayersValid = validateMaxPlayers(newMaxPlayers);
+    const isTimeLimitValid = validateTimeLimit(newTimeLimit);
+    const isArticlesNumberValid = validateArticlesNumber(newArticlesNumber);
+    
+    // Only update if all validations pass
+    if (isMaxPlayersValid && isTimeLimitValid && isArticlesNumberValid) {
+      const newSettings = {
+        max_players: newMaxPlayers,
+        time_limit: newTimeLimit,
+        articles_number: newArticlesNumber,
+        visibility: formData.get('visibility') as string,
+        allow_join: settings.allow_join,
+        enabled_artifacts: settings.enabled_artifacts
+      };
 
-    onSettingsUpdate(newSettings);
+      onSettingsUpdate(newSettings);
+    }
   };
 
   // Helper function to determine if max players should be disabled
   const isMaxPlayersDisabled = !isHost || settings.allow_join;
 
   // Convert seconds to format "minutes:seconds"
-  function formatSecondsToMinutesSeconds(seconds) {
-    if (isNaN(seconds) || seconds < 0) return '';
+  function formatSecondsToMinutesSeconds(seconds: number | null): string {
+    if (seconds === null || isNaN(seconds) || seconds < 0) return '';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   }
 
-// Convert "minutes:seconds" to seconds
-  function convertMinutesSecondsToSeconds(timeString) {
-    const [minutes, seconds] = timeString.split(':').map(Number);
-    if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
-      return 0; // ou une valeur par défaut
+  // Convert "minutes:seconds" to seconds
+  function convertMinutesSecondsToSeconds(timeString: string): number {
+    if (!timeString) return 0;
+    const parts = timeString.split(':');
+    
+    // Handle different input formats
+    if (parts.length === 1) {
+      // Input might be just seconds or just minutes
+      const value = Number(parts[0]);
+      return isNaN(value) ? 0 : value;
+    } else if (parts.length === 2) {
+      const minutes = Number(parts[0]);
+      const seconds = Number(parts[1]);
+      if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
+        return 0; // or a default value
+      }
+      return minutes * 60 + seconds;
     }
-    return minutes * 60 + seconds;
+    
+    return 0;
   }
 
   return (
@@ -123,12 +271,9 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                 type={"number"}
                 name={"playersNumber"}
                 id={"playerNumber"}
-                min={1}
+                min={2}
                 value={settings.max_players || ''}
-                onChange={(e) => onSettingsUpdate({
-                  ...settings,
-                  max_players: Number(e.target.value)
-                })}
+                onChange={handleMaxPlayersChange}
                 required
                 disabled={isMaxPlayersDisabled}
                 className={isMaxPlayersDisabled ? "disabled-input" : ""}
@@ -141,6 +286,7 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
               style={{cursor: (!isHost || settings.allow_join) ? 'default' : 'pointer'}}
             />
             {settings.allow_join && <div className="tooltip">Lock room to edit</div>}
+            {maxPlayersError && <div className="error-message">{maxPlayersError}</div>}
           </div>
 
           <div className={"Option"}>
@@ -161,18 +307,13 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
                 name={"timeLimit"}
                 id={"timeLimit"}
                 value={formatSecondsToMinutesSeconds(settings.time_limit) || ''}
-                onChange={(e) => {
-                  const seconds = convertMinutesSecondsToSeconds(e.target.value);
-                  onSettingsUpdate({
-                    ...settings,
-                    time_limit: seconds
-                  });
-                }}
+                onChange={(e) => handleTimeLimitChange(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                     e.preventDefault();
                     const increment = e.key === 'ArrowUp' ? 30 : -30;
                     const newTime = (settings.time_limit !== null ? Math.max(0, settings.time_limit + increment) : 0);
+                    validateTimeLimit(newTime);
                     onSettingsUpdate({
                       ...settings,
                       time_limit: newTime,
@@ -190,6 +331,7 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
               alt={"unlimited"}
               style={{cursor: isHost ? 'pointer' : 'default'}}
             />
+            {timeLimitError && <div className="error-message">{timeLimitError}</div>}
           </div>
 
           <div className={"Option"}>
@@ -200,15 +342,13 @@ export const OptionsPanel = ({ settings, onSettingsUpdate, isHost }: OptionsPane
               id={"articlesNumber"}
               value={settings.articles_number}
               min={2}
-              max={16}
-              onChange={(e) => onSettingsUpdate({
-                ...settings,
-                articles_number: Number(e.target.value)
-              })}
+              max={100}
+              onChange={handleArticlesNumberChange}
               required
               disabled={!isHost}
               className={!isHost ? "disabled-input" : ""}
             />
+            {articlesNumberError && <div className="error-message">{articlesNumberError}</div>}
           </div>
 
           <div className={"Option"}>
