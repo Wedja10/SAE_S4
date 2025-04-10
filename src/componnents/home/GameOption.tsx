@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { NavLink } from 'react-router-dom'
 import '../../style/GameOption.css'
 import { Storage } from '../../utils/storage';
+import { checkIfBanned } from '../lobby/ModerationComponents';
 
 function GameOption() {
     const [gameCode, setGameCode] = useState('');
@@ -45,6 +46,14 @@ function GameOption() {
             setError('Please enter a game code');
             return;
         }
+        
+        // Check if player is banned before trying to join
+        const formattedGameCode = gameCode.toUpperCase().trim();
+        const banInfo = checkIfBanned(formattedGameCode);
+        if (banInfo) {
+            setError(`You have been banned from this game. Reason: ${banInfo.reason || 'No reason provided'}`);
+            return;
+        }
 
         try {
             // First ensure we have a player
@@ -56,7 +65,7 @@ function GameOption() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    gameCode: gameCode.toUpperCase(),
+                    gameCode: formattedGameCode,
                     playerId
                 }),
             });
@@ -72,8 +81,8 @@ function GameOption() {
                 return;
             }
 
-            Storage.setGameCode(gameCode.toUpperCase());
-            navigate(`/lobby/${gameCode.toUpperCase()}`);
+            Storage.setGameCode(formattedGameCode);
+            navigate(`/lobby/${formattedGameCode}`);
         } catch (error) {
             console.error('Error joining game:', error);
             setError('Failed to join game. Please try again.');

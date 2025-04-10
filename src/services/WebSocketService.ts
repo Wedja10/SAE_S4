@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { getWsUrl } from '../utils/config';
 
-export type LobbyEventType = 'player_join' | 'player_leave' | 'settings_update' | 'game_start' | 'chat_message' | 'private_message' | 'host_change' | 'player_rename' | 'profile_picture_change' | 'game_start_error' | 'ping';
+export type LobbyEventType = 'player_join' | 'player_leave' | 'settings_update' | 'game_start' | 'chat_message' | 'private_message' | 'host_change' | 'player_rename' | 'profile_picture_change' | 'game_start_error' | 'ping' | 'player_kick' | 'player_ban' | 'player_kicked' | 'player_banned' | 'join_banned';
 
 export type LobbyEvent = {
   type: LobbyEventType;
@@ -370,6 +370,26 @@ class WebSocketService {
       if (event.type === 'player_join') {
         const { gameCode, player } = event.data;
         playerKey = `${player.id}-${gameCode}`;
+        
+        // Check if player is banned from this game before trying to join
+        try {
+          const bannedGames = JSON.parse(localStorage.getItem('bannedGames') || '{}');
+          const isBanned = bannedGames[gameCode];
+          
+          if (isBanned) {
+            console.log(`Player ${player.id} is banned from game ${gameCode}. Preventing join attempt.`);
+            console.log(`Ban reason: ${isBanned.reason || 'No reason provided'}`);
+            
+            // Clear game code and redirect to home
+            localStorage.removeItem('gameCode');
+            window.location.href = '/';
+            
+            // Don't send the join event
+            return;
+          }
+        } catch (e) {
+          console.error('Error checking ban status:', e);
+        }
         
         // Store current lobby and player information for reconnection
         this.currentLobby = gameCode;

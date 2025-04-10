@@ -26,6 +26,13 @@ const GameSchema = new mongoose.Schema({
             is_host: Boolean
         }
     ],
+    banned_players: [
+        {
+            player_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+            reason: String,
+            banned_at: { type: Date, default: Date.now }
+        }
+    ],
     mined_article: [String],
     articles_to_visit: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Article' }],
 });

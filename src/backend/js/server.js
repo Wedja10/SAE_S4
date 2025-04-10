@@ -445,6 +445,94 @@ async function handleGameStateChange(gameCode, event) {
                     }
                 }
                 break;
+
+            case 'player_ban':
+                const banPlayerId = event.data.playerId;
+                const banReason = event.data.reason || 'No reason provided';
+                
+                // Only host can ban players
+                const requestingPlayer = game.players.find(p => 
+                    p.player_id && p.player_id.toString() === event.data.hostId
+                );
+                
+                if (!requestingPlayer || !requestingPlayer.is_host) {
+                    console.error(`Ban request denied: Player ${event.data.hostId} is not the host of game ${gameCode}`);
+                    return;
+                }
+                
+                // Check if player is already banned
+                const alreadyBanned = game.banned_players.some(p => 
+                    p.player_id && p.player_id.toString() === banPlayerId
+                );
+                
+                if (alreadyBanned) {
+                    console.log(`Player ${banPlayerId} is already banned from game ${gameCode}`);
+                    // Update the ban reason if provided
+                    if (banReason && banReason !== 'No reason provided') {
+                        const bannedPlayerIndex = game.banned_players.findIndex(p => 
+                            p.player_id && p.player_id.toString() === banPlayerId
+                        );
+                        if (bannedPlayerIndex !== -1) {
+                            game.banned_players[bannedPlayerIndex].reason = banReason;
+                            game.banned_players[bannedPlayerIndex].banned_at = new Date();
+                        }
+                    }
+                } else {
+                    // Add player to banned list
+                    game.banned_players.push({
+                        player_id: banPlayerId,
+                        reason: banReason,
+                        banned_at: new Date()
+                    });
+                    console.log(`Player ${banPlayerId} has been banned from game ${gameCode}. Reason: ${banReason}`);
+                }
+                
+                // Find the player in the game
+                const bannedPlayerIndex = game.players.findIndex(p => 
+                    p.player_id && p.player_id.toString() === banPlayerId
+                );
+                
+                if (bannedPlayerIndex === -1) {
+                    console.log(`Player ${banPlayerId} not found in game ${gameCode}, nothing to remove but ban recorded`);
+                } else {
+                    // Remove the player from the game
+                    game.players.splice(bannedPlayerIndex, 1);
+                }
+                
+                await game.save();
+                break;
+                
+            case 'player_kick':
+                const kickPlayerId = event.data.playerId;
+                const kickReason = event.data.reason || 'No reason provided';
+                
+                // Only host can kick players
+                const hostPlayer = game.players.find(p => 
+                    p.player_id && p.player_id.toString() === event.data.hostId
+                );
+                
+                if (!hostPlayer || !hostPlayer.is_host) {
+                    console.error(`Kick request denied: Player ${event.data.hostId} is not the host of game ${gameCode}`);
+                    return;
+                }
+                
+                // Find the player in the game
+                const kickedPlayerIndex = game.players.findIndex(p => 
+                    p.player_id && p.player_id.toString() === kickPlayerId
+                );
+                
+                if (kickedPlayerIndex === -1) {
+                    console.log(`Player ${kickPlayerId} not found in game ${gameCode}, nothing to remove`);
+                    return;
+                }
+                
+                // Remove the player from the game
+                game.players.splice(kickedPlayerIndex, 1);
+                
+                console.log(`Player ${kickPlayerId} has been kicked from game ${gameCode}. Reason: ${kickReason}`);
+                
+                await game.save();
+                break;
         }
 
         await game.save();
@@ -528,6 +616,35 @@ function setupWebSocketServer() {
                     if (event.data && event.data.gameCode) {
                         const gameCode = event.data.gameCode;
                         const playerId = event.data.player?.id;
+                        
+                        // Check if the player is banned
+                        const game = await Game.findOne({ game_code: gameCode });
+                        if (game) {
+                            const isBanned = game.banned_players.some(p => 
+                                p.player_id && p.player_id.toString() === playerId
+                            );
+                            
+                            if (isBanned) {
+                                // Get the ban reason
+                                const bannedPlayer = game.banned_players.find(p => 
+                                    p.player_id && p.player_id.toString() === playerId
+                                );
+                                const banReason = bannedPlayer ? bannedPlayer.reason : 'No reason provided';
+                                
+                                console.log(`Banned player ${playerId} attempted to join game ${gameCode}. Reason: ${banReason}`);
+                                
+                                // Send ban message to player
+                                ws.send(JSON.stringify({
+                                    type: 'join_banned',
+                                    data: {
+                                        gameCode,
+                                        reason: banReason
+                                    }
+                                }));
+                                
+                                return;
+                            }
+                        }
                         
                         // Check for duplicate join attempts
                         const joinKey = `${playerId}-${gameCode}`;
@@ -859,6 +976,86 @@ function setupWebSocketServer() {
                         }));
                     } else {
                         console.error('Private message missing gameCode or recipientId:', event);
+                    }
+                    break;
+
+                case 'player_kick':
+                    if (currentLobby) {
+                        // Verify the game exists
+                        const game = await Game.findOne({ game_code: currentLobby });
+                        if (!game) {
+                            console.log(`Game not found for lobby ${currentLobby}, skipping kick event`);
+                            break;
+                        }
+                        
+                        // Process the kick
+                        await handleGameStateChange(currentLobby, event);
+                        
+                        // Send kick notification to the kicked player
+                        const kickedPlayerId = event.data.playerId;
+                        const kickReason = event.data.reason || 'No reason provided';
+                        const kickedPlayerSocket = playerSockets.get(kickedPlayerId);
+                        
+                        if (kickedPlayerSocket && kickedPlayerSocket.readyState === WebSocket.OPEN) {
+                            kickedPlayerSocket.send(JSON.stringify({
+                                type: 'player_kicked',
+                                data: {
+                                    gameCode: currentLobby,
+                                    reason: kickReason
+                                }
+                            }));
+                        }
+                        
+                        // Broadcast to everyone else that the player left
+                        const leaveEvent = {
+                            type: 'player_leave',
+                            data: {
+                                gameCode: currentLobby,
+                                playerId: kickedPlayerId
+                            }
+                        };
+                        
+                        broadcastToLobby(currentLobby, leaveEvent, kickedPlayerSocket);
+                    }
+                    break;
+                    
+                case 'player_ban':
+                    if (currentLobby) {
+                        // Verify the game exists
+                        const game = await Game.findOne({ game_code: currentLobby });
+                        if (!game) {
+                            console.log(`Game not found for lobby ${currentLobby}, skipping ban event`);
+                            break;
+                        }
+                        
+                        // Process the ban
+                        await handleGameStateChange(currentLobby, event);
+                        
+                        // Send ban notification to the banned player
+                        const bannedPlayerId = event.data.playerId;
+                        const banReason = event.data.reason || 'No reason provided';
+                        const bannedPlayerSocket = playerSockets.get(bannedPlayerId);
+                        
+                        if (bannedPlayerSocket && bannedPlayerSocket.readyState === WebSocket.OPEN) {
+                            bannedPlayerSocket.send(JSON.stringify({
+                                type: 'player_banned',
+                                data: {
+                                    gameCode: currentLobby,
+                                    reason: banReason
+                                }
+                            }));
+                        }
+                        
+                        // Broadcast to everyone else that the player left
+                        const leaveEvent = {
+                            type: 'player_leave',
+                            data: {
+                                gameCode: currentLobby,
+                                playerId: bannedPlayerId
+                            }
+                        };
+                        
+                        broadcastToLobby(currentLobby, leaveEvent, bannedPlayerSocket);
                     }
                     break;
             }
