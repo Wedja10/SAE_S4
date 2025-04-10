@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { getWsUrl } from '../utils/config';
 
-export type LobbyEventType = 'player_join' | 'player_leave' | 'settings_update' | 'game_start' | 'chat_message' | 'host_change' | 'player_rename' | 'profile_picture_change' | 'game_start_error' | 'ping';
+export type LobbyEventType = 'player_join' | 'player_leave' | 'settings_update' | 'game_start' | 'chat_message' | 'private_message' | 'host_change' | 'player_rename' | 'profile_picture_change' | 'game_start_error' | 'ping';
 
 export type LobbyEvent = {
   type: LobbyEventType;

@@ -814,6 +814,53 @@ function setupWebSocketServer() {
                         console.error('Chat message missing gameCode:', event);
                     }
                     break;
+                
+                case 'private_message':
+                    // For private messages, we send only to the specific recipient
+                    if (event.data && event.data.gameCode && event.data.recipientId) {
+                        const chatGameCode = event.data.gameCode;
+                        const recipientId = event.data.recipientId;
+                        const senderId = event.data.playerId;
+                        
+                        // Add timestamp if not present
+                        if (!event.data.timestamp) {
+                            event.data.timestamp = Date.now();
+                        }
+                        
+                        // Add message ID if not present
+                        if (!event.data.messageId) {
+                            event.data.messageId = `${senderId}-${recipientId}-${event.data.timestamp}-${Math.random().toString(36).substring(2, 10)}`;
+                        }
+                        
+                        // Create a copy of the event for sending
+                        const privateEvent = JSON.parse(JSON.stringify(event));
+                        
+                        // Add echo flag to indicate this is a server echo
+                        privateEvent.data.isServerEcho = true;
+                        
+                        console.log(`Private message from ${event.data.senderName || 'Unknown'} to user ${recipientId} in lobby ${chatGameCode}`);
+                        
+                        // Send to the recipient
+                        const recipientSocket = playerSockets.get(recipientId);
+                        if (recipientSocket && recipientSocket.readyState === WebSocket.OPEN) {
+                            recipientSocket.send(JSON.stringify(privateEvent));
+                        } else {
+                            console.log(`Recipient ${recipientId} is not connected, message not delivered`);
+                        }
+                        
+                        // Send acknowledgment back to the sender
+                        ws.send(JSON.stringify({
+                            type: 'private_message_sent',
+                            data: {
+                                messageId: privateEvent.data.messageId,
+                                recipientId: recipientId,
+                                timestamp: privateEvent.data.timestamp
+                            }
+                        }));
+                    } else {
+                        console.error('Private message missing gameCode or recipientId:', event);
+                    }
+                    break;
             }
         });
 
