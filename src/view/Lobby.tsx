@@ -8,6 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Storage } from "../utils/storage";
 import { ProfilePicture } from '../componnents/lobby/ProfilePicture';
 import { PlayerName } from '../componnents/lobby/PlayerName';
+import { ModerationToast, useModerationEvents, checkIfBanned } from '../componnents/lobby/ModerationComponents';
 
 interface LobbySettings {
   max_players: number | null;
@@ -55,6 +56,26 @@ const Lobby: React.FC = () => {
   const [hasJoined, setHasJoined] = useState(false);
   const [leaveSent, setLeaveSent] = useState(false);
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+  
+  // Get moderation event handling
+  const { moderationState, handleModerationEvent, clearModerationState } = useModerationEvents();
+  
+  // Immediately check for bans before doing anything else
+  useEffect(() => {
+    if (gameCode) {
+      const banInfo = checkIfBanned(gameCode);
+      if (banInfo) {
+        console.log('Player is banned from this game, redirecting to home:', banInfo);
+        // Clear any game code data
+        Storage.setGameCode('');
+        // Show alert with ban information
+        alert(`You have been banned from this game. Reason: ${banInfo.reason || 'No reason provided'}`);
+        // Directly navigate to home page
+        window.location.href = '/';
+        return; // Stop execution of the effect
+      }
+    }
+  }, [gameCode]);
 
   // Get player ID from local storage
   useEffect(() => {
@@ -66,8 +87,20 @@ const Lobby: React.FC = () => {
     }
   }, [navigate]);
 
+  // Store isHost in localStorage for other components to access
+  useEffect(() => {
+    localStorage.setItem('isHost', isHost.toString());
+  }, [isHost]);
+
   const ws = useWebSocket((event: LobbyEvent) => {
     console.log('Received WebSocket event:', event);
+    
+    // Handle moderation events
+    if (event.type === 'player_kicked' || event.type === 'player_banned' || event.type === 'join_banned') {
+      handleModerationEvent(event);
+      return;
+    }
+    
     switch (event.type) {
       case 'player_join':
         setPlayers(prevPlayers => {
@@ -607,6 +640,16 @@ const Lobby: React.FC = () => {
           </>
         )}
       </div>
+      
+      {/* Moderation toast notification */}
+      {moderationState.show && (
+        <ModerationToast
+          type={moderationState.type}
+          reason={moderationState.reason}
+          gameCode={moderationState.gameCode}
+          onClose={clearModerationState}
+        />
+      )}
     </>
   );
 };

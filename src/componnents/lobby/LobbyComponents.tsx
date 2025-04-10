@@ -5,6 +5,7 @@ import { useWebSocket } from '../../services/WebSocketService';
 import { Storage } from '../../utils/storage';
 import { useState, useEffect, useRef } from 'react';
 import { ProfilePicture } from './ProfilePicture';
+import { ModerationButton } from './ModerationComponents';
 import './LobbyComponents.css';
 
 interface PlayerProps {
@@ -40,6 +41,7 @@ export const Player = ({ player, onChatClick, self, hasUnreadMessages = false }:
   const [currentPicture, setCurrentPicture] = useState(player.pp || Playerpicture);
   const [currentSkinColor, setCurrentSkinColor] = useState(player.pp_color || '#FFAD80');
   const gameCode = Storage.getGameCode();
+  const isHost = localStorage.getItem('isHost') === 'true';
   
   const ws = useWebSocket((event) => {
     if (event.type === 'profile_picture_change' && event.data.playerId === player.id) {
@@ -174,7 +176,10 @@ export const Player = ({ player, onChatClick, self, hasUnreadMessages = false }:
         />
         {player.is_host && <span className="host-badge">HOST</span>}
       </div>
-      {currentUserId !== player.id && <ChatButton onClick={onChatClick} hasUnreadMessages={hasUnreadMessages} />}
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {currentUserId !== player.id && <ChatButton onClick={onChatClick} hasUnreadMessages={hasUnreadMessages} />}
+        {currentUserId !== player.id && <ModerationButton targetPlayerId={player.id} targetPlayerName={player.pseudo} isHost={isHost} />}
+      </div>
     </div>
   );
 };

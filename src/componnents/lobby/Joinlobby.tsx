@@ -1,14 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import '../../style/Joinlobby.css';
 import { Storage } from '../../utils/storage';
 import Navbar from "../Navbar";
+import { checkIfBanned } from './ModerationComponents';
 
 function Joinlobby() {
     const { gameCode } = useParams();
     const [error, setError] = useState('');
     const [isCreatingPlayer, setIsCreatingPlayer] = useState(false);
     const navigate = useNavigate();
+    
+    // Check for bans immediately on component mount
+    useEffect(() => {
+        if (gameCode) {
+            const banInfo = checkIfBanned(gameCode);
+            if (banInfo) {
+                console.log('Player is banned from this game, redirecting to home:', banInfo);
+                // Show error message instead of alert for better UX
+                setError(`You have been banned from this game. Reason: ${banInfo.reason || 'No reason provided'}`);
+                // Prevent joining by disabling the component
+                setIsCreatingPlayer(true);
+                // Navigate back after a short delay
+                setTimeout(() => {
+                    navigate('/');
+                }, 3000);
+            }
+        }
+    }, [gameCode, navigate]);
 
     // Create a player if one doesn't exist
     const ensurePlayer = async () => {
@@ -43,6 +62,17 @@ function Joinlobby() {
 
         if (!gameCode) {
             setError('Code de partie invalide');
+            return;
+        }
+        
+        // Check if player is banned before trying to join
+        const banInfo = checkIfBanned(gameCode);
+        if (banInfo) {
+            setError(`You have been banned from this game. Reason: ${banInfo.reason || 'No reason provided'}`);
+            // Navigate back after a short delay
+            setTimeout(() => {
+                navigate('/');
+            }, 3000);
             return;
         }
 
