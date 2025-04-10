@@ -3,7 +3,7 @@ import chatIcon from '/assets/chatIcon.svg';
 import { PlayerName } from './PlayerName';
 import { useWebSocket } from '../../services/WebSocketService';
 import { Storage } from '../../utils/storage';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ProfilePicture } from './ProfilePicture';
 import './LobbyComponents.css';
 
@@ -17,22 +17,25 @@ interface PlayerProps {
   };
   self: boolean;
   onChatClick: () => void;
+  hasUnreadMessages?: boolean;
 }
 
 interface ChatButtonProps {
   onClick: () => void;
+  hasUnreadMessages: boolean;
 }
 
-export const ChatButton = ({ onClick }: ChatButtonProps) => {
+export const ChatButton = ({ onClick, hasUnreadMessages }: ChatButtonProps) => {
   return (
     <button className="ChatButton" onClick={onClick}>
-      <img src={chatIcon} alt="X" style={{ height: '20px' }} />
+      <img src={chatIcon} alt="Chat" />
       <p>Chat</p>
+      {hasUnreadMessages && <div className="notification-dot"></div>}
     </button>
   );
 };
 
-export const Player = ({ player, onChatClick, self }: PlayerProps) => {
+export const Player = ({ player, onChatClick, self, hasUnreadMessages = false }: PlayerProps) => {
   const currentUserId = localStorage.getItem('playerId');
   const [currentPicture, setCurrentPicture] = useState(player.pp || Playerpicture);
   const [currentSkinColor, setCurrentSkinColor] = useState(player.pp_color || '#FFAD80');
@@ -171,7 +174,7 @@ export const Player = ({ player, onChatClick, self }: PlayerProps) => {
         />
         {player.is_host && <span className="host-badge">HOST</span>}
       </div>
-      {currentUserId !== player.id && <ChatButton onClick={onChatClick} />}
+      {currentUserId !== player.id && <ChatButton onClick={onChatClick} hasUnreadMessages={hasUnreadMessages} />}
     </div>
   );
 };
@@ -188,29 +191,148 @@ interface PlayerListProps {
 }
 
 export const PlayerList = ({ players, currentPlayerId }: PlayerListProps) => {
-
   const [chatOpen, setChatOpen] = useState('');
   const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<Record<string, Array<{
+    content: string;
+    sender: string;
+    timestamp: number;
+    isFromMe: boolean;
+  }>>>({});
+  const [unreadMessages, setUnreadMessages] = useState<Record<string, boolean>>({});
+  const chatContentRef = useRef<HTMLDivElement>(null);
+  const gameCode = Storage.getGameCode();
 
-  const handleChatClick = (playerName: string) => { // Gestion des clicks sur ChatButton ou sur CloseChatbox
-    if (chatOpen === '') {
-      setChatOpen(playerName);
-    } else {
+  // Find player by name to get their ID
+  const getPlayerIdByName = (name: string) => {
+    const player = players.find(p => p.pseudo === name);
+    return player ? player.id : null;
+  };
+
+  // Get the current chat's recipient ID
+  const recipientId = getPlayerIdByName(chatOpen);
+
+  // Setup WebSocket listener for private messages
+  const ws = useWebSocket((event) => {
+    if (event.type === 'private_message') {
+      const isIncomingMessage = event.data.recipientId === currentPlayerId;
+      const isOutgoingConfirmation = event.data.isServerEcho && event.data.playerId === currentPlayerId;
+      
+      if (isIncomingMessage || isOutgoingConfirmation) {
+        // Identify the conversation partner
+        const conversationPartnerId = isIncomingMessage ? event.data.playerId : event.data.recipientId;
+        const conversationPartner = players.find(p => p.id === conversationPartnerId);
+        
+        if (conversationPartner) {
+          // Add message to the conversation
+          const partnerName = conversationPartner.pseudo;
+          const newMessage = {
+            content: event.data.message,
+            sender: isIncomingMessage ? partnerName : 'Me',
+            timestamp: event.data.timestamp || Date.now(),
+            isFromMe: !isIncomingMessage
+          };
+          
+          setMessages(prev => {
+            const conversationMessages = prev[partnerName] || [];
+            return {
+              ...prev,
+              [partnerName]: [...conversationMessages, newMessage]
+            };
+          });
+          
+          // If this is a new message from someone else and chat isn't open with them, mark as unread
+          if (isIncomingMessage && chatOpen !== partnerName) {
+            setUnreadMessages(prev => ({
+              ...prev,
+              [partnerName]: true
+            }));
+            console.log(`New message from ${partnerName}`);
+          }
+        }
+      }
+    }
+  });
+
+  // Scroll to bottom of chat when messages change
+  useEffect(() => {
+    if (chatContentRef.current) {
+      // Delay the scroll to allow the DOM to update
+      setTimeout(() => {
+        if (chatContentRef.current) {
+          chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
+        }
+      }, 50);
+    }
+  }, [messages, chatOpen]);
+
+  const handleChatClick = (playerName: string) => {
+    if (chatOpen === playerName) {
       setChatOpen('');
+    } else {
+      setChatOpen(playerName);
+      // Clear unread messages indicator when opening chat
+      setUnreadMessages(prev => ({
+        ...prev,
+        [playerName]: false
+      }));
+    }
+    setMessage('');
+  };
+
+  const handleTypeMessage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && message.trim()) {
+      handleSendMessage();
     }
   };
 
-  const handleTypeMessage = () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    setMessage(document.querySelector('.textInput').value);
+  const handleSendMessage = () => {
+    if (message.trim() === '' || !recipientId || !currentPlayerId || !gameCode) return;
+    
+    const timestamp = Date.now();
+    
+    // Send private message via WebSocket
+    ws.sendEvent({
+      type: 'private_message',
+      data: {
+        gameCode,
+        playerId: currentPlayerId,
+        senderName: Storage.getPlayerName() || 'Me',
+        recipientId,
+        message: message.trim(),
+        timestamp
+      }
+    });
+    
+    // Optimistically add message to UI before server confirmation
+    setMessages(prev => {
+      const conversationMessages = prev[chatOpen] || [];
+      return {
+        ...prev,
+        [chatOpen]: [...conversationMessages, {
+          content: message.trim(),
+          sender: 'Me',
+          timestamp,
+          isFromMe: true
+        }]
+      };
+    });
+    
+    // Scroll to bottom after sending message
+    setTimeout(() => {
+      if (chatContentRef.current) {
+        chatContentRef.current.scrollTop = chatContentRef.current.scrollHeight;
+      }
+    }, 50);
+    
+    setMessage('');
   };
 
-  const handleSendMessage = () => {
-    console.log('Message envoyé : ' + message);
-  }
-
-  if (chatOpen === '') { // Affichage de la liste des joueurs
+  if (chatOpen === '') { // Display player list when no chat is open
     return (
       <div className="PlayerList">
         <div className="LobbyTitle fade-in">LOBBY</div>
@@ -220,27 +342,66 @@ export const PlayerList = ({ players, currentPlayerId }: PlayerListProps) => {
             player={player}
             self={player.id === currentPlayerId}
             onChatClick={() => handleChatClick(player.pseudo)}
+            hasUnreadMessages={unreadMessages[player.pseudo] || false}
           />
         ))}
       </div>
     );
-  } else { // Affichage de la boite de chat du joueur
+  } else { // Display private chat when a chat is open
+    const currentMessages = messages[chatOpen] || [];
+    
     return (
       <div className="PrivateChatbox">
         <div className="ChatboxHeader">
-          <img src={"/public/assets/closeChatbox.svg"} alt="X" onClick={() => handleChatClick('')} style={{
-            cursor: 'pointer',
-            height: '25px'
-          }}/>
+          <img 
+            src="/assets/closeChatbox.svg" 
+            alt="X" 
+            onClick={() => handleChatClick('')} 
+            style={{
+              cursor: 'pointer',
+              height: '25px'
+            }}
+          />
           <p>{chatOpen}</p>
         </div>
-        <div className="ChatboxContent"></div>
+        <div className="ChatboxContent" ref={chatContentRef}>
+          {currentMessages.length === 0 ? (
+            <div className="empty-chat-message">
+              No messages yet. Say hello!
+            </div>
+          ) : (
+            currentMessages.map((msg, idx) => (
+              <div 
+                key={idx} 
+                className={`chat-message ${msg.isFromMe ? 'message-sent' : 'message-received'}`}
+              >
+                <div className="message-content">{msg.content}</div>
+                <div className="message-timestamp">
+                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
         <div className="ChatboxInput">
-          <input type="text" className="textInput" placeholder="Message..." onChange={handleTypeMessage} />
-          <img src={"/public/assets/sendPlane.svg"} alt={"Send"} onClick={() => handleSendMessage()} style={{
-            cursor: 'pointer',
-            height: '25px'
-          }} />
+          <input 
+            type="text" 
+            className="textInput" 
+            placeholder="Message..." 
+            value={message}
+            onChange={handleTypeMessage}
+            onKeyDown={handleKeyDown}
+            autoFocus
+          />
+          <img 
+            src="/assets/sendPlane.svg" 
+            alt="Send" 
+            onClick={handleSendMessage} 
+            style={{
+              cursor: 'pointer',
+              height: '28px'
+            }} 
+          />
         </div>
       </div>
     );
