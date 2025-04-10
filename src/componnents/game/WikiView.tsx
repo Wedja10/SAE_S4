@@ -725,9 +725,8 @@ const WikiView: React.FC = () => {
       const response = await fetch(url);
 
       if (!response.ok) {
-        const errorMessage = `HTTP Error: ${response.status} - ${response.statusText}`;
-        console.error(errorMessage);
-        throw new Error(errorMessage);
+        alert("Cette article n'existe plus");
+        return;
       }
 
       const html = await response.text();
@@ -751,6 +750,36 @@ const WikiView: React.FC = () => {
     }
   }
 
+  // Vérifier si un lien est encyclopédique
+  const isEncyclopediaLink = (href: string): boolean => {
+    // Un lien Wikipedia encyclopédique typique n'a pas de ":" dans son chemin,
+    // sauf pour les liens interlangue comme /wiki/fr:Article
+    if (!href || !href.includes('/wiki/')) return false;
+
+    const path = href.split('/wiki/')[1];
+
+    // Exclure les liens non-encyclopédiques
+    const nonEncyclopedicPrefixes = [
+      'Fichier:', 'File:', 'Image:', 'Special:', 'Spécial:',
+      'Catégorie:', 'Category:', 'Portail:', 'Portal:',
+      'Aide:', 'Help:', 'Wikipédia:', 'Wikipedia:',
+      'Projet:', 'Project:', 'Média:', 'Media:',
+      'Modèle:', 'Template:', 'Module:', 'Utilisateur:', 'User:'
+    ];
+
+    for (const prefix of nonEncyclopedicPrefixes) {
+      if (path.startsWith(prefix)) return false;
+    }
+
+    // Vérifier si c'est un lien avec une action spéciale
+    if (href.includes('&action=') || href.includes('?action=')) return false;
+
+    // Vérifier si le lien contient d'autres paramètres typiques des pages non-encyclopédiques
+    if (href.includes('&redlink=') || href.includes('?redlink=')) return false;
+
+    return true;
+  };
+
   const handleLinkClick = async (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     if(isBlocked){
       event.preventDefault();
@@ -759,36 +788,45 @@ const WikiView: React.FC = () => {
     }
 
     const link = (event.target as HTMLElement).closest("a");
-    if (link && link.href.includes("/wiki/")) {
-      event.preventDefault();
+    if (link && link.href) {
+      // Vérifier si c'est un lien vers un article encyclopédique
+      if (isEncyclopediaLink(link.href)) {
+        event.preventDefault();
 
-      try {
-        const newTitle = decodeURIComponent(link.href.split("/wiki/")[1]);
-        console.log(`Link clicked: ${newTitle}`);
-
-        // Update UI immediately
-        setCurrentTitle(newTitle);
-        setIsLoading(true);
-
-        // Start fetching content
-        const contentPromise = fetchWikiContent(newTitle);
-
-        // Update the database in parallel
         try {
-          await updateArticleInDB(newTitle);
-          console.log(`Successfully updated article in database: ${newTitle}`);
-        } catch (dbError) {
-          console.error(`Failed to update article in database: ${newTitle}`, dbError);
-          // Continue with content display even if DB update fails
-        }
+          const newTitle = decodeURIComponent(link.href.split("/wiki/")[1]);
+          console.log(`Link clicked: ${newTitle}`);
 
-        // Wait for content to finish loading
-        await contentPromise;
-      } catch (error) {
-        console.error("Error handling link click:", error);
-        setIsLoading(false);
-        // Show error message to user
-        alert("Une erreur s'est produite lors du chargement de l'article. Veuillez réessayer.");
+          // Update UI immediately
+          setCurrentTitle(newTitle);
+          setIsLoading(true);
+
+          // Start fetching content
+          const contentPromise = fetchWikiContent(newTitle);
+
+          // Update the database in parallel
+          try {
+            await updateArticleInDB(newTitle);
+            console.log(`Successfully updated article in database: ${newTitle}`);
+          } catch (dbError) {
+            console.error(`Failed to update article in database: ${newTitle}`, dbError);
+            // Continue with content display even if DB update fails
+          }
+
+          // Wait for content to finish loading
+          await contentPromise;
+        } catch (error) {
+          console.error("Error handling link click:", error);
+          setIsLoading(false);
+          // Show error message to user
+          alert("Une erreur s'est produite lors du chargement de l'article. Veuillez réessayer.");
+        }
+      } else {
+        // Empêcher la navigation pour les liens non-encyclopédiques
+        event.preventDefault();
+        console.log("Lien non-encyclopédique ignoré:", link.href);
+        // Optionnel: informer l'utilisateur
+        // alert("Seuls les liens vers des articles encyclopédiques sont autorisés.");
       }
     }
   };
