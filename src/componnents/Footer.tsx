@@ -8,7 +8,7 @@ function Footer() {
                 <div className="footer-container">
                     <div className="footer-section">
                         <h3>À propos</h3>
-                        <p>Ce site a été développer par :</p> <br />
+                        <p>Ce site a été développé par :</p> <br />
                             <ul>
                                 <li>Abdelrmb (<a href="https://github.com/AbdelRMB" target="_blank">Github</a>, <a
                                     href="https://abdelrahimriche.com" target="_blank">Portfolio</a>)</li>
