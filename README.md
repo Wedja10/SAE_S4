@@ -52,7 +52,7 @@ Le jeu sera accessible à l'adresse indiquée dans la console, généralement `h
 - Création de lobbies pour jouer avec des amis
 - Mode multijoueur avec chat en temps réel
 - Divers artefacts et pouvoirs à utiliser pendant le jeu
-- Système de navigation dans le labyrinthe
+- Challenges quotidiens sur l'appli mobile
 - Paramètres de jeu personnalisables
 
 ## Structure du projet
